@@ -3,16 +3,16 @@
 Query
 -----                
 
-Requests to the server are made in the format of a standard NDN interest packet.
-The question is replaced with a standard request for content. 
+Requests to the zone are made in the format of a standard NDN interest.
 
-See :ref `Interest section <Interest>` for details.
+See :ref `Interest section <http://named-data.net/doc/ndn-tlv/interest.html>`_ for details.
 
 
 Answer
 ------
 
 .. _data:
+
     Data ::= DATA-TLV TLV-LENGTH
         Name
         MetaInfo
@@ -20,21 +20,24 @@ Answer
         Signature
         
 Every response from the NDNS system comes in the same generic form.
-The specialization is accomplished by setting values in the MetaInfo structure.
+Specialization of different types of NDNS responses is accomplished through
+``NDNS Type`` field of MetaInfo.
+
+See :ref `NDNS Type section` <NDNS-Type> for details
 
 
 Name
 ~~~~
 See :ref:`Name section <Name>` for details.
 
-.. _MetaInfo
 
+.. _MetaInfo
 
 MetaInfo
 ~~~~~~~~
 
 MetaInfo specified here represents portions that are defaultly specified in any 
-NDN packet, which NDNS specific additions. 
+NDN packet with NDNS specific additions. 
 
 See `NDN Packet Specification - Meta-Info <http://named-data.net/doc/ndn-tlv/data.html#metainfo>`_
 
@@ -89,18 +92,13 @@ There are 3 distinct types of NDNS Responses:
 +===========+==================================================================+    
 | NDNS Data | indicates an answer was found, and that contains the requested   | 
 |           | content                                                          |
-+-----------+----------------------------------------------------------------+   
++-----------+------------------------------------------------------------------+   
 | NDNS NACK | indicates that the responding zone has no content matching the   |
 |           | query.                                                           |
 +-----------+------------------------------------------------------------------+
 | NDNS AUTH | indicates that the zone has content, but a more specific         |
 |           | question is need to determine the correct content to server.     |
 +-----------+------------------------------------------------------------------+
-
-.. note:
-
-Both ``NDNS NACK`` and ``NDNS AUTH`` are types of negative respones which 
-indicate an issue with the request.
 
 .. _AnswerCount:
 
