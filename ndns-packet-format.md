@@ -54,7 +54,6 @@ FreshnessPeriod
 
 ::
 
-
         FreshnessPeriod ::= FRESHNESS-PERIOD-TLV TLV-LENGTH 
                           nonNegativeInteger
                           
@@ -68,8 +67,7 @@ NDNS-Type
 +++++++++
 
 ::
-
-    
+  
         NDNS-Type ::= NDNS-TYPE-TLV TLV-LENGTH
                     nonNegativeIntegear
                     
@@ -79,13 +77,12 @@ There are 4 distinct types of NDNS Responses:
     *NDNS NACK* - indicates that the responding zone has no content matching the query
     *NDNS AUTH* - indicates that the zone has content, but a more specific question is need to determine the correct content to server.
     
-.. _Content-Length:
+.. _AnswerCount:
 
 AnswerCount
 ++++++++++++
 
 ::
-
     
             AnswerCount ::= ANSWER-COUNT-TLV TLV-LENGTH
                     nonNegativeIntegear
@@ -95,3 +92,18 @@ This field is used to specify the number of answer in a response.
 
 Content
 ~~~~~~~
+
+::
+
+            Content ::= CONTENT-TYPE TLV-LENGTH BYTE*
+            
+Signature
+~~~~~~~~~
+
+::
+
+            Signature ::= SignatureInfo
+                          SignatureBits
+                          
+See `NDN Signature Specification - Signature <http://named-data.net/doc/ndn-tlv/signature.html>`_
+            
