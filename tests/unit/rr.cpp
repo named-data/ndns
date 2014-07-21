@@ -17,20 +17,31 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "zone.hpp"
+#include "rr.hpp"
+
+#include <boost/test/unit_test.hpp>
 
 namespace ndn {
 namespace ndns {
+namespace tests {
 
-Zone::Zone() {
+BOOST_AUTO_TEST_SUITE(Rr)
+
+BOOST_AUTO_TEST_CASE(Encode)
+{
+  ndn::RR rr;
+  rr.setRrdata("www2.ex.com");
+
+  ndn::Block block = rr.wireEncode();
+
+  ndn::RR rr2;
+  rr2.wireDecode(block);
+
+  BOOST_TEST_EQUAL(rr.getRrdata(), "?");
 }
 
-Zone::~Zone() {
-}
+BOOST_AUTO_TEST_SUITE_END()
 
-const RR Zone::hasName(const std::string& key) {
-  return "example.key";
-}
-
+} // namespace tests
 } // namespace ndns
 } // namespace ndn

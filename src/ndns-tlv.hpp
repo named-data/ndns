@@ -17,20 +17,18 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "zone.hpp"
-
 namespace ndn {
 namespace ndns {
+namespace tlv {
 
-Zone::Zone() {
-}
+enum {
+  Type = 2000,
+  Fressness = 2001,
+  ContentBlob = 2002,
+  NumberOfRRData = 2003,
+  RRData = 2004
+};
 
-Zone::~Zone() {
-}
-
-const RR Zone::hasName(const std::string& key) {
-  return "example.key";
-}
-
+} // namespace tlv
 } // namespace ndns
 } // namespace ndn

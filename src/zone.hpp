@@ -17,20 +17,24 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "zone.hpp"
+#ifndef NDNS_ZONE_HPP
+#define NDNS_ZONE_HPP
+
+#include "rr.hpp"
 
 namespace ndn {
 namespace ndns {
 
-Zone::Zone() {
-}
+class Zone {
+public:
+  Zone();
+  virtual ~Zone();
 
-Zone::~Zone() {
-}
+  const RR hasName(const std::string& key);
 
-const RR Zone::hasName(const std::string& key) {
-  return "example.key";
-}
+};
 
 } // namespace ndns
 } // namespace ndn
+
+#endif // NDNS_ZONE_HPP

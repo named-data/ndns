@@ -1,0 +1,33 @@
+# -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+
+from waflib import Utils
+
+top = '..'
+
+def build(bld):
+    if bld.env['WITH_TESTS']:
+        tests_base = bld(
+            target='tests-base',
+            name='tests-base',
+            features='cxx',
+            source=bld.path.ant_glob(['*.cpp']),
+            use='ndns-objects',
+          )
+
+        # unit tests
+        unit_tests = bld.program(
+            target='../unit-tests',
+            features='cxx cxxprogram',
+            source=bld.path.ant_glob(['unit/**/*.cpp']),
+            use='tests-base',
+            install_path=None,
+          )
+
+        # integrated tests
+        unit_tests_nfd = bld.program(
+            target='../integrated-tests',
+            features='cxx cxxprogram',
+            source=bld.path.ant_glob(['integrated/**/*.cpp']),
+            use='tests-base',
+            install_path=None,
+          )

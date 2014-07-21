@@ -17,20 +17,7 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "zone.hpp"
+#define BOOST_TEST_MAIN 1
+#define BOOST_TEST_DYN_LINK 1
 
-namespace ndn {
-namespace ndns {
-
-Zone::Zone() {
-}
-
-Zone::~Zone() {
-}
-
-const RR Zone::hasName(const std::string& key) {
-  return "example.key";
-}
-
-} // namespace ndns
-} // namespace ndn
+#include <boost/test/unit_test.hpp>

@@ -1,26 +1,45 @@
-/*
- * resolver.cpp
+/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
+/**
+ * Copyright (c) 2014, Regents of the University of California.
  *
- *  Created on: 18 Jul, 2014
- *      Author: shock
+ * This file is part of NDNS (Named Data Networking Domain Name Service).
+ * See AUTHORS.md for complete list of NDNS authors and contributors.
+ *
+ * NDNS is free software: you can redistribute it and/or modify it under the terms
+ * of the GNU General Public License as published by the Free Software Foundation,
+ * either version 3 of the License, or (at your option) any later version.
+ *
+ * NDNS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+ * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+ * PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "resolver.h"
+#include "resolver.hpp"
 
 namespace ndn {
+namespace ndns {
 
-Resolver::Resolver() {
-	// TODO Auto-generated constructor stub
+Resolver::Resolver()
+{
 
 }
 
-Resolver::~Resolver() {
-	// TODO Auto-generated destructor stub
+Resolver::~Resolver()
+{
 }
-const RR Resolver::iterativelyResolve(const string domain, const string name){
-	return "ex";
+
+const RR Resolver::iterativelyResolve(const std::string& domain, const std::string& name)
+{
+  return "ex";
 }
-const RR Resolver::recusivelyResolve(const string domain, const string name){
-	return "ex";
+
+const RR Resolver::recusivelyResolve(const std::string& domain, const std::string& name)
+{
+  return "ex";
 }
-} /* namespace ndn */
+
+} // namespace ndns
+} // namespace ndn

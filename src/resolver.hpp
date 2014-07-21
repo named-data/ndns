@@ -17,20 +17,26 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "zone.hpp"
+#ifndef NDNS_RESOLVER_HPP
+#define NDNS_RESOLVER_HPP
+
+#include "rr.hpp"
 
 namespace ndn {
 namespace ndns {
 
-Zone::Zone() {
-}
+class Resolver {
+public:
+  Resolver();
+  virtual ~Resolver();
 
-Zone::~Zone() {
-}
 
-const RR Zone::hasName(const std::string& key) {
-  return "example.key";
-}
+  const RR iterativelyResolve(const std::string& domain, const std::string& name);
+  const RR recusivelyResolve(const std::string& domain, const std::string& name);
+
+};
 
 } // namespace ndns
 } // namespace ndn
+
+#endif // NDNS_RESOLVER_HPP

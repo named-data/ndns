@@ -17,20 +17,12 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "zone.hpp"
+#include "tool/nameServer.h"
 
 namespace ndn {
 namespace ndns {
+namespace tests {
 
-Zone::Zone() {
-}
-
-Zone::~Zone() {
-}
-
-const RR Zone::hasName(const std::string& key) {
-  return "example.key";
-}
-
+} // namespace tests
 } // namespace ndns
 } // namespace ndn

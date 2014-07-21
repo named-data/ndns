@@ -17,20 +17,66 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "zone.hpp"
+#ifndef NDNS_RR_HPP
+#define NDNS_RR_HPP
+
+#include "ndns-tlv.hpp"
+
+#include <ndn-cxx/encoding/block.hpp>
+#include <ndn-cxx/interest.hpp>
 
 namespace ndn {
 namespace ndns {
 
-Zone::Zone() {
-}
+enum RRType
+  {
+    NS,
+    TXT,
+    UNKNOWN
+  };
 
-Zone::~Zone() {
-}
+class RR {
+public:
+  RR();
+  virtual ~RR();
 
-const RR Zone::hasName(const std::string& key) {
-  return "example.key";
-}
+  const std::string&
+  getRrdata() const
+  {
+    return m_rrData;
+  }
+
+  void setRrdata(const std::string& rrdata)
+  {
+    this->m_rrData = rrdata;
+  }
+
+private:
+  template<bool T>
+  size_t
+  wireEncode(EncodingImpl<T> & block) const;
+
+public:
+
+  const Block&
+  wireEncode() const;
+
+  void
+  wireDecode(const Block& wire);
+
+
+  Interest
+  toWire() const;
+
+
+private:
+  uint32_t m_id;
+  std::string m_rrData;
+
+  mutable Block m_wire;
+};
 
 } // namespace ndns
 } // namespace ndn
+
+#endif // NDNS_RR_HPP
