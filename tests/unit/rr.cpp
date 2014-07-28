@@ -18,26 +18,41 @@
  */
 
 #include "rr.hpp"
+#include "boost-test.hpp"
 
-#include <boost/test/unit_test.hpp>
+//#include <boost/test/test_tools.hpp>
+//#include <string>
 
 namespace ndn {
 namespace ndns {
 namespace tests {
 
-BOOST_AUTO_TEST_SUITE(Rr)
+using namespace std;
+
+BOOST_AUTO_TEST_SUITE(rr)
 
 BOOST_AUTO_TEST_CASE(Encode)
 {
-  ndn::RR rr;
-  rr.setRrdata("www2.ex.com");
+  string label = "rr:Encode";
+  printbegin(label);
+  RR rr;
+  std::string ex = "www2.ex.com";
+  uint32_t id = 201;
+  rr.setRrdata(ex);
+  rr.setId(id);
 
+  cout<<"before encode"<<endl;
   ndn::Block block = rr.wireEncode();
+  cout<<"Encode finishes with totalLenght="<<block.size()<<endl;
 
-  ndn::RR rr2;
+
+
+  RR rr2;
   rr2.wireDecode(block);
 
-  BOOST_TEST_EQUAL(rr.getRrdata(), "?");
+  BOOST_CHECK_EQUAL(rr2.getRrdata(), ex);
+  BOOST_CHECK_EQUAL(rr2.getId(), id);
+  printend(label);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

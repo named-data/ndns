@@ -32,20 +32,9 @@ RR::~RR()
 {
 }
 
-template<bool T>
-size_t
-RR::wireEncode(EncodingImpl<T> & block) const
-{
-  size_t totalLength = 0;
-  const std::string& msg = this->getRrdata();
-  totalLength += prependByteArrayBlock(block,
-                                       tlv::ndns::RRData,
-                                       reinterpret_cast<const uint8_t*>(msg.c_str()),
-                                       msg.size()
-                                       );
 
-  return totalLength;
-}
+
+
 
 const Block&
 RR::wireEncode() const
@@ -53,7 +42,9 @@ RR::wireEncode() const
   if (m_wire.hasWire())
     return m_wire;
   EncodingEstimator estimator;
+
   size_t estimatedSize = wireEncode(estimator);
+  //std::cout<<"estmatedSize="<<estimatedSize<<std::endl;
   EncodingBuffer buffer(estimatedSize, 0);
   wireEncode(buffer);
   m_wire = buffer.block();
@@ -67,7 +58,7 @@ RR::wireDecode(const Block& wire)
     throw Tlv::Error("The supplied block does not contain wire format");
   }
 
-  if (wire.type() != tlv::ndns::RRData)
+  if (wire.type() != ndn::ndns::tlv::RRData)
     throw Tlv::Error("Unexpected TLV type when decoding Content");
 
   m_wire = wire;
@@ -75,13 +66,25 @@ RR::wireDecode(const Block& wire)
 
   Block::element_const_iterator it = m_wire.elements_begin();
 
-  if (it != m_wire.elements_end() && it->type() == tlv::ndns::RRData)
+  if (it != m_wire.elements_end() && it->type() == ndn::ndns::tlv::RRDataSub1)
     {
-      m_rrData = std::string(reinterpret_cast<const char*>(it->value()), it->value_size());
+      m_id = readNonNegativeInteger(*it);
       it ++;
     } else {
-    throw Tlv::Error("not the RRData Type");
+    throw Tlv::Error("not the RRDataSub1 Type");
   }
+
+  if (it != m_wire.elements_end() && it->type() == ndn::ndns::tlv::RRDataSub2)
+    {
+
+      m_rrData = std::string(reinterpret_cast<const char*>(it->value()),
+                            it->value_size());
+      it ++;
+    } else {
+    throw Tlv::Error("not the RRDataSub2 Type");
+  }
+
+
 
 }
 

@@ -17,7 +17,7 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "src/zone.h"
+// #include "src/zone.h"
 
 namespace ndn {
 namespace ndns {

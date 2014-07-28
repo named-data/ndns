@@ -17,29 +17,56 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "resolver.hpp"
+#ifndef NDNS_ZONE_MGR_CPP
+#define NDNS_ZONE_MGR_CPP
+
+#include <sqlite3.h>
+
+#include "db-mgr.hpp"
+#include "zone.hpp"
+#include <ndn-cxx/name.hpp>
 
 namespace ndn {
 namespace ndns {
 
-Resolver::Resolver()
+class ZoneMgr : public DBMgr
 {
 
-}
+public:
+  ZoneMgr( Zone& zone);
 
-Resolver::~Resolver()
-{
-}
+public:
+  void
+  lookupId(const Name& name);
 
-const RR Resolver::iterativelyResolve(const std::string& domain, const std::string& name)
-{
-  return "ex";
-}
+  void
+  lookupId();
 
-const RR Resolver::recusivelyResolve(const std::string& domain, const std::string& name)
-{
-  return "ex";
-}
+   const Zone& getZone() const {
+    return m_zone;
+  }
 
-} // namespace ndns
-} // namespace ndn
+  void setZone(const Zone& zone) {
+    this->m_zone = zone;
+  }
+
+  int
+  callback_setId(int argc, char **argv, char **azColName);
+
+
+  static int
+  static_callback_setId(void *param, int argc, char **argv, char **azColName){
+
+     ZoneMgr *mgr = reinterpret_cast<ZoneMgr*>(param);
+     return mgr->callback_setId(argc, argv, azColName);
+   }
+
+private:
+  Zone& m_zone;
+};//class ZoneMgr
+
+
+
+}//namespace ndns
+}//namespace ndn
+#endif

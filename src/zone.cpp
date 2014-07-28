@@ -22,14 +22,19 @@
 namespace ndn {
 namespace ndns {
 
-Zone::Zone() {
+Zone::Zone(const Name& name)
+: m_id(0)
+, m_authorizedName(name)
+{
 }
 
-Zone::~Zone() {
+Zone::Zone()
+ : m_id(0)
+{
 }
 
-const RR Zone::hasName(const std::string& key) {
-  return "example.key";
+Zone::~Zone()
+{
 }
 
 } // namespace ndns

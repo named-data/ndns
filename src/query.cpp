@@ -23,7 +23,9 @@ namespace ndn {
 namespace ndns {
 
 Query::Query()
-  : m_interestLifetime(time::milliseconds(4000))
+  : m_queryType (QUERY_DNS)
+  , m_interestLifetime(time::milliseconds(4000))
+  , m_rrType(RR::NS)
 {
 }
 
@@ -31,8 +33,14 @@ Query::~Query() {
 }
 
 
-void
-Query::fromWire(const Name &name, const Interest &interest)
+bool
+Query::fromInterest(const Name &name, const Interest &interest)
+{
+  return fromInterest(interest);
+}
+
+bool
+Query::fromInterest(const Interest& interest)
 {
   Name interestName;
   interestName = interest.getName();
@@ -51,40 +59,24 @@ Query::fromWire(const Name &name, const Interest &interest)
 
   if (qtflag == -1)
     {
-      std::cerr << "There is no QueryType in the Interest Name: " << interestName << std::endl;
-      return;
+      std::cerr << "There is no QueryType in the Interest Name: "<< interestName << std::endl;
+      return false;
     }
   this->m_queryType = toQueryType(interestName.get(qtflag).toUri());
-  this->m_rrType = toRRType(interestName.get(len-1).toUri());
+  this->m_rrType = RR::toRRType(interestName.get(len-1).toUri());
   this->m_authorityZone = interestName.getPrefix(qtflag); //the DNS/DNS-R is not included
   this->m_interestLifetime = interest.getInterestLifetime();
-
-}
-
-template<bool T>
-size_t
-Query::wireEncode(EncodingImpl<T>& block) const
-{
-  size_t totalLength = 0;
-  totalLength += 0;
-
-
-  size_t totalLength = prependByteArrayBlock(block, tlv::Bytes,
-                                             m_key.get().buf(), m_key.get().size());
-  totalLength += m_keyName.wireEncode(block);
-  totalLength += block.prependVarNumber(totalLength);
-  totalLength += block.prependVarNumber(tlv::PublicKey);
-
-  return totalLength;
+  this->m_rrLabel = interestName.getSubName(qtflag+1, len-qtflag-2);
+  return true;
 }
 
 Interest
-Query::toWire() const
+Query::toInterest() const
 {
   Name name = this->m_authorityZone;
   name.append(toString(this->m_queryType));
   name.append(this->m_rrLabel);
-  name.append(toString(this->m_rrType));
+  name.append(RR::toString(this->m_rrType));
   Selectors selector;
   //selector.setMustBeFresh(true);
 

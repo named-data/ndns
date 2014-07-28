@@ -36,62 +36,185 @@
 #include <vector>
 
 #include "ndns-tlv.hpp"
+#include "query.hpp"
+#include "rr.hpp"
 
 namespace ndn {
 namespace ndns {
 
-enum ResponseType
-  {
-    NDNS_Resp,
-    NDNS_Nack,
-    NDNS_Auth
-  };
-
-
-static std::string
-toString(ResponseType responseType) const
-{
-  string label;
-  switch (responseType)
-    {
-    case ResponseType::NDNS_Resp:
-      label = "NDNS Resp";
-      break;
-    case ResponseType::NDNS_Nack:
-      label = "NDNS Nack";
-      break;
-    case ResponseType::NDNS_Auth:
-      label = "NDNS Auth";
-      break;
-    default:
-      label = "Default";
-      break;
-    }
-  return label;
-}
 
 class Response {
 public:
+  enum ResponseType
+    {
+      NDNS_Resp,
+      NDNS_Nack,
+      NDNS_Auth,
+      UNKNOWN
+    };
+
+
+  static std::string
+  toString(ResponseType responseType)
+  {
+    std::string label;
+    switch (responseType)
+      {
+      case NDNS_Resp:
+        label = "NDNS Resp";
+        break;
+      case NDNS_Nack:
+        label = "NDNS Nack";
+        break;
+      case NDNS_Auth:
+        label = "NDNS Auth";
+        break;
+      default:
+        label = "UNKNOWN";
+        break;
+      }
+    return label;
+  }
+
+  static ResponseType
+  toResponseType(const std::string& str)
+  {
+      ResponseType atype;
+      if (str == "NDNS Resp"){
+          atype = NDNS_Resp;
+      }
+      else if (str == "NDNS Nack") {
+          atype = NDNS_Nack;
+      }
+      else if (str == "NDNS Auth")
+      {
+        atype = NDNS_Auth;
+      }
+      else {
+          atype = UNKNOWN;
+      }
+      return atype;
+  }
+
   Response();
   virtual ~Response();
 
-  Data
-  toWire() const;
+  inline void addRr(const uint32_t rrId, const std::string rrData)
+  {
+    RR rr;
+    rr.setId(rrId);
+    rr.setRrdata(rrData);
+    this->m_rrs.push_back(rr);
+  }
+
+  const Block&
+  wireEncode() const;
 
   void
-  fromWire(const Interest &interest, const Data &data);
+  wireDecode(const Block& wire);
+
+  template<bool T>
+  size_t
+  wireEncode(EncodingImpl<T> & block) const;
+
+
+  void
+  fromData(const Name& name, const Data& data);
+
+  void
+  fromData(const Data &data);
+
+  Data
+  toData() const;
+
+
+
+  const std::string
+  getStringRRs() const {
+    std::stringstream str;
+    str<<"[";
+    std::vector<RR>::const_iterator iter = m_rrs.begin();
+    while (iter != m_rrs.end())
+    {
+      str<<" "<<*iter;
+      iter ++;
+    }
+    str<<"]";
+    return str.str();
+  }
+
+  Query::QueryType getContentType() const {
+    return m_contentType;
+  }
+
+  void setContentType(Query::QueryType contentType) {
+    m_contentType = contentType;
+  }
+
+  time::milliseconds getFreshness() const {
+    return m_freshness;
+  }
+
+  void setFreshness(time::milliseconds freshness) {
+    m_freshness = freshness;
+  }
+
+  const Name& getQueryName() const {
+    return m_queryName;
+  }
+
+  void setQueryName(const Name& queryName) {
+    m_queryName = queryName;
+  }
+
+  ResponseType getResponseType() const {
+    return m_responseType;
+  }
+
+  void setResponseType(ResponseType responseType) {
+    m_responseType = responseType;
+  }
+
+  const std::vector<RR>& getRrs() const {
+    return m_rrs;
+  }
+
+  void setRrs(const std::vector<RR>& rrs) {
+    m_rrs = rrs;
+  }
+
+
 
 private:
-  Name m_queryName;
-  std::string m_serial;
-  ResponseType m_responseType;
-
   time::milliseconds m_freshness;
-
-  unsigned int m_numberOfRR;
-  vector<RR>  m_rrs;
+  Name m_queryName;
+  //std::string m_serial;
+  Query::QueryType m_contentType;
+  ResponseType m_responseType;
+  //unsigned int m_numberOfRR;
+  std::vector<RR>  m_rrs;
+  mutable Block m_wire;
 
 };
+
+
+inline std::ostream&
+operator<<(std::ostream& os, const Response& response)
+{
+  os<<"Response: queryName="<<response.getQueryName().toUri()
+    <<" responseType="<<Response::toString(response.getResponseType())
+    <<" contentType="<<Query::toString(response.getContentType())
+    <<" [";
+  std::vector<RR>::const_iterator iter = response.getRrs().begin();
+  while (iter != response.getRrs().end())
+  {
+    os<<" "<<*iter;
+    iter ++;
+  }
+  os<<"]";
+  return os;
+}
+
 
 } // namespace ndns
 } // namespace ndn

@@ -19,11 +19,13 @@
 
 #include "response.hpp"
 
-
 namespace ndn {
 namespace ndns {
 
 Response::Response()
+  : m_freshness (time::milliseconds(3600))
+  , m_contentType (Query::QUERY_DNS)
+  , m_responseType (NDNS_Resp)
 {
 }
 
@@ -31,96 +33,184 @@ Response::~Response()
 {
 }
 
-
-Data
-Response::toWire() const
+template<bool T>
+size_t
+Response::wireEncode(EncodingImpl<T> & block) const
 {
-  Name name = this->m_queryName;
-  name.append(this->m_serial);
+    size_t totalLength = 0;
+    std::vector<RR>::size_type lenOfRR = m_rrs.size();
+    RR rr;
+    Block btemp;
 
-  Data data(name);
+    //totalLength += m_rrs[0].wireEncode(block);
 
-  data.setFreshnessPeriod(this->m_freshness);
-
-  string content = "";
-
-  size_t totalLen = 0;
-  Block block = Block();
-  block.push_back
-    (nonNegativeIntegerBlock
-     (tlv::ndns::Type, static_cast<unsigned long>(this->m_responseType))
-     );
-
-  block.push_back
-    (nonNegativeIntegerBlock
-     (tlv::ndns::Fressness, this->m_freshness.count())
-     );
-
-  Block block2 = Block(tlv::ndns::ContentBlob);
-  block2.push_back
-    (nonNegativeIntegerBlock
-     (tlv::ndns::NumberOfRRData, this->m_numberOfRR)
-     );
-
-  for (int i=0; i<this->m_numberOfRR; i++)
+    for (std::vector<RR>::size_type i=0; i<lenOfRR; i++)
     {
-      RR rr = m_rrs[i];
-      block2.push_back(rr.toWire());
+      rr = m_rrs[lenOfRR-i-1];
+      totalLength += rr.wireEncode(block);
+      //std::cout<<"totalLenght="<<totalLength<<std::endl;
     }
 
-  block.push_back(block2);
+    totalLength += prependNonNegativeIntegerBlock(block,
+                        ndn::ndns::tlv::ResponseNumberOfRRData,
+                        lenOfRR);
 
-  return data;
+    totalLength += block.prependVarNumber(totalLength);
+    totalLength += block.prependVarNumber(ndn::ndns::tlv::ResponseContentBlob);
+
+    totalLength += prependNonNegativeIntegerBlock(block,
+                                ndn::ndns::tlv::ResponseFressness,
+                                m_freshness.count()
+                                  );
+
+    std::string msg = Response::toString(m_responseType);
+    totalLength += prependByteArrayBlock(block,
+                           ndn::ndns::tlv::ResponseType,
+                           reinterpret_cast<const uint8_t*>(msg.c_str()),
+                           msg.size()
+                           );
+
+    totalLength += m_queryName.wireEncode(block);
+
+
+    totalLength += block.prependVarNumber(totalLength);
+    totalLength += block.prependVarNumber(Tlv::Content);
+    return totalLength;
+}
+
+
+const Block&
+Response::wireEncode() const
+{
+
+  if (m_wire.hasWire())
+     return m_wire;
+   EncodingEstimator estimator;
+
+   size_t estimatedSize = wireEncode(estimator);
+   //std::cout<< typeid( this).name()<<" Instance estimatedsize="<<estimatedSize<<std::endl;
+   EncodingBuffer buffer(estimatedSize, 0);
+   wireEncode(buffer);
+   m_wire = buffer.block();
+   return m_wire;
+}
+
+
+void
+Response::wireDecode(const Block& wire)
+{
+  if (!wire.hasWire()) {
+    throw Tlv::Error("The supplied block does not contain wire format");
+  }
+
+  //if (wire.type() != ndn::ndns::tlv::ResponseContentBlob)
+  //  throw Tlv::Error("Unexpected TLV type when decoding Content");
+
+  m_wire = wire;
+  m_wire.parse();
+
+
+  Block::element_const_iterator it = m_wire.elements_begin();
+
+  if (it != m_wire.elements_end() && it->type() == ndn::Tlv::Name)
+  {
+    m_queryName.wireDecode(*it);
+    it ++;
+  } else
+  {
+    throw Tlv::Error("not the ndn::Tlv::Name type");
+  }
+
+  if (it != m_wire.elements_end() && it->type() == ndn::ndns::tlv::ResponseType)
+  {
+    std::string temp = std::string(reinterpret_cast<const char*>(it->value()),
+                          it->value_size());
+    m_responseType = Response::toResponseType(temp);
+      it ++;
+  } else
+  {
+      throw Tlv::Error("not the ndn::ndns::tlv::ReponseType type");
+  }
+
+  if (it != m_wire.elements_end() && it->type() == ndn::ndns::tlv::ResponseFressness)
+    {
+      m_freshness = time::milliseconds(readNonNegativeInteger(*it));
+      it ++;
+    } else
+    {
+      throw Tlv::Error("not the ndn::ndns::tlv::ReponseFreshness type");
+    }
+
+
+  if (it != m_wire.elements_end() && it->type() == ndn::ndns::tlv::ResponseContentBlob)
+    {
+      //Block b2 = it->value();/* to check */
+      Block b2 = *it;/* to check */
+
+      b2.parse();
+      Block::element_const_iterator it2 = b2.elements_begin();
+      size_t rrlen = 0;
+      if (it2 != b2.elements_end() && it2->type() == ndn::ndns::tlv::ResponseNumberOfRRData)
+      {
+         rrlen = readNonNegativeInteger(*it2);
+         it2 ++;
+      } else
+      {
+        throw Tlv::Error("not the ndn::ndns::tlv::ResponseNumberOfRRData type");
+      }
+      for (size_t i=0; i<rrlen; i++)
+      {
+        if (it2 != b2.elements_end() &&
+            it2->type() == ndn::ndns::tlv::RRData)
+        {
+          RR rr;
+          rr.wireDecode(*it2);
+          this->m_rrs.push_back(rr);
+          it2 ++;
+        } else
+        {
+          throw Tlv::Error("not the ndn::ndns::tlv::RRData type");
+        }
+      }
+
+
+      it ++;
+    } else
+    {
+      throw Tlv::Error("not the ndn::ndns::tlv::ResponseContentBlob type");
+    }
+
+
 
 }
 
 void
-Response::fromWire(const Interest &interest, const Data &data)
+Response::fromData(const Data& data)
 {
-  Name dataName;
-  dataName = data.getName();
 
-  int qtflag = -1;
-  size_t len = dataName.size();
-  for (size_t i=0; i<len; i++)
-    {
-      string comp = dataName.get(i).toEscapedString();
-      if (comp == ndn::toString(QueryType::DNS) || comp == ndn::toString(QueryType::DNS_R))
-        {
-          qtflag = i;
-          break;
-        }
-    }//for
+    m_queryName = data.getName();
+    m_freshness = data.getFreshnessPeriod();
+    m_contentType = Query::QueryType(data.getContentType());
+    this->wireDecode(data.getContent());
+}
 
-  if (qtflag == -1)
-    {
-      cerr<<"There is no QueryType in the Interest Name: "<<dataName<<endl;
-      return;
-    }
 
-  this->m_queryName = dataName.getPrefix(-1);
+void
+Response::fromData(const Name& name, const Data& data)
+{
+  fromData(data);
+}
 
-  string last = dataName.get(len-1).toEscapedString();
-  if (ndn::toRRType(last) == RRType::UNKNOWN)
-    {
-      this->m_serial = "";
-    } else
-    {
-      this->m_serial = last;
-    }
+Data
+Response::toData() const
+{
+  Data data;
+  data.setName(m_queryName);
+  data.setFreshnessPeriod(this->m_freshness);
+  data.setContentType(m_contentType);
+  data.setContent(this->wireEncode());
 
-  Block block = data.getContent();
-  this->m_numberOfRR = readNonNegativeInteger(block.get(tlv::ndns::NumberOfRRData));
-
-  Block block2 = block.get(tlv::ndns::ContentBlob);
-  for (int i=0; i<this->m_numberOfRR; i++)
-    {
-      Block block3 = block2.get(tlv::ndns::RRData);
-      RR rr;
-      rr.fromWire(block3);
-      m_rrs.push_back(rr);
-    }
-
+  return data;
 }
 
 

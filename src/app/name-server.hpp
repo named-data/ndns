@@ -16,47 +16,62 @@
  * You should have received a copy of the GNU General Public License along with
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef NDNS_NAME_SERVER_HPP
+#define NDNS_NAME_SERVER_HPP
 
-#ifndef NDNS_ZONE_HPP
-#define NDNS_ZONE_HPP
+#include <boost/asio.hpp>
+#include <boost/noncopyable.hpp>
 
-#include "rr.hpp"
+#include <ndn-cxx/face.hpp>
+#include <ndn-cxx/name.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
+
+#include "zone.hpp"
+#include "db/zone-mgr.hpp"
+#include "db/rr-mgr.hpp"
 #include "query.hpp"
 #include "response.hpp"
+#include "rr.hpp"
 
-namespace ndn {
-namespace ndns {
+#include "ndn-app.hpp"
 
-class Zone {
+using namespace std;
+using namespace ndn;
+
+
+namespace ndn{
+namespace ndns{
+class NameServer : public NDNApp
+{
 
 public:
+explicit
+NameServer(const char *programName, const char *prefix, const char *nameZone);
 
-  Zone(const Name& name);
-  Zone();
-  virtual ~Zone();
+void
+onInterest(const Name &name, const Interest &interest);
 
-  const Name& getAuthorizedName() const {
-    return m_authorizedName;
-  }
 
-  void setAuthorizedName(const Name& authorizedName) {
-    m_authorizedName = authorizedName;
-  }
+void
+run();
 
-  uint32_t getId() const {
-    return m_id;
-  }
+public:
+  /*
+   * the name used by the server to provide routeable accessory.
 
-  void setId(uint32_t id) {
-    m_id = id;
-  }
+  Name m_name;
+  */
+  /*
+   * the zone the server is in charge of
+   */
+  Zone m_zone;
 
-private:
-  uint32_t m_id;
-  Name m_authorizedName;
-};//class Zone
+  /*
+   * to manage the m_zone; m_zoneMgr.getZone() returns the referrence of m_zone
+   */
+  ZoneMgr m_zoneMgr;
 
-} // namespace ndns
-} // namespace ndn
-
-#endif // NDNS_ZONE_HPP
+};//clcass NameServer
+}//namespace ndns
+}//namespace ndn
+#endif /* NAME_SERVER_HPP_ */

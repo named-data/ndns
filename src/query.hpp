@@ -36,6 +36,42 @@ public:
     QUERY_DNS_R
   };
 
+  static std::string
+  toString(const QueryType& qType)
+  {
+    std::string label;
+    switch (qType)
+      {
+      case QUERY_DNS:
+        label = "DNS";
+        break;
+      case QUERY_DNS_R:
+        label = "DNS-R";
+        break;
+      default:
+        label = "Default";
+        break;
+      }
+    return label;
+
+  }
+
+  static const QueryType
+  toQueryType(const std::string& str)
+  {
+    QueryType atype;
+    if (str == "DNS") {
+      atype = QUERY_DNS;
+    }
+    else if (str == "DNS-R") {
+      atype = QUERY_DNS_R;
+    }
+    else {
+      atype = QUERY_DNS;
+    }
+    return atype;
+  }
+
   Query();
 
   virtual ~Query();
@@ -72,49 +108,14 @@ public:
     m_rrLabel = rrLabel;
   }
 
-  const RRType& getRrType() const {
+  const RR::RRType& getRrType() const {
     return m_rrType;
   }
 
-  void setRrType(const RRType& rrType) {
+  void setRrType(const RR::RRType& rrType) {
     m_rrType = rrType;
   }
 
-  static std::string
-  toString(QueryType qType)
-  {
-    std::string label;
-    switch (qType)
-      {
-      case QUERY_DNS:
-        label = "DNS";
-        break;
-      case QUERY_DNS_R:
-        label = "DNS-R";
-        break;
-      default:
-        label = "Default";
-        break;
-      }
-    return label;
-
-  }
-
-  static const QueryType
-  toQueryType(const std::string& str)
-  {
-    QueryType atype;
-    if (str == "DNS") {
-      atype = QUERY_DNS;
-    }
-    else if (str == "DNS-R") {
-      atype = QUERY_DNS_R;
-    }
-    else {
-      atype = QUERY_DNS;
-    }
-    return atype;
-  }
 
 private:
   template<bool T>
@@ -122,29 +123,37 @@ private:
   wireEncode(EncodingImpl<T> & block) const;
 
 public:
-
-  const Block&
-  wireEncode() const;
-
-  void
-  wireDecode(const Block& wire);
-
-
   Interest
-  toWire() const;
+  toInterest() const;
 
-  void
-  fromWire(const Name &name, const Interest& interest);
+  bool
+  fromInterest(const Name &name, const Interest& interest);
+
+  bool
+  fromInterest(const Interest& interest);
+
 
 public:
   Name m_authorityZone;
   enum QueryType m_queryType;
   time::milliseconds m_interestLifetime;
   Name m_rrLabel;
-  enum RRType m_rrType;
+  enum RR::RRType m_rrType;
 
   mutable Block m_wire;
 };
+
+
+inline std::ostream&
+operator<<(std::ostream& os, const Query& query)
+{
+  os<<"Query: authorityZone="<<query.getAuthorityZone().toUri()
+    <<" queryType="<<Query::toString(query.getQueryType())
+    <<" rrLabel="<<query.getRrLabel().toUri()
+    <<" rrType="<<RR::toString(query.getRrType());
+  return os;
+}
+
 
 } // namespace ndns
 } // namespace ndn

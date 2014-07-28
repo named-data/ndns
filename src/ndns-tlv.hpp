@@ -17,18 +17,29 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef NDNS_NDNS_TLV_HPP
+#define NDNS_NDNS_TLV_HPP
 namespace ndn {
 namespace ndns {
 namespace tlv {
 
 enum {
-  Type = 2000,
-  Fressness = 2001,
-  ContentBlob = 2002,
-  NumberOfRRData = 2003,
-  RRData = 2004
+  ResponseType = 130,
+  ResponseFressness = 131,
+  ResponseContentBlob = 132,
+  ResponseNumberOfRRData = 133,
+
+  RRData = 134,
+  RRDataSub1 = 141,
+  RRDataSub2 = 142,
+
+  NDNSRecusive = 151,
+  NDNSInteative = 152
+
 };
 
 } // namespace tlv
 } // namespace ndns
 } // namespace ndn
+
+#endif

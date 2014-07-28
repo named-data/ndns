@@ -16,47 +16,70 @@
  * You should have received a copy of the GNU General Public License along with
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef NAME_RESOLVER_HPP
+#define NAME_RESOLVER_HPP
 
-#ifndef NDNS_ZONE_HPP
-#define NDNS_ZONE_HPP
+#include <boost/asio.hpp>
+#include <boost/noncopyable.hpp>
 
-#include "rr.hpp"
+#include <ndn-cxx/face.hpp>
+#include <ndn-cxx/name.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
+
+#include "zone.hpp"
+#include "db/zone-mgr.hpp"
+#include "db/rr-mgr.hpp"
 #include "query.hpp"
 #include "response.hpp"
+#include "rr.hpp"
+#include "iterative-query.hpp"
+#include "ndn-app.hpp"
+
+using namespace std;
 
 namespace ndn {
 namespace ndns {
 
-class Zone {
+
+class NameCachingResolver : public NDNApp{
+enum ResolverType
+{
+  StubResolver,
+  CachingResolver
+};
 
 public:
 
-  Zone(const Name& name);
-  Zone();
-  virtual ~Zone();
+NameCachingResolver(const char *programName, const char *prefix);
 
-  const Name& getAuthorizedName() const {
-    return m_authorizedName;
-  }
 
-  void setAuthorizedName(const Name& authorizedName) {
-    m_authorizedName = authorizedName;
-  }
+void
+resolve(IterativeQuery& iq);
 
-  uint32_t getId() const {
-    return m_id;
-  }
+void
+answerRespNack(IterativeQuery& iq);
 
-  void setId(uint32_t id) {
-    m_id = id;
-  }
+using NDNApp::onData;
+void
+onData(const Interest& interest, Data &data, IterativeQuery& iq);
+
+void
+onInterest(const Name &name, const Interest &interest);
+
+using NDNApp::onTimeout;
+
+void
+onTimeout(const Interest& interest, IterativeQuery& iq);
+
+void
+run();
 
 private:
-  uint32_t m_id;
-  Name m_authorizedName;
-};//class Zone
+  //ResolverType m_resolverType;
 
-} // namespace ndns
-} // namespace ndn
+};
 
-#endif // NDNS_ZONE_HPP
+} /* namespace ndns */
+} /* namespace ndn */
+
+#endif /* NAME_RESOLVER_HPP_ */

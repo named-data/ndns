@@ -17,26 +17,53 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NDNS_RESOLVER_HPP
-#define NDNS_RESOLVER_HPP
+#include "../boost-test.hpp"
 
-#include "rr.hpp"
+#include "db/rr-mgr.hpp"
 
+//#include <ndn-cxx/name.hpp>
 namespace ndn {
 namespace ndns {
+namespace tests {
 
-class Resolver {
-public:
-  Resolver();
-  virtual ~Resolver();
+using namespace std;
+
+BOOST_AUTO_TEST_SUITE(rrMgr)
+
+BOOST_AUTO_TEST_CASE(db)
+{
+
+  string label = "rrMgr::db";
+  printbegin(label);
+
+  ndns::Query q;
+  Name n1("/net");
+  Name n2("/ndnsim");
+  q.setAuthorityZone(n1);
+  q.setRrLabel(n2);
+  q.setQueryType(ndns::Query::QUERY_DNS_R);
 
 
-  const RR iterativelyResolve(const std::string& domain, const std::string& name);
-  const RR recusivelyResolve(const std::string& domain, const std::string& name);
+  Zone zone;
+  zone.setAuthorizedName(Name("/net"));
+  zone.setId(2);
 
-};
+  Response re;
 
+  RRMgr mgr(zone, q, re);
+  BOOST_CHECK_EQUAL(mgr.lookup(), 0);
+
+
+  zone.setId(23);
+  RRMgr mgr2(zone, q, re);
+  BOOST_CHECK_EQUAL(mgr2.lookup(), 0);
+
+
+
+  printend(label);
+}
+BOOST_AUTO_TEST_SUITE_END()
+
+} // namespace tests
 } // namespace ndns
 } // namespace ndn
-
-#endif // NDNS_RESOLVER_HPP

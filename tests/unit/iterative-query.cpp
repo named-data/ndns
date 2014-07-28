@@ -17,11 +17,33 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// #include "resolver.h"
+#include "iterative-query.hpp"
+#include "boost-test.hpp"
+
+//#include <boost/test/test_tools.hpp>
+//#include <string>
 
 namespace ndn {
 namespace ndns {
 namespace tests {
+
+using namespace std;
+
+BOOST_AUTO_TEST_SUITE(iQuery)
+
+BOOST_AUTO_TEST_CASE(Protocol)
+{
+  string label = "iQuery::Protocol";
+  printbegin(label);
+
+  Query q;
+
+
+
+  printend(label);
+}
+
+BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace tests
 } // namespace ndns

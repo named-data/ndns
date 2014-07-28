@@ -17,11 +17,51 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "tool/nameServer.h"
+#include "../boost-test.hpp"
 
+#include "db/zone-mgr.hpp"
+#include "zone.hpp"
+
+//#include <ndn-cxx/name.hpp>
 namespace ndn {
 namespace ndns {
 namespace tests {
+
+using namespace std;
+
+BOOST_AUTO_TEST_SUITE(zoneMgr)
+
+BOOST_AUTO_TEST_CASE(db)
+{
+  string label = "zoneMgr::db";
+  printbegin(label);
+  Zone zone;
+  zone.setAuthorizedName(Name("/net"));
+  zone.setId(11);
+
+  ZoneMgr mgr(zone); //the construction will lookup zone.id, /net's id is 2
+  BOOST_CHECK_EQUAL(mgr.getZone().getId(), 2);
+  BOOST_CHECK_EQUAL(zone.getId(), 2);
+
+
+  zone.setId(11);
+  BOOST_CHECK_EQUAL(mgr.getZone().getId(), 11);
+
+  zone.setId(12);
+  BOOST_CHECK_EQUAL(mgr.getZone().getId(), 12);
+
+  mgr.lookupId();
+  cout<<"zone.name="<<mgr.getZone().getAuthorizedName()<<endl;
+  cout<<"zone.id="<<mgr.getZone().getId()<<endl;
+  cout<<"zone.id="<<mgr.getZone().getId()<<endl;
+  cout<<"&zone="<<&zone<<endl;
+  cout<<"&mgr.getZone()"<<&(mgr.getZone())<<endl;
+  BOOST_CHECK_EQUAL(mgr.getZone().getId(), 2);
+  BOOST_CHECK_EQUAL(zone.getId(), 2);
+
+  printend(label);
+}
+BOOST_AUTO_TEST_SUITE_END()
 
 } // namespace tests
 } // namespace ndns
