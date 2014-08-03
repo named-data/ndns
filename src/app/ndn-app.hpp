@@ -28,28 +28,29 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/noncopyable.hpp>
 
+#include "ndns-label.hpp"
+
 using namespace std;
 
 namespace ndn {
-namespace ndns{
+namespace ndns {
 
-class NDNApp {
+class NDNApp
+{
 public:
   NDNApp(const char *programName, const char *prefix);
   virtual ~NDNApp();
 
-  virtual void
-  onData(const ndn::Interest& interest, Data& data)
+  virtual void onData(const ndn::Interest& interest, Data& data)
   {
   }
-  virtual void
-  onTimeout(const ndn::Interest& interest)
+  virtual void onTimeout(const ndn::Interest& interest)
   {
-    std::cout<<"!- Interest Timeout"<<interest.getName()<<std::endl;
+    std::cout << "!- Interest Timeout" << interest.getName() << std::endl;
   }
 
-  virtual void
-  onRegisterFailed(const ndn::Name& prefix, const std::string& reason)
+  virtual void onRegisterFailed(const ndn::Name& prefix,
+      const std::string& reason)
   {
     m_error = "ERROR: Failed to register prefix in local hub's daemon";
     m_error += " due to: ";
@@ -58,95 +59,120 @@ public:
     this->stop();
   }
 
-
-  virtual void
-  onInterest(const Name &name, const Interest& interest)
+  virtual void onInterest(const Name &name, const Interest& interest)
   {
 
   }
 
-  virtual void
-  signalHandler()
+  virtual void signalHandler()
   {
     this->stop();
     exit(1);
   }
 
-
-  virtual void
-  stop()
+  virtual void stop()
   {
-    std::cout<<m_programName<<" stops"<<std::endl;
+    std::cout << m_programName << " stops" << std::endl;
     m_ioService.stop();
     m_face.shutdown();
-    if (hasError())
-    {
-      cout<<m_error<<endl;
+    if (hasError()) {
+      cout << m_error << endl;
     }
   }
 
-
-
-  bool hasError() const {
+  bool hasError() const
+  {
     return m_hasError;
   }
 
-  void setHasError(bool hasError) {
+  void setHasError(bool hasError)
+  {
     m_hasError = hasError;
   }
 
-  const char* getPrefix() const {
+  const char* getPrefix() const
+  {
     return m_prefix;
   }
 
-  void setPrefix(char* prefix) {
+  void setPrefix(char* prefix)
+  {
     m_prefix = prefix;
   }
 
-  const char* getProgramName() const {
+  const char* getProgramName() const
+  {
     return m_programName;
   }
 
-  void setProgramName(char* programName) {
+  void setProgramName(char* programName)
+  {
     m_programName = programName;
   }
 
-  const string& getErr() const {
+  const string& getErr() const
+  {
     return m_error;
   }
 
-  void setErr(const string& err) {
+  void setErr(const string& err)
+  {
     m_error = err;
   }
 
-  uint32_t getInterestTriedMax() const {
+  uint32_t getInterestTriedMax() const
+  {
     return m_interestTriedMax;
   }
 
-  void setInterestTriedMax(uint32_t interestTriedMax) {
+  void setInterestTriedMax(uint32_t interestTriedMax)
+  {
     m_interestTriedMax = interestTriedMax;
   }
 
-  time::milliseconds getContentFreshness() const {
+  time::milliseconds getContentFreshness() const
+  {
     return m_contentFreshness;
   }
 
-  void setContentFreshness(time::milliseconds contentFreshness) {
+  void setContentFreshness(time::milliseconds contentFreshness)
+  {
     m_contentFreshness = contentFreshness;
   }
 
-  time::milliseconds getInterestLifetime() const {
+  time::milliseconds getInterestLifetime() const
+  {
     return m_interestLifetime;
   }
 
-  void setInterestLifetime(time::milliseconds interestLifetime) {
+  void setInterestLifetime(time::milliseconds interestLifetime)
+  {
     m_interestLifetime = interestLifetime;
   }
 
-public:
+  const Name& getForwardingHint() const
+  {
+    return m_forwardingHint;
+  }
+
+  void setForwardingHint(const Name& forwardingHint)
+  {
+    m_forwardingHint = forwardingHint;
+  }
+
+  unsigned short getEnableForwardingHint() const
+  {
+    return m_enableForwardingHint;
+  }
+
+  void setEnableForwardingHint(unsigned short enableForwardingHint)
+  {
+    m_enableForwardingHint = enableForwardingHint;
+  }
+
+protected:
   const char* m_programName;
-  const char* m_prefix;
-  bool m_hasError;
+  const char* m_prefix;bool m_hasError;
   string m_error;
   time::milliseconds m_contentFreshness;
   time::milliseconds m_interestLifetime;
@@ -159,9 +185,14 @@ public:
   //Zone m_zone;
   //ZoneMgr m_zoneMgr;
 
-
   Face m_face;
   KeyChain m_keyChain;
+
+  /**
+   * forwarding hint
+   */
+  unsigned short m_enableForwardingHint;
+  Name m_forwardingHint;
 };
 
 } //namespace ndns

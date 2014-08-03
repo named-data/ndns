@@ -27,7 +27,8 @@
 namespace ndn {
 namespace ndns {
 
-class Zone {
+class Zone
+{
 
 public:
 
@@ -35,28 +36,33 @@ public:
   Zone();
   virtual ~Zone();
 
-  const Name& getAuthorizedName() const {
+  const Name& getAuthorizedName() const
+  {
     return m_authorizedName;
   }
 
-  void setAuthorizedName(const Name& authorizedName) {
+  void setAuthorizedName(const Name& authorizedName)
+  {
     m_authorizedName = authorizedName;
   }
 
-  uint32_t getId() const {
+  uint32_t getId() const
+  {
     return m_id;
   }
 
-  void setId(uint32_t id) {
+  void setId(uint32_t id)
+  {
     m_id = id;
   }
 
 private:
   uint32_t m_id;
   Name m_authorizedName;
-};//class Zone
+};
+//class Zone
 
-} // namespace ndns
+}// namespace ndns
 } // namespace ndn
 
 #endif // NDNS_ZONE_HPP

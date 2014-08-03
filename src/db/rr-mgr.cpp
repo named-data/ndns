@@ -8,7 +8,7 @@
 #include "rr-mgr.hpp"
 
 namespace ndn {
-namespace ndns{
+namespace ndns {
 RRMgr::RRMgr(Zone& zone, Query& query, Response& response)
   : m_count(0U)
   , m_zone(zone)
@@ -18,18 +18,15 @@ RRMgr::RRMgr(Zone& zone, Query& query, Response& response)
 
 }
 
-
-RRMgr::~RRMgr() {
+RRMgr::~RRMgr()
+{
   // TODO Auto-generated destructor stub
 }
 
-
-
-int
-RRMgr::count()
+int RRMgr::count()
 {
   std::string sql;
-  sql =  "SELECT count(*) FROM rrs INNER JOIN rrsets ON rrs.rrset_id=rrsets.id";
+  sql = "SELECT count(*) FROM rrs INNER JOIN rrsets ON rrs.rrset_id=rrsets.id";
   sql += " WHERE rrsets.zone_id=";
   sql += std::to_string(m_zone.getId());
   sql += " AND ";
@@ -37,24 +34,23 @@ RRMgr::count()
   sql += RR::toString(m_query.getRrType());
   sql += "\' AND ";
   sql += "rrsets.label LIKE\'";
-  sql += m_query.getRrLabel().toUri()+"/%\'";
+  sql += m_query.getRrLabel().toUri() + "/%\'";
 
-  std::cout<<"sql="<<sql<<std::endl;
+  std::cout << "sql=" << sql << std::endl;
   this->execute(sql, static_callback_countRr, this);
 
-  if (this->getStatus() == DBMgr::DBError)
-  {
+  if (this->getStatus() == DBMgr::DBError) {
     return -1;
   }
 
   return this->m_count;
 }
-int
-RRMgr::callback_countRr(int argc, char **argv, char **azColName)
+int RRMgr::callback_countRr(int argc, char **argv, char **azColName)
 {
   this->addResultNum();
 
-  std::cout<<this->getResultNum()<<"th result: "<<"count="<<argv[0]<<std::endl;
+  std::cout << this->getResultNum() << "th result: " << "count=" << argv[0]
+      << std::endl;
   m_count = std::atoi(argv[0]);
   return 0;
 }
@@ -63,7 +59,8 @@ int RRMgr::lookup()
 {
   std::string sql;
 
-  sql =  "SELECT rrs.ttl, rrs.rrdata, rrs.id FROM rrs INNER JOIN rrsets ON rrs.rrset_id=rrsets.id";
+  sql =
+      "SELECT rrs.ttl, rrs.rrdata, rrs.id FROM rrs INNER JOIN rrsets ON rrs.rrset_id=rrsets.id";
   sql += " WHERE rrsets.zone_id=";
   sql += std::to_string(m_zone.getId());
   sql += " AND ";
@@ -71,14 +68,13 @@ int RRMgr::lookup()
   sql += RR::toString(m_query.getRrType());
   sql += "\' AND ";
   sql += "rrsets.label=\'";
-  sql += m_query.getRrLabel().toUri()+"\'";
+  sql += m_query.getRrLabel().toUri() + "\'";
   sql += " ORDER BY rrs.id";
 
-  std::cout<<"sql="<<sql<<std::endl;
+  std::cout << "sql=" << sql << std::endl;
   this->execute(sql, static_callback_getRr, this);
 
-  if (this->getStatus() == DBMgr::DBError)
-  {
+  if (this->getStatus() == DBMgr::DBError) {
     return -1;
   }
 
@@ -89,16 +85,16 @@ int RRMgr::lookup()
 int RRMgr::callback_getRr(int argc, char **argv, char **azColName)
 {
   this->addResultNum();
-  if (argc < 1)
-  {
-    this->setErr("No RRType="+RR::toString(m_query.getRrType())+
-        " and label="+m_query.getRrLabel().toUri()+
-        " and zone="+m_zone.getAuthorizedName().toUri());
+  if (argc < 1) {
+    this->setErr(
+        "No RRType=" + RR::toString(m_query.getRrType()) + " and label="
+            + m_query.getRrLabel().toUri() + " and zone="
+            + m_zone.getAuthorizedName().toUri());
     return 0;
   }
 
-  std::cout<<this->getResultNum()<<"th result: "<<"id="<<argv[2]
-           <<" ttl="<<argv[0]<<" rrdata="<<argv[1]<<std::endl;
+  std::cout << this->getResultNum() << "th result: " << "id=" << argv[2]
+      << " ttl=" << argv[0] << " rrdata=" << argv[1] << std::endl;
 
   m_response.setFreshness(time::milliseconds(std::atoi(argv[0])));
 
@@ -108,5 +104,5 @@ int RRMgr::callback_getRr(int argc, char **argv, char **azColName)
   return 0;
 }
 
-}//namespace ndnsn
+}  //namespace ndnsn
 } /* namespace ndn */

@@ -22,45 +22,43 @@ namespace ndn {
 namespace ndns {
 
 NameDig::NameDig(const char *programName, const char *prefix)
-: NDNApp(programName, prefix)
-, m_resolverName(Name("/"))
-, m_dstLabel(Name(prefix)){
+  : NDNApp(programName, prefix)
+  , m_resolverName(Name("/"))
+  , m_dstLabel(Name(prefix))
+  , m_rrType(RR::TXT)
+{
   //prefix in this app is the m_dstLabel
   this->setInterestLifetime(time::milliseconds(10000));
 }
 
-NameDig::~NameDig() {
+NameDig::~NameDig()
+{
   // TODO Auto-generated destructor stub
 }
 
-void
-NameDig::onData(const Interest& interest, Data& data)
+void NameDig::onData(const Interest& interest, Data& data)
 {
   Response re;
   re.fromData(data);
-  cout<<"get data:->"<<data.getName()<<endl;
-  cout<<"get response:->"<<re<<endl;
+  cout << "get data:->" << data.getName() << endl;
+  cout << "get response:->" << re << endl;
 
-
+  response = re;
 
   m_rrs = re.getRrs();
 
-
-
   vector<RR>::iterator iter = m_rrs.begin();
 
-  while (iter != m_rrs.end())
-  {
+  while (iter != m_rrs.end()) {
     RR rr = *iter;
-    cout<<rr<<endl;
-    iter ++;
+    cout << rr << endl;
+    iter++;
   }
 
   this->stop();
 }
 
-void
-NameDig::sendQuery()
+void NameDig::sendQuery()
 {
   Query q;
   q.setAuthorityZone(this->m_resolverName);
@@ -72,46 +70,39 @@ NameDig::sendQuery()
   interest.setInterestLifetime(this->m_interestLifetime);
   try {
     m_face.expressInterest(interest,
-            boost::bind(&NameDig::onData, this, _1, _2),
-            boost::bind(&NameDig::onTimeout, this, _1)
-            );
-    std::cout<<"[* <- *] send Interest: "<<interest.getName().toUri()<<std::endl;
-  }catch(std::exception& e) {
+        boost::bind(&NameDig::onData, this, _1, _2),
+        boost::bind(&NameDig::onTimeout, this, _1));
+    std::cout << "[* <- *] send Interest: " << interest.getName().toUri()
+        << std::endl;
+  } catch (std::exception& e) {
     m_hasError = true;
     m_error = e.what();
   }
   m_interestTriedNum += 1;
 }
 
-void
-NameDig::onTimeout(const Interest& interest)
+void NameDig::onTimeout(const Interest& interest)
 {
-  std::cout<<"[* !! *] timeout Interest"<<interest.getName()<<std::endl;
+  std::cout << "[* !! *] timeout Interest" << interest.getName() << std::endl;
 
-  if (m_interestTriedNum >= m_interestTriedMax)
-  {
+  if (m_interestTriedNum >= m_interestTriedMax) {
     m_error = "All Interests timeout";
     m_hasError = true;
     this->stop();
-  } else
-  {
+  } else {
     sendQuery();
   }
 
 }
 
-void
-NameDig::run()
+void NameDig::run()
 {
 
   this->sendQuery();
 
-  try
-  {
+  try {
     m_face.processEvents();
-  }
-  catch (std::exception& e)
-  {
+  } catch (std::exception& e) {
     m_error = e.what();
     m_hasError = true;
     this->stop();

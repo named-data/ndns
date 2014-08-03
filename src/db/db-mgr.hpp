@@ -23,19 +23,15 @@
 #include <sqlite3.h>
 #include <iostream>
 
-
 namespace ndn {
 namespace ndns {
-
 
 class DBMgr
 {
 public:
   enum m_status
   {
-    DBConnected,
-    DBClosed,
-    DBError
+    DBConnected, DBClosed, DBError
   };
 
 public:
@@ -44,56 +40,67 @@ public:
 
   void open();
   void close();
-  void execute(std::string sql,
-        int (*callback)(void*,int,char**,char**), void * paras);
+  void execute(std::string sql, int (*callback)(void*, int, char**, char**),
+      void * paras);
 
-  inline void addResultNum(){
+  inline void addResultNum()
+  {
     m_resultNum += 1;
   }
-  inline void clearResultNum() {
+  inline void clearResultNum()
+  {
     m_resultNum = 0;
   }
 
-  const std::string& getDbfile() const {
+  const std::string& getDbfile() const
+  {
     return m_dbfile;
   }
 
-  void setDbfile(const std::string& dbfile) {
+  void setDbfile(const std::string& dbfile)
+  {
     this->m_dbfile = dbfile;
   }
 
-  const std::string& getErr() const {
+  const std::string& getErr() const
+  {
     return m_err;
   }
 
-  void setErr(const std::string& err) {
+  void setErr(const std::string& err)
+  {
     this->m_err = err;
   }
 
-  int getReCode() const {
+  int getReCode() const
+  {
     return m_reCode;
   }
 
-  void setReCode(int reCode) {
+  void setReCode(int reCode)
+  {
     this->m_reCode = reCode;
   }
 
-  m_status getStatus() const {
+  m_status getStatus() const
+  {
     return m_status;
   }
 
-  void setStatus(m_status status) {
+  void setStatus(m_status status)
+  {
     this->m_status = status;
   }
 
-  int getResultNum() const {
+  int getResultNum() const
+  {
     return m_resultNum;
   }
 
-  void setResultNum(int resultNum) {
+  void setResultNum(int resultNum)
+  {
     m_resultNum = resultNum;
   }
-
 
 private:
   std::string m_dbfile;
@@ -102,8 +109,9 @@ private:
   int m_reCode;
   m_status m_status;
   int m_resultNum;
-}; //class DBMgr
+};
+//class DBMgr
 }//namespace ndns
-}//namespace ndn
+} //namespace ndn
 
 #endif

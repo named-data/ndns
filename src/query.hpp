@@ -22,6 +22,7 @@
 
 #include "rr.hpp"
 
+
 #include <ndn-cxx/name.hpp>
 
 namespace ndn {
@@ -31,43 +32,47 @@ class Query
 {
 public:
 
-  enum QueryType {
-    QUERY_DNS,
-    QUERY_DNS_R
+  enum QueryType
+  {
+    QUERY_DNS = 1,
+    QUERY_DNS_R,
+    QUERY_KEY,
+    QUERY_UNKNOWN
   };
 
-  static std::string
-  toString(const QueryType& qType)
+  static std::string toString(const QueryType& qType)
   {
     std::string label;
-    switch (qType)
-      {
-      case QUERY_DNS:
-        label = "DNS";
-        break;
-      case QUERY_DNS_R:
-        label = "DNS-R";
-        break;
-      default:
-        label = "Default";
-        break;
-      }
+    switch (qType) {
+    case QUERY_DNS:
+      label = "DNS";
+      break;
+    case QUERY_DNS_R:
+      label = "DNS-R";
+      break;
+    case QUERY_KEY:
+      label = "KEY";
+      break;
+    default:
+      label = "UNKNOWN";
+      break;
+    }
     return label;
 
   }
 
-  static const QueryType
-  toQueryType(const std::string& str)
+  static const QueryType toQueryType(const std::string& str)
   {
     QueryType atype;
     if (str == "DNS") {
       atype = QUERY_DNS;
-    }
-    else if (str == "DNS-R") {
+    } else if (str == "DNS-R") {
       atype = QUERY_DNS_R;
+    } else if (str == "KEY") {
+      atype = QUERY_KEY;
     }
     else {
-      atype = QUERY_DNS;
+      atype = QUERY_UNKNOWN;
     }
     return atype;
   }
@@ -76,46 +81,55 @@ public:
 
   virtual ~Query();
 
-  const Name& getAuthorityZone() const {
+  const Name& getAuthorityZone() const
+  {
     return m_authorityZone;
   }
 
-  void setAuthorityZone(const Name& authorityZone) {
+  void setAuthorityZone(const Name& authorityZone)
+  {
     m_authorityZone = authorityZone;
   }
 
-  time::milliseconds getInterestLifetime() const {
+  time::milliseconds getInterestLifetime() const
+  {
     return m_interestLifetime;
   }
 
-  void setInterestLifetime(time::milliseconds interestLifetime) {
+  void setInterestLifetime(time::milliseconds interestLifetime)
+  {
     m_interestLifetime = interestLifetime;
   }
 
-  enum QueryType getQueryType() const {
+  enum QueryType getQueryType() const
+  {
     return m_queryType;
   }
 
-  void setQueryType(enum QueryType queryType) {
+  void setQueryType(enum QueryType queryType)
+  {
     m_queryType = queryType;
   }
 
-  const Name& getRrLabel() const {
+  const Name& getRrLabel() const
+  {
     return m_rrLabel;
   }
 
-  void setRrLabel(const Name& rrLabel) {
+  void setRrLabel(const Name& rrLabel)
+  {
     m_rrLabel = rrLabel;
   }
 
-  const RR::RRType& getRrType() const {
+  const RR::RRType& getRrType() const
+  {
     return m_rrType;
   }
 
-  void setRrType(const RR::RRType& rrType) {
+  void setRrType(const RR::RRType& rrType)
+  {
     m_rrType = rrType;
   }
-
 
 private:
   template<bool T>
@@ -132,28 +146,39 @@ public:
   bool
   fromInterest(const Interest& interest);
 
+  const Name& getFowardingHint() const
+  {
+    return m_forwardingHint;
+  }
+
+  void setFowardingHint(const Name& fowardingHint)
+  {
+    m_forwardingHint = fowardingHint;
+  }
 
 public:
+
   Name m_authorityZone;
+  Name m_forwardingHint;
+
   enum QueryType m_queryType;
   time::milliseconds m_interestLifetime;
   Name m_rrLabel;
   enum RR::RRType m_rrType;
 
+
   mutable Block m_wire;
 };
-
 
 inline std::ostream&
 operator<<(std::ostream& os, const Query& query)
 {
-  os<<"Query: authorityZone="<<query.getAuthorityZone().toUri()
-    <<" queryType="<<Query::toString(query.getQueryType())
-    <<" rrLabel="<<query.getRrLabel().toUri()
-    <<" rrType="<<RR::toString(query.getRrType());
+  os << "Query: authorityZone=" << query.getAuthorityZone().toUri()
+      << " queryType=" << Query::toString(query.getQueryType()) << " rrLabel="
+      << query.getRrLabel().toUri() << " rrType="
+      << RR::toString(query.getRrType());
   return os;
 }
-
 
 } // namespace ndns
 } // namespace ndn

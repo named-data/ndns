@@ -30,50 +30,70 @@
 namespace ndn {
 namespace ndns {
 
-
-class RR {
+class RR
+{
 public:
 
   enum RRType
-    {
-      NS,
-      TXT,
-      UNKNOWN
-    };
-  static std::string
-  toString(const RRType& type)
-    {
-      std::string str;
-
-        switch (type)
-        {
-            case NS:
-                str = "NS";
-                break;
-            case TXT:
-                str = "TXT";
-                break;
-            default:
-                str = "UNKNOWN";
-                break;
-        }
-        return str;
-    }
-
-  static RRType
-  toRRType(const std::string& str)
   {
-      RRType atype;
-      if (str == "NS"){
-          atype = NS;
-      }
-      else if (str == "TXT") {
-          atype = TXT;
-      }
-      else {
-          atype = UNKNOWN;
-      }
-      return atype;
+    NS,
+    TXT,
+    FH,
+    A,
+    AAAA,
+    NDNCERT,
+    UNKNOWN
+  };
+  static std::string toString(const RRType& type)
+  {
+    std::string str;
+
+    switch (type) {
+    case NS:
+      str = "NS";
+      break;
+    case TXT:
+      str = "TXT";
+      break;
+    case FH:
+      str = "FH";
+      break;
+    case A:
+      str = "A";
+      break;
+    case AAAA:
+      str = "AAAA";
+      break;
+    case NDNCERT:
+      str = "NDNCERT";
+      break;
+    default:
+      str = "UNKNOWN";
+      break;
+    }
+    return str;
+  }
+
+  static RRType toRRType(const std::string& str)
+  {
+    RRType atype;
+    if (str == "NS") {
+      atype = NS;
+    } else if (str == "TXT") {
+      atype = TXT;
+    } else if (str == "FH") {
+      atype = FH;
+    } else if (str == "A") {
+      atype = A;
+    } else if (str == "AAAA") {
+      atype = AAAA;
+    } else if (str == "NDNCERT") {
+      atype = NDNCERT;
+    }
+    else {
+      atype = UNKNOWN;
+    }
+    return atype;
   }
 
   RR();
@@ -91,26 +111,27 @@ public:
     this->m_rrData = rrdata;
   }
 
-
-
 public:
 
-	uint32_t getId() const {
-		return m_id;
-	}
-
-	void setId(uint32_t id) {
-		m_id = id;
-	}
-
-  const Block& getWire() const {
-      return m_wire;
+  uint32_t getId() const
+  {
+    return m_id;
   }
 
-  void setWire(const Block& wire) {
-      m_wire = wire;
+  void setId(uint32_t id)
+  {
+    m_id = id;
   }
 
+  const Block& getWire() const
+  {
+    return m_wire;
+  }
+
+  void setWire(const Block& wire)
+  {
+    m_wire = wire;
+  }
 
   inline bool operator==(const RR& rr) const
   {
@@ -120,29 +141,22 @@ public:
     return false;
   }
 
-
   template<bool T>
-  inline size_t
-  wireEncode(EncodingImpl<T> & block) const
+  inline size_t wireEncode(EncodingImpl<T> & block) const
   {
     size_t totalLength = 0;
     const std::string& msg = this->getRrdata();
-    totalLength += prependByteArrayBlock(block,
-                           ndn::ndns::tlv::RRDataSub2,
-                           reinterpret_cast<const uint8_t*>(msg.c_str()),
-                           msg.size()
-                           );
+    totalLength += prependByteArrayBlock(block, ndn::ndns::tlv::RRDataSub2,
+        reinterpret_cast<const uint8_t*>(msg.c_str()), msg.size());
 
     totalLength += prependNonNegativeIntegerBlock(block,
-                        ndn::ndns::tlv::RRDataSub1,
-                        this->getId());
+        ndn::ndns::tlv::RRDataSub1, this->getId());
 
     totalLength += block.prependVarNumber(totalLength);
     totalLength += block.prependVarNumber(ndn::ndns::tlv::RRData);
     //std::cout<<"call rr.h wireEncode"<<std::endl;
     return totalLength;
   }
-
 
   const Block&
   wireEncode() const;
@@ -158,19 +172,17 @@ private:
   std::string m_rrData;
 
   mutable Block m_wire;
-};//class RR
-
+};
+//class RR
 
 inline std::ostream&
 operator<<(std::ostream& os, const RR& rr)
 {
-  os<<"RR: Id="<<rr.getId()<<" Data="<<rr.getRrdata();
+  os << "RR: Id=" << rr.getId() << " Data=" << rr.getRrdata();
   return os;
 }
 
 } // namespace ndns
 } // namespace ndn
-
-
 
 #endif // NDNS_RR_HPP

@@ -16,7 +16,10 @@ def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
                'boost', 'default-compiler-flags', 'doxygen',
                'sqlite3', 'pch', 'coverage'])
-
+  
+    conf.check_cfg(package='liblog4cxx', args=['--cflags', '--libs'],
+                  uselib_store='LOG4CXX', mandatory=True)
+  
     conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'],
                    uselib_store='NDN_CXX', mandatory=True)
 
@@ -30,8 +33,6 @@ def configure(conf):
         USED_BOOST_LIBS += ['unit_test_framework']
     conf.check_boost(lib=USED_BOOST_LIBS, mandatory=True)
 
-    # conf.define('DEFAULT_CONFIG_FILE', '%s/ndn/ndns.conf' % conf.env['SYSCONFDIR'])
-
     if not conf.options.with_sqlite_locking:
         conf.define('DISABLE_SQLITE3_FS_LOCKING', 1)
 
@@ -41,14 +42,15 @@ def build (bld):
     bld(
         features='cxx',
         name='ndns-objects',
-#        source=bld.path.ant_glob(['src/**/*.cpp'], excl=['src/main.cpp']),
-        source=bld.path.ant_glob(['src/rr.cpp', 'src/query.cpp',
-                'src/response.cpp', 'src/zone.cpp', 'src/iterative-query.cpp',
-                'src/db/db-mgr.cpp','src/db/zone-mgr.cpp', 'src/db/rr-mgr.cpp',
-                'src/app/ndn-app.cpp', 'src/app/name-server.cpp',
-                'src/app/name-caching-resolver.cpp', 'src/app/name-dig.cpp',
-                ], 
-           excl=['src/main.cpp']),
+        source=bld.path.ant_glob(['src/**/*.cpp'], excl=['src/main.cpp']),
+#        source=bld.path.ant_glob(['src/rr.cpp', 'src/query.cpp',
+#                'src/response.cpp', 'src/zone.cpp', 'src/iterative-query.cpp',
+#                'src/db/db-mgr.cpp','src/db/zone-mgr.cpp', 'src/db/rr-mgr.cpp',
+#                'src/app/ndn-app.cpp', 'src/app/name-server.cpp',
+#                'src/app/name-caching-resolver.cpp', 'src/app/name-dig.cpp',
+#                'src/iterative-query-with-forwarding-hint.cpp'
+#                ], 
+#           excl=['src/main.cpp']),
         use='NDN_CXX BOOST',
         includes='src',
         export_includes='src',

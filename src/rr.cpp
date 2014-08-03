@@ -32,10 +32,6 @@ RR::~RR()
 {
 }
 
-
-
-
-
 const Block&
 RR::wireEncode() const
 {
@@ -51,8 +47,7 @@ RR::wireEncode() const
   return m_wire;
 }
 
-void
-RR::wireDecode(const Block& wire)
+void RR::wireDecode(const Block& wire)
 {
   if (!wire.hasWire()) {
     throw Tlv::Error("The supplied block does not contain wire format");
@@ -66,25 +61,21 @@ RR::wireDecode(const Block& wire)
 
   Block::element_const_iterator it = m_wire.elements_begin();
 
-  if (it != m_wire.elements_end() && it->type() == ndn::ndns::tlv::RRDataSub1)
-    {
-      m_id = readNonNegativeInteger(*it);
-      it ++;
-    } else {
+  if (it != m_wire.elements_end() && it->type() == ndn::ndns::tlv::RRDataSub1) {
+    m_id = readNonNegativeInteger(*it);
+    it++;
+  } else {
     throw Tlv::Error("not the RRDataSub1 Type");
   }
 
-  if (it != m_wire.elements_end() && it->type() == ndn::ndns::tlv::RRDataSub2)
-    {
+  if (it != m_wire.elements_end() && it->type() == ndn::ndns::tlv::RRDataSub2) {
 
-      m_rrData = std::string(reinterpret_cast<const char*>(it->value()),
-                            it->value_size());
-      it ++;
-    } else {
+    m_rrData = std::string(reinterpret_cast<const char*>(it->value()),
+        it->value_size());
+    it++;
+  } else {
     throw Tlv::Error("not the RRDataSub2 Type");
   }
-
-
 
 }
 

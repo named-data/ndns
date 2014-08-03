@@ -33,6 +33,8 @@ BOOST_AUTO_TEST_CASE(UnderstandInterest)
 {
   printbegin("query::UnderstandInterst");
   ndns::Query q;
+  q.setFowardingHint(Name("/ucla"));
+
   Name n1("/dns.google.com");
   Name n2("/www.baidu.com");
   q.setAuthorityZone(n1);
@@ -50,6 +52,7 @@ BOOST_AUTO_TEST_CASE(UnderstandInterest)
   BOOST_CHECK_EQUAL(q.getAuthorityZone(), q2.getAuthorityZone());
   BOOST_CHECK_EQUAL(q.getRrLabel(), q2.getRrLabel());
   BOOST_CHECK_EQUAL(q.getQueryType(), q2.getQueryType());
+  BOOST_CHECK_EQUAL(q.getFowardingHint(), q2.getFowardingHint());
   printend("query:UnderstandInterst");
 }
 

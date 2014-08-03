@@ -33,6 +33,7 @@
 #include "response.hpp"
 #include "rr.hpp"
 #include "iterative-query.hpp"
+#include "iterative-query-with-forwarding-hint.hpp"
 #include "ndn-app.hpp"
 
 using namespace std;
@@ -40,45 +41,215 @@ using namespace std;
 namespace ndn {
 namespace ndns {
 
-
-class NameCachingResolver : public NDNApp{
-enum ResolverType
+template <class IQStrategy> //IQ stands for iterative Query Strategy
+class NameCachingResolver: public NDNApp
 {
-  StubResolver,
-  CachingResolver
-};
 
 public:
 
-NameCachingResolver(const char *programName, const char *prefix);
+  NameCachingResolver(const char *programName, const char *prefix);
 
+  void
+  resolve(IQStrategy& iq);
 
-void
-resolve(IterativeQuery& iq);
+  using NDNApp::onData;
+  void
+  onData(const Interest& interest, Data &data, IQStrategy& iq);
 
-void
-answerRespNack(IterativeQuery& iq);
+  void
+  onInterest(const Name &name, const Interest &interest);
 
-using NDNApp::onData;
-void
-onData(const Interest& interest, Data &data, IterativeQuery& iq);
+  using NDNApp::onTimeout;
+  void
+  onTimeout(const Interest& interest, IQStrategy& iq);
 
-void
-onInterest(const Name &name, const Interest &interest);
+  void
+  run();
 
-using NDNApp::onTimeout;
+  const Name& getRootZoneFowardingHint() const
+  {
+    return m_rootZoneFowardingHint;
+  }
 
-void
-onTimeout(const Interest& interest, IterativeQuery& iq);
-
-void
-run();
+  void setRootZoneFowardingHint(const Name& rootZoneFowardingHint)
+  {
+    m_rootZoneFowardingHint = rootZoneFowardingHint;
+  }
 
 private:
-  //ResolverType m_resolverType;
+  /**
+   * 0 means disable forwarding hint,
+   * 1 means enable forwarding hint
+   * todo: 2, retrieve name and hint of the name server as a optimization way
+   */
+
+  Name m_rootZoneFowardingHint;
 
 };
 
+
+template <typename IQStrategy>
+NameCachingResolver<IQStrategy>::NameCachingResolver(const char *programName,
+    const char *prefix)
+  : NDNApp(programName, prefix)
+  , m_rootZoneFowardingHint("/")
+{
+  this->setInterestLifetime(time::milliseconds(2000));
+}
+
+template <class IQStrategy> void
+NameCachingResolver<IQStrategy>::run()
+{
+  boost::asio::signal_set signalSet(m_ioService, SIGINT, SIGTERM);
+  signalSet.async_wait(boost::bind(&NDNApp::signalHandler, this));
+  // boost::bind(&NdnTlvPingServer::signalHandler, this)
+
+  Name name(m_prefix);
+  name.append(Query::toString(Query::QUERY_DNS_R));
+
+  m_face.setInterestFilter(name,
+      bind(&NameCachingResolver::onInterest, this, _1, _2),
+      bind(&NDNApp::onRegisterFailed, this, _1, _2));
+
+  std::cout << "\n=== NDNS Resolver " << m_programName
+      << " with routeble prefix " << name.toUri() << " starts";
+
+  if (this->m_enableForwardingHint > 0) {
+    std::cout<<" & Root Zone ForwardingHint "<<this->m_rootZoneFowardingHint.toUri();
+  }
+  std::cout<<"==="<< std::endl;
+
+  try {
+    m_face.processEvents();
+  } catch (std::exception& e) {
+    std::cerr << "ERROR: " << e.what() << std::endl;
+    m_hasError = true;
+    m_ioService.stop();
+  }
+}
+template <class IQStrategy> void
+NameCachingResolver<IQStrategy>::onData(const Interest& interest, Data &data, IQStrategy& iq)
+{
+  /*
+  if (interest.getName() != iq.getLastInterest().getName()) {
+    std::cout << iq << std::endl;
+    std::cout << "waiting for " << iq.getLastInterest().getName().toUri()
+        << std::endl;
+    std::cout << "coming data " << data.getName().toUri() << std::endl;
+    return;
+  }*/
+
+  iq.doData(data);
+
+  if (iq.getStep() == IterativeQuery::AnswerStub) {
+    Data data = iq.getLastResponse().toData();
+    Name name = iq.getQuery().getAuthorityZone();
+    name.append(Query::toString(iq.getQuery().getQueryType()));
+    name.append(iq.getQuery().getRrLabel());
+    name.append(RR::toString(iq.getQuery().getRrType()));
+    name.appendVersion();
+    data.setName(name);
+    data.setFreshnessPeriod(iq.getLastResponse().getFreshness());
+
+    m_keyChain.sign(data);
+    m_face.put(data);
+    std::cout << "[* <- *] answer Response ("
+        << Response::toString(iq.getLastResponse().getResponseType())
+        << ") to stub:" << std::endl;
+    std::cout << iq.getLastResponse() << std::endl;
+    for (int i = 0; i < 15; i++) {
+      std::cout << "----";
+    }
+    std::cout << std::endl << std::endl;
+
+    //iq.setStep(IterativeQuery::FinishedSuccessfully);
+
+  } else if (iq.getStep() == IterativeQuery::NSQuery) {
+    resolve(iq);
+  } else if (iq.getStep() == IterativeQuery::RRQuery) {
+    resolve(iq);
+  } else if (iq.getStep() == IterativeQuery::Abort) {
+    return;
+  } else if (iq.getStep() == IterativeQuery::FHQuery) {
+    resolve(iq);
+  }
+  else {
+    std::cout << "let me see the current step="
+        << IterativeQuery::toString(iq.getStep()) << std::endl;
+    std::cout << iq;
+    std::cout<<std::endl;
+  }
+
+}
+
+template <class IQStrategy> void
+NameCachingResolver<IQStrategy>::onInterest(const Name &name, const Interest &interest)
+{
+  Query query;
+  query.fromInterest(interest);
+  std::cout << "[* -> *] receive Interest: " << interest.getName().toUri()
+      << std::endl;
+  if (query.getQueryType() == Query::QUERY_DNS) {
+    cout << m_programName << " is not in charge of Query_DNS" << endl;
+  }
+
+  IQStrategy iq(query);
+
+  if (this->m_enableForwardingHint == 0) {
+
+  } else if (this->m_enableForwardingHint > 0) {
+    //std::cout<<"--------------------create a Forwarding Hint"<<std::endl;
+    IterativeQueryWithFowardingHint& iqfh =dynamic_cast<IterativeQueryWithFowardingHint&>(iq);
+    iqfh.setForwardingHint(this->m_rootZoneFowardingHint);
+    iqfh.setLastForwardingHint(this->m_rootZoneFowardingHint);
+  }
+  resolve(iq);
+}
+
+template <class IQStrategy> void
+NameCachingResolver<IQStrategy>::onTimeout(const Interest& interest, IQStrategy& iq)
+{
+  std::cout << "[* !! *] timeout Interest " << interest.getName().toUri()
+      << " timeouts" << std::endl;
+
+  iq.doTimeout();
+}
+
+template <class IQStrategy>
+void NameCachingResolver<IQStrategy>::resolve(IQStrategy& iq)
+{
+
+  Interest interest = iq.toLatestInterest();
+
+  //must be set before express interest,since the call will back call iq
+  //if set after, then the iq in call of onData will return nothing
+  //be very careful here,  as a new guy to c++
+
+  interest.setInterestLifetime(this->getInterestLifetime());
+  iq.setLastInterest(interest);
+  /*
+  if (this->m_enableForwardingHint > 0)
+  {
+    //iq = (IterativeQueryWithFowardingHint)iq;
+    iq = dynamic_cast<IterativeQueryWithFowardingHint>iq;
+  }
+  */
+  std::cout<<"lastInterest="<<iq.getLastInterest()<<std::endl;
+
+  try {
+    m_face.expressInterest(interest,
+        boost::bind(&NameCachingResolver::onData, this, _1, _2, iq),
+        boost::bind(&NameCachingResolver::onTimeout, this, _1,  iq));
+        //boost::bind(&NameCachingResolver::onData, this, _1, _2, ndn::ref(iq)),
+        //boost::bind(&NameCachingResolver::onTimeout, this, _1, iq));
+  } catch (std::exception& e) {
+    std::cerr << "ERROR: " << e.what() << std::endl;
+  }
+
+  std::cout << "[* <- *] send Interest: " << interest.getName().toUri()
+      << std::endl;
+  std::cout << iq << std::endl;
+}
 } /* namespace ndns */
 } /* namespace ndn */
 

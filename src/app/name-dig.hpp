@@ -27,14 +27,14 @@
 namespace ndn {
 namespace ndns {
 
-class NameDig: public NDNApp {
+class NameDig: public NDNApp
+{
 public:
   NameDig(const char *programName, const char *prefix);
   virtual ~NameDig();
 
   void
   onData(const ndn::Interest& interest, Data& data);
-
 
   void
   onTimeout(const ndn::Interest& interest);
@@ -45,38 +45,54 @@ public:
   void
   run();
 
-  const vector<RR>& getRrs() const {
+  const vector<RR>& getRrs() const
+  {
     return m_rrs;
   }
 
-  void setRrs(const vector<RR>& rrs) {
+  void setRrs(const vector<RR>& rrs)
+  {
     m_rrs = rrs;
   }
 
-  const Name& getResolverName() const {
+  const Name& getResolverName() const
+  {
     return m_resolverName;
   }
 
-  void setResolverName(const Name& resolverName) {
+  void setResolverName(const Name& resolverName)
+  {
     m_resolverName = resolverName;
   }
 
-
-
-  const Name& getDstLabel() const {
+  const Name& getDstLabel() const
+  {
     return m_dstLabel;
   }
 
-  void setDstLabel(const Name& dstLabel) {
+  void setDstLabel(const Name& dstLabel)
+  {
     m_dstLabel = dstLabel;
   }
 
-  RR::RRType getRrType() const {
+  RR::RRType getRrType() const
+  {
     return m_rrType;
   }
 
-  void setRrType(RR::RRType rrType) {
+  void setRrType(RR::RRType rrType)
+  {
     m_rrType = rrType;
+  }
+
+  const Response& getResponse() const
+  {
+    return response;
+  }
+
+  void setResponse(const Response& response)
+  {
+    this->response = response;
   }
 
 private:
@@ -84,6 +100,8 @@ private:
   Name m_dstLabel;
   RR::RRType m_rrType;
   vector<RR> m_rrs;
+
+  Response response;
 };
 
 } /* namespace ndns */

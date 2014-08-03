@@ -17,25 +17,21 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "zone.hpp"
+
+#ifndef NDNS_NDNS_LABEL_HPP
+#define NDNS_NDNS_LABEL_HPP
+#include "query.hpp"
+
 
 namespace ndn {
 namespace ndns {
+namespace label {
+  const std::string ForwardingHintLabel = "\xF0.";
+  const ndn::Name::Component ForwardingHintComp(ForwardingHintLabel);
+  const ndn::Name::Component QueryDNSComp(Query::toString(Query::QUERY_DNS));
+  const ndn::Name::Component QueryDNSRComp(Query::toString(Query::QUERY_DNS_R));
 
-Zone::Zone(const Name& name)
-  : m_id(0)
-  , m_authorizedName(name)
-{
 }
-
-Zone::Zone()
-    : m_id(0)
-{
-}
-
-Zone::~Zone()
-{
-}
-
 } // namespace ndns
 } // namespace ndn
+#endif

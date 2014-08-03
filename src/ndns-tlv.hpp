@@ -23,7 +23,8 @@ namespace ndn {
 namespace ndns {
 namespace tlv {
 
-enum {
+enum
+{
   ResponseType = 130,
   ResponseFressness = 131,
   ResponseContentBlob = 132,

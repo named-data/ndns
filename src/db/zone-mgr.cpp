@@ -19,59 +19,50 @@
 
 #include "zone-mgr.hpp"
 
-
 namespace ndn {
 namespace ndns {
 
-ZoneMgr::ZoneMgr( Zone& zone)
-: m_zone(zone)
+ZoneMgr::ZoneMgr(Zone& zone)
+  : m_zone(zone)
 {
   this->lookupId();
 }
 
-void
-ZoneMgr::lookupId(const Name& name)
+void ZoneMgr::lookupId(const Name& name)
 {
   this->open();
-  std::string sql = "SELECT id FROM zones WHERE name=\'"+name.toUri()+"\'";
+  std::string sql = "SELECT id FROM zones WHERE name=\'" + name.toUri() + "\'";
   //sql = "SELECT * FROM ZONES";
-  std::cout<<"sql="<<sql<<std::endl;
+  std::cout << "sql=" << sql << std::endl;
   //std::cout<<"*this="<<this<<" m_zone.id="<<m_zone.getId()<<" zoneId="<<&m_zone<<std::endl;
   this->execute(sql, static_callback_setId, this);
   //std::cout<<"*this="<<this<<" m_zone.id="<<m_zone.getId()<<" zoneId="<<&m_zone<<std::endl;
   this->close();
 
 }
-int
-ZoneMgr::callback_setId(int argc, char **argv, char **azColName)
+int ZoneMgr::callback_setId(int argc, char **argv, char **azColName)
 {
   //Zone zone = this->getZone();
   this->addResultNum();
 
   Zone zone = this->m_zone;
 
-  if (argc < 1)
-  {
-    this->setErr("No Zone with Name "+zone.getAuthorizedName().toUri());
+  if (argc < 1) {
+    this->setErr("No Zone with Name " + zone.getAuthorizedName().toUri());
     return -1;
   }
   //std::cout<<"id="<<(uint32_t)std::atoi(argv[0])<<" "<<std::endl;
   int t1 = std::atoi(argv[0]);
 
-
   m_zone.setId(t1);
 
   return 0;
 }
-void
-ZoneMgr::lookupId()
+void ZoneMgr::lookupId()
 {
   lookupId(this->m_zone.getAuthorizedName());
 }
 
-
-}//namepsace ndns
-}//namespace ndn
-
-
+} //namepsace ndns
+} //namespace ndn
 

@@ -30,6 +30,8 @@ NDNApp::NDNApp(const char *programName, const char *prefix)
   , m_interestTriedMax(2)
   , m_interestTriedNum(0)
   , m_face(m_ioService)
+  , m_enableForwardingHint(0)
+  , m_forwardingHint("/")
 {
 }
 
@@ -38,10 +40,6 @@ NDNApp::~NDNApp()
   m_programName = 0;
   m_prefix = 0;
 }
-
-
-
-
 
 } //namespace ndns
 } /* namespace ndn */

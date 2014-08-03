@@ -38,29 +38,28 @@
 using namespace std;
 using namespace ndn;
 
-
-namespace ndn{
-namespace ndns{
-class NameServer : public NDNApp
+namespace ndn {
+namespace ndns {
+class NameServer: public NDNApp
 {
 
 public:
-explicit
-NameServer(const char *programName, const char *prefix, const char *nameZone);
+  explicit
+  NameServer(const char *programName, const char *prefix, const char *nameZone,
+      const string dbfile = "src/db/ndns-local.db");
 
-void
-onInterest(const Name &name, const Interest &interest);
+  void
+  onInterest(const Name &name, const Interest &interest);
 
-
-void
-run();
+  void
+  run();
 
 public:
   /*
    * the name used by the server to provide routeable accessory.
 
-  Name m_name;
-  */
+   Name m_name;
+   */
   /*
    * the zone the server is in charge of
    */
@@ -71,7 +70,8 @@ public:
    */
   ZoneMgr m_zoneMgr;
 
-};//clcass NameServer
+};
+//clcass NameServer
 }//namespace ndns
-}//namespace ndn
+} //namespace ndn
 #endif /* NAME_SERVER_HPP_ */

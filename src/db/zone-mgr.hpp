@@ -29,11 +29,11 @@
 namespace ndn {
 namespace ndns {
 
-class ZoneMgr : public DBMgr
+class ZoneMgr: public DBMgr
 {
 
 public:
-  ZoneMgr( Zone& zone);
+  ZoneMgr(Zone& zone);
 
 public:
   void
@@ -42,31 +42,32 @@ public:
   void
   lookupId();
 
-   const Zone& getZone() const {
+  const Zone& getZone() const
+  {
     return m_zone;
   }
 
-  void setZone(const Zone& zone) {
+  void setZone(const Zone& zone)
+  {
     this->m_zone = zone;
   }
 
   int
   callback_setId(int argc, char **argv, char **azColName);
 
+  static int static_callback_setId(void *param, int argc, char **argv,
+      char **azColName)
+  {
 
-  static int
-  static_callback_setId(void *param, int argc, char **argv, char **azColName){
-
-     ZoneMgr *mgr = reinterpret_cast<ZoneMgr*>(param);
-     return mgr->callback_setId(argc, argv, azColName);
-   }
+    ZoneMgr *mgr = reinterpret_cast<ZoneMgr*>(param);
+    return mgr->callback_setId(argc, argv, azColName);
+  }
 
 private:
   Zone& m_zone;
-};//class ZoneMgr
-
-
+};
+//class ZoneMgr
 
 }//namespace ndns
-}//namespace ndn
+} //namespace ndn
 #endif

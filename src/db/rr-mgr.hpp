@@ -25,12 +25,12 @@
 #include "response.hpp"
 #include "zone.hpp"
 
-
 namespace ndn {
-namespace ndns{
-class RRMgr : public DBMgr {
+namespace ndns {
+class RRMgr: public DBMgr
+{
 public:
-  RRMgr( Zone& zone, Query& query, Response& response);
+  RRMgr(Zone& zone, Query& query, Response& response);
   virtual ~RRMgr();
 
 public:
@@ -38,44 +38,50 @@ public:
 
   int callback_getRr(int argc, char **argv, char **azColName);
 
-  static int
-  static_callback_getRr(void *param, int argc, char **argv, char **azColName)
+  static int static_callback_getRr(void *param, int argc, char **argv,
+      char **azColName)
   {
     RRMgr *mgr = reinterpret_cast<RRMgr*>(param);
     return mgr->callback_getRr(argc, argv, azColName);
-   }
+  }
 
   int count();
   int callback_countRr(int argc, char **argv, char **azColName);
 
-  static int
-  static_callback_countRr(void *param, int argc, char **argv, char **azColName)
+  static int static_callback_countRr(void *param, int argc, char **argv,
+      char **azColName)
   {
     RRMgr *mgr = reinterpret_cast<RRMgr*>(param);
     return mgr->callback_countRr(argc, argv, azColName);
-   }
+  }
 
-  const Query& getQuery() const {
+  const Query& getQuery() const
+  {
     return m_query;
   }
 
-  void setQuery(const Query& query) {
+  void setQuery(const Query& query)
+  {
     m_query = query;
   }
 
-  const Response& getResponse() const {
+  const Response& getResponse() const
+  {
     return m_response;
   }
 
-  void setResponse(const Response& response) {
+  void setResponse(const Response& response)
+  {
     m_response = response;
   }
 
-  const Zone& getZone() const {
+  const Zone& getZone() const
+  {
     return m_zone;
   }
 
-  void setZone(const Zone& zone) {
+  void setZone(const Zone& zone)
+  {
     m_zone = zone;
   }
 
@@ -85,8 +91,6 @@ private:
   Query& m_query;
   Response& m_response;
 };
-
-
 
 } //namespace ndns
 } /* namespace ndn */
