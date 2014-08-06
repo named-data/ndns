@@ -31,7 +31,6 @@
 
 #include <ndn-cxx/encoding/block-helpers.hpp>
 #include <ndn-cxx/encoding/block.hpp>
-#include <ndn-cxx/encoding/tlv-ndnd.hpp>
 
 #include <vector>
 

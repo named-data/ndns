@@ -21,6 +21,8 @@
 #include "boost/program_options.hpp"
 #include "boost/filesystem.hpp"
 
+#include "version.hpp"
+
 using namespace ndn;
 using namespace ndn::ndns;
 using namespace std;
@@ -147,4 +149,3 @@ int main(int argc, char * argv[])
   }
 
 }
-
