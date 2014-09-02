@@ -4,3 +4,5 @@
 .lock*
 **/*.pyc
 build/
+VERSION
+*.db

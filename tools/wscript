@@ -1,0 +1,19 @@
+# -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
+
+top = '..'
+
+def build(bld):
+    for app in bld.path.ant_glob('tools/*', dir=True):
+        if os.path.isdir(app.abspath()):
+            bld(features=['cxx', 'cxxprogram'],
+                target = '../bin/%s' % (str(app)),
+                source = app.ant_glob(['**/*.cpp']),
+                use = 'ndns-objects',
+                )
+
+    for app in bld.path.ant_glob('tools/*.cpp'):
+        bld(features=['cxxprogram'],
+            target = 'bin/%s' % (str(app.change_ext('','.cpp'))),
+            source = app,
+            use = 'ndns-objects',
+            )
