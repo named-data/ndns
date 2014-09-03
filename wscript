@@ -68,7 +68,7 @@ def build (bld):
         name='ndns-objects',
         source=bld.path.ant_glob(['src/**/*.cpp'],
                                  excl=['src/main.cpp']),
-        use='version NDN_CXX BOOST',
+        use='version NDN_CXX LOG4CXX BOOST',
         includes='src',
         export_includes='src',
     )

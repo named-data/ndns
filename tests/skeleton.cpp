@@ -24,8 +24,6 @@ namespace ndn {
 namespace ndns {
 namespace tests {
 
-using namespace std;
-
 BOOST_AUTO_TEST_SUITE(Skeleton)
 
 BOOST_AUTO_TEST_CASE(TestCase)

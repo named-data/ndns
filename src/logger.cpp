@@ -17,28 +17,41 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define BOOST_TEST_MAIN 1
-#define BOOST_TEST_DYN_LINK 1
-
-#include <boost/test/unit_test.hpp>
-
 #include "logger.hpp"
+
+#include <log4cxx/logger.h>
+#include <log4cxx/basicconfigurator.h>
+#include <log4cxx/consoleappender.h>
+#include <log4cxx/patternlayout.h>
+#include <log4cxx/level.h>
+#include <log4cxx/propertyconfigurator.h>
+#include <log4cxx/defaultconfigurator.h>
+#include <log4cxx/helpers/exception.h>
+
+#include <unistd.h>
 
 namespace ndn {
 namespace ndns {
-namespace tests {
+namespace log {
 
-class UnitTestsLogging
+void
+init(const std::string& configFile/* = "log4cxx.properties"*/)
 {
-public:
-  UnitTestsLogging()
-  {
-    log::init("unit-tests.log4cxx");
+  using namespace log4cxx;
+  using namespace log4cxx::helpers;
+
+  if (access(configFile.c_str(), R_OK) == 0) {
+    PropertyConfigurator::configureAndWatch(configFile.c_str());
   }
-};
+  else {
+    PatternLayoutPtr   layout(new PatternLayout("%d{HH:mm:ss} %p %c{1} - %m%n"));
+    ConsoleAppenderPtr appender(new ConsoleAppender(layout));
 
-BOOST_GLOBAL_FIXTURE(UnitTestsLogging)
+    BasicConfigurator::configure(appender);
+    Logger::getRootLogger()->setLevel(log4cxx::Level::getInfo());
+  }
+}
 
-} // namespace tests
+} // namespace log
 } // namespace ndns
 } // namespace ndn
