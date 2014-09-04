@@ -5,6 +5,8 @@
 #pragma GCC system_header
 #pragma clang system_header
 
+#include "logger.hpp"
+
 #include <boost/test/test_tools.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/concept_check.hpp>
