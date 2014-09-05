@@ -17,48 +17,29 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "zone.hpp"
-#include "../boost-test.hpp"
-
-#include <ndn-cxx/name.hpp>
+#include "rrset.hpp"
 
 namespace ndn {
 namespace ndns {
-namespace tests {
 
-BOOST_AUTO_TEST_SUITE(Zone)
-
-BOOST_AUTO_TEST_CASE(Basic)
+Rrset::Rrset(Zone* zone)
+  : m_id(0)
+  , m_zone(zone)
 {
-  Name zoneName("/net/ndnsim");
-  ndns::Zone zone1;
-  zone1.setName(zoneName);
-  zone1.setId(2);
-  zone1.setTtl(time::seconds(4000));
-
-  BOOST_CHECK_EQUAL(zone1.getId(), 2);
-  BOOST_CHECK_EQUAL(zone1.getName(), zoneName);
-  BOOST_CHECK_EQUAL(zone1.getTtl(), time::seconds(4000));
-
-  ndns::Zone zone2(zoneName);
-  BOOST_CHECK_EQUAL(zone1, zone2);
-  BOOST_CHECK_EQUAL(zone2.getName(), zone1.getName());
-
-  BOOST_CHECK_NE(zone1, ndns::Zone("/net/ndnsim2"));
 }
 
-BOOST_AUTO_TEST_CASE(Ostream)
+std::ostream&
+operator<<(std::ostream& os, const Rrset& rrset)
 {
-  ndns::Zone zone("/test");
-  zone.setId(1);
+  os << "Rrset: Id=" << rrset.getId();
+  if (rrset.getZone() != 0)
+    os << " Zone=(" << *rrset.getZone() << ")";
 
-  boost::test_tools::output_test_stream os;
-  os << zone;
-  BOOST_CHECK(os.is_equal("Zone: Id=1 Name=/test"));
+  os << " Label=" << rrset.getLabel()
+     << " Type=" << rrset.getType()
+     << " Version=" << rrset.getVersion();
+  return os;
 }
 
-BOOST_AUTO_TEST_SUITE_END()
-
-} // namespace tests
 } // namespace ndns
 } // namespace ndn
