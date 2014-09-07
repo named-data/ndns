@@ -15,7 +15,6 @@ NDNS Documentation
    :maxdepth: 2
 
    INSTALL
-   ndns-packet-format
    ndns-db-manage
    manpages
 
