@@ -26,13 +26,12 @@ namespace ndn {
 namespace ndns {
 namespace tests {
 
+BOOST_AUTO_TEST_SUITE(Zone)
 
-BOOST_AUTO_TEST_SUITE(ZoneTest)
-
-BOOST_AUTO_TEST_CASE(TestCase)
+BOOST_AUTO_TEST_CASE(Basic)
 {
   Name zoneName("/net/ndnsim");
-  Zone zone1;
+  ndns::Zone zone1;
   zone1.setName(zoneName);
   zone1.setId(2);
   zone1.setTtl(time::seconds(4000));
@@ -41,11 +40,11 @@ BOOST_AUTO_TEST_CASE(TestCase)
   BOOST_CHECK_EQUAL(zone1.getName(), zoneName);
   BOOST_CHECK_EQUAL(zone1.getTtl(), time::seconds(4000));
 
-  Zone zone2(zoneName);
+  ndns::Zone zone2(zoneName);
   BOOST_CHECK_EQUAL(zone1, zone2);
   BOOST_CHECK_EQUAL(zone2.getName(), zone1.getName());
 
-  BOOST_CHECK_NE(zone1, Zone("/net/ndnsim2"));
+  BOOST_CHECK_NE(zone1, ndns::Zone("/net/ndnsim2"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

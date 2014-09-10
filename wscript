@@ -43,6 +43,9 @@ def configure(conf):
     if not conf.options.with_sqlite_locking:
         conf.define('DISABLE_SQLITE3_FS_LOCKING', 1)
 
+    conf.define("DEFAULT_CONFIG_PATH", "%s/ndn" % conf.env['SYSCONFDIR'])
+    conf.define("DEFAULT_DATABASE_PATH", "%s/ndn/ndns" % conf.env['LOCALSTATEDIR'])
+
     conf.write_config_header('src/config.hpp')
 
 def build (bld):

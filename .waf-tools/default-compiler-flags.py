@@ -21,7 +21,7 @@ def configure(conf):
     else:
         defaultFlags += ['-std=c++03', '-Wno-variadic-macros', '-Wno-c99-extensions']
 
-    defaultFlags += ['-pedantic', '-Wall', '-Wno-long-long', '-Wno-unneeded-internal-declaration']
+    defaultFlags += ['-Wall', '-Wno-long-long', '-Wno-unneeded-internal-declaration']
 
     if conf.options.debug:
         conf.define('_DEBUG', 1)

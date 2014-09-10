@@ -18,7 +18,7 @@
  */
 
 #include "logger.hpp"
-#include "boost-test.hpp"
+#include "../boost-test.hpp"
 
 #include <fstream>
 

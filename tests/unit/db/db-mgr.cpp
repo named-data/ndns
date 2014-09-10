@@ -17,17 +17,26 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// #include ""
-#include "boost-test.hpp"
+#include "db/db-mgr.hpp"
+#include "../../boost-test.hpp"
 
 namespace ndn {
 namespace ndns {
 namespace tests {
 
-BOOST_AUTO_TEST_SUITE(Skeleton)
+BOOST_AUTO_TEST_SUITE(DbMgr)
 
-BOOST_AUTO_TEST_CASE(TestCase)
+BOOST_AUTO_TEST_CASE(Basic)
 {
+  ndns::DbMgr mgr(BUILDDIR "/tests/unit/db/dbmgr-ndns.db");
+  BOOST_CHECK_EQUAL(mgr.getStatus(), ndns::DbMgr::DB_CONNECTED);
+
+  mgr.close();
+  BOOST_CHECK_EQUAL(mgr.getStatus(), ndns::DbMgr::DB_CLOSED);
+
+  // reopen
+  mgr.open();
+  BOOST_CHECK_EQUAL(mgr.getStatus(), ndns::DbMgr::DB_CONNECTED);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

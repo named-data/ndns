@@ -18,9 +18,12 @@
  */
 
 #include "zone.hpp"
+#include "logger.hpp"
 
 namespace ndn {
 namespace ndns {
+
+NDNS_LOG_INIT("Zone")
 
 Zone::Zone()
   : m_id(0)

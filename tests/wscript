@@ -1,6 +1,6 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
-from waflib import Utils
+from waflib import Utils, Context
 
 top = '..'
 
@@ -12,4 +12,5 @@ def build(bld):
             source=bld.path.ant_glob(['**/*.cpp']),
             use='ndns-objects',
             install_path=None,
+            defines="BUILDDIR=\"%s\"" % Context.out_dir,
           )

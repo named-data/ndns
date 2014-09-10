@@ -16,6 +16,7 @@ NDNS Documentation
 
    INSTALL
    ndns-packet-format
+   ndns-db-manage
    manpages
 
 **Additional documentation**
