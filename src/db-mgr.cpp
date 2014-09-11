@@ -18,7 +18,7 @@
  */
 
 #include "db-mgr.hpp"
-#include "../logger.hpp"
+#include "logger.hpp"
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -107,6 +107,88 @@ DbMgr::close()
   }
   m_status = DB_CLOSED;
 }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool
+DbMgr::lookup(Zone& zone)
+{
+  sqlite3_stmt* stmt;
+  const char* sql = "SELECT id, ttl FROM zones WHERE name=?";
+  int rc = sqlite3_prepare_v2(m_conn, sql, strlen(sql), &stmt, 0);
+  if (rc != SQLITE_OK) {
+    throw PrepareError(sql);
+  }
+
+  const Block& zoneName = zone.getName().wireEncode();
+  sqlite3_bind_blob(stmt, 1, zoneName.wire(), zoneName.size(), SQLITE_STATIC);
+
+  if (sqlite3_step(stmt) == SQLITE_ROW) {
+    zone.setId(sqlite3_column_int64(stmt, 0));
+    zone.setTtl(time::seconds(sqlite3_column_int(stmt, 1)));
+  } else {
+    zone.setId(0);
+  }
+
+  sqlite3_finalize(stmt);
+
+  return zone.getId() != 0;
+}
+
+void
+DbMgr::insert(Zone& zone)
+{
+  if (zone.getId() > 0)
+    return;
+
+  sqlite3_stmt* stmt;
+  const char* sql = "INSERT INTO zones (name, ttl) VALUES (?, ?)";
+  int rc = sqlite3_prepare_v2(m_conn, sql, strlen(sql), &stmt, 0);
+  if (rc != SQLITE_OK) {
+    throw PrepareError(sql);
+  }
+
+  const Block& zoneName = zone.getName().wireEncode();
+  sqlite3_bind_blob(stmt, 1, zoneName.wire(), zoneName.size(), SQLITE_STATIC);
+  sqlite3_bind_int(stmt,  2, zone.getTtl().count());
+
+  rc = sqlite3_step(stmt);
+  if (rc != SQLITE_DONE) {
+    sqlite3_finalize(stmt);
+    throw ExecuteError(sql);
+  }
+
+  zone.setId(sqlite3_last_insert_rowid(m_conn));
+  sqlite3_finalize(stmt);
+}
+
+void
+DbMgr::remove(Zone& zone)
+{
+  if (zone.getId() == 0)
+    return;
+
+  sqlite3_stmt* stmt;
+  const char* sql = "DELETE FROM zones where id=?";
+  int rc = sqlite3_prepare_v2(m_conn, sql, strlen(sql), &stmt, 0);
+  if (rc != SQLITE_OK) {
+    throw PrepareError(sql);
+  }
+
+  sqlite3_bind_int64(stmt, 1, zone.getId());
+
+  rc = sqlite3_step(stmt);
+  if (rc != SQLITE_DONE) {
+    sqlite3_finalize(stmt);
+    throw ExecuteError(sql);
+  }
+
+  sqlite3_finalize(stmt);
+
+  zone.setId(0);
+  zone.setTtl(time::seconds(3600));
+}
+
 
 } // namespace ndns
 } // namespace ndn

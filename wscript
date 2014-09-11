@@ -35,7 +35,7 @@ def configure(conf):
     if conf.options.with_tests:
         conf.env['WITH_TESTS'] = True
 
-    USED_BOOST_LIBS = ['system']
+    USED_BOOST_LIBS = ['system', 'filesystem']
     if conf.env['WITH_TESTS']:
         USED_BOOST_LIBS += ['unit_test_framework']
     conf.check_boost(lib=USED_BOOST_LIBS, mandatory=True)

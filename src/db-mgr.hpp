@@ -17,16 +17,28 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NDNS_DB_DB_MGR_HPP
-#define NDNS_DB_DB_MGR_HPP
+#ifndef NDNS_DB_MGR_HPP
+#define NDNS_DB_MGR_HPP
 
 #include "config.hpp"
+#include "zone.hpp"
 
 #include <ndn-cxx/common.hpp>
 #include <sqlite3.h>
 
 namespace ndn {
 namespace ndns {
+
+#define DEFINE_ERROR(Name, Base)                \
+class Name : public Base                        \
+{                                               \
+ public:                                        \
+  explicit                                      \
+  Name(const std::string& what)                 \
+    : Base(what)                                \
+  {                                             \
+  }                                             \
+};
 
 /**
  * @brief Database Manager, which provides some common DB functionalities
@@ -42,6 +54,10 @@ public:
     DB_CLOSED,
     DB_ERROR
   };
+
+  DEFINE_ERROR(Error, std::runtime_error);
+  DEFINE_ERROR(PrepareError, Error);
+  DEFINE_ERROR(ExecuteError, Error);
 
 public:
   /**
@@ -88,6 +104,35 @@ public:
     return m_status;
   }
 
+public: // Zone manipulation
+  DEFINE_ERROR(ZoneError, Error);
+
+  /**
+   * @brief lookup the zone by name, fill the m_id and m_ttl
+   * @post whatever the previous id is
+   * @return true if the record exist
+   */
+  bool
+  lookup(Zone& zone);
+
+  /**
+   * @brief remove the zone
+   * @pre m_zone.getId() > 0
+   * @post m_zone.getId() == 0
+   */
+  void
+  remove(Zone& zone);
+
+  /**
+   * @brief insert the m_zone to the database, and set the zone's id.
+   * If the zone is already in the db, handle the exception without leaving it to upper level,
+   * meanwhile, set the zone's id too.
+   * @pre m_zone.getId() == 0
+   * @post m_zone.getId() > 0
+   */
+  void
+  insert(Zone& zone);
+
 private:
   /**
    * @brief set error message
@@ -121,4 +166,4 @@ private:
 } // namespace ndns
 } // namespace ndn
 
-#endif // NDNS_DB_DB_MGR_HPP
+#endif // NDNS_DB_MGR_HPP
