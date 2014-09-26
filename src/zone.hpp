@@ -21,6 +21,7 @@
 #define NDNS_ZONE_HPP
 
 #include <ndn-cxx/name.hpp>
+
 #include <iostream>
 
 namespace ndn {
@@ -43,50 +44,87 @@ public:
    * @brief create a Zone instance
    */
   explicit
-  Zone(const Name& name);
+  Zone(const Name& name, const time::seconds& ttl = time::seconds(3600));
 
+  /**
+   * @brief get name of the zone
+   */
   const Name&
   getName() const
   {
     return m_name;
   }
 
+  /**
+   * @brief set name of the zone
+   */
   void
   setName(const Name& name)
   {
     m_name = name;
   }
 
-  uint32_t
+  /**
+   * @brief get the id when the rr is stored in the database
+   *  default value is 0, the database has to guarantee that id is greater than 0.
+   */
+  uint64_t
   getId() const
   {
     return m_id;
   }
 
+  /**
+   * @brief set the id when the rr is stored in the database
+   *  default value is 0, the database has to guarantee that id is greater than 0.
+   */
   void
-  setId(uint32_t id)
+  setId(uint64_t id)
   {
     m_id = id;
   }
 
+  /**
+   * @brief get default ttl of resource record delegated in this zone, measured by seconds.
+   * default 3600 (seconds)
+   */
+  const time::seconds&
+  getTtl() const
+  {
+    return m_ttl;
+  }
+
+  /**
+   * @brief set default ttl of resource record delegated in this zone, measured by seconds.
+   * default 3600 (seconds)
+   */
+  void
+  setTtl(const time::seconds& ttl)
+  {
+    m_ttl = ttl;
+  }
+
+  /**
+   * @brief two zones are equal if they have the same name. Zone's name is unique
+   */
   bool
   operator==(const Zone& other) const
   {
     return (m_name == other.getName());
   }
 
-private:
-  /**
-   * @brief the id when the rr is stored in the database
-   *  default value is 0, the database has to guarantee that id is greater than 0.
-   */
-  uint32_t m_id;
+  bool
+  operator!=(const Zone& other) const
+  {
+    return (m_name != other.getName());
+  }
 
-  /**
-   * @brief the zone's name, which means all its
-   *    delegated subzones or labels are under this namespace
-   */
+private:
+  uint64_t m_id;
+
   Name m_name;
+
+  time::seconds m_ttl;
 };
 
 std::ostream&

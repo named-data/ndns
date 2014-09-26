@@ -24,12 +24,14 @@ namespace ndns {
 
 Zone::Zone()
   : m_id(0)
+  , m_ttl(3600)
 {
 }
 
-Zone::Zone(const Name& name)
+Zone::Zone(const Name& name, const time::seconds& ttl)
   : m_id(0)
   , m_name(name)
+  , m_ttl(ttl)
 {
 }
 

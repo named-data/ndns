@@ -35,15 +35,17 @@ BOOST_AUTO_TEST_CASE(TestCase)
   Zone zone1;
   zone1.setName(zoneName);
   zone1.setId(2);
+  zone1.setTtl(time::seconds(4000));
 
-  Zone zone2(zoneName);
-  Zone zone3("/net/ndnsim");
-
-  BOOST_CHECK_EQUAL(zone1, zone2);
-  BOOST_CHECK_EQUAL(zone3, zone2);
-  BOOST_CHECK_EQUAL(zone2.getName(), zone3.getName());
   BOOST_CHECK_EQUAL(zone1.getId(), 2);
   BOOST_CHECK_EQUAL(zone1.getName(), zoneName);
+  BOOST_CHECK_EQUAL(zone1.getTtl(), time::seconds(4000));
+
+  Zone zone2(zoneName);
+  BOOST_CHECK_EQUAL(zone1, zone2);
+  BOOST_CHECK_EQUAL(zone2.getName(), zone1.getName());
+
+  BOOST_CHECK_NE(zone1, Zone("/net/ndnsim2"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
