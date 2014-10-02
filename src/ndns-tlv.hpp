@@ -31,8 +31,8 @@ namespace tlv {
  */
 enum {
   NdnsType = 180, ///< Detailed Types are defined in NdnsType in ndns-enum.hpp
-  RrType = 190,
-  RrDataType = 191
+  Rr = 190,
+  RrData = 191
 };
 
 } // namespace tlv

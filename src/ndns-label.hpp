@@ -31,21 +31,22 @@ namespace ndn {
 namespace ndns {
 namespace label {
 
+
 /**
  * @brief NDNS iterative query type
  */
 
-const name::Component NdnsIterativeQuery("NDNS");
+const name::Component NDNS_ITERATIVE_QUERY("NDNS");
 
 /**
  * @brief NDNS recursive query type
  */
-const name::Component NdnsRecursiveQuery("NDNS-R");
+const name::Component NDNS_RECURSIVE_QUERY("NDNS-R");
 
 /**
  * @brief NDNS ID-CERT query type
  */
-const name::Component NdnsCertQuery("KEY");
+const name::Component NDNS_CERT_QUERY("KEY");
 
 /////////////////////////////////////////////
 
@@ -53,24 +54,31 @@ const name::Component NdnsCertQuery("KEY");
  * @brief label of forwarding hint
  * @todo not support forwarding hint yet, for future use
  */
-const name::Component ForwardingHintLabel("\xF0.");
+const name::Component FORWARDING_HINT_LABEL("\xF0.");
 
 /**
  * @brief label of update message, located at the last component in Interest name
  */
-const name::Component NdnsUpdateLabel("UPDATE");
+const name::Component NDNS_UPDATE_LABEL("UPDATE");
+
 
 //////////////////////////////////////////////
 
 /**
  * @brief NS resource record type
  */
-const name::Component NsRrType("NS");
+const name::Component NS_RR_TYPE("NS");
 
 /**
  * @brief ID-CERT resource record type
  */
-const name::Component CertRrType("ID-CERT");
+const name::Component CERT_RR_TYPE("ID-CERT");
+
+/**
+ * @brief TXT resource record type
+ */
+const name::Component TXT_RR_TYPE("TXT");
+
 
 //////////////////////////////////////////
 
@@ -97,8 +105,8 @@ struct MatchResult
  */
 bool
 matchName(const Interest& interest,
-           const Name& hint, const Name& zone,
-           MatchResult& result);
+          const Name& hint, const Name& zone,
+          MatchResult& result);
 
 /**
  * @brief match the Data (NDNS query response, NDNS update response) name
@@ -115,6 +123,7 @@ bool
 matchName(const Data& data,
           const Name& hint, const Name& zone,
           MatchResult& result);
+
 
 } // namespace label
 } // namespace ndns

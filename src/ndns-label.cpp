@@ -37,7 +37,7 @@ calculateSkip(const Name& name,
     BOOST_ASSERT(name.size() > skip);
 
     BOOST_ASSERT(name.getPrefix(hint.size()) == hint);
-    BOOST_ASSERT(name.get(hint.size()) == ForwardingHintLabel);
+    BOOST_ASSERT(name.get(hint.size()) == FORWARDING_HINT_LABEL);
     BOOST_ASSERT(name.getSubName(hint.size() + 1, zone.size()) == zone);
 
   }
@@ -47,8 +47,8 @@ calculateSkip(const Name& name,
     BOOST_ASSERT(name.getPrefix(zone.size()) == zone);
   }
 
-  BOOST_ASSERT(name.get(skip) == NdnsIterativeQuery ||
-               name.get(skip) == NdnsCertQuery);
+  BOOST_ASSERT(name.get(skip) == NDNS_ITERATIVE_QUERY ||
+               name.get(skip) == NDNS_CERT_QUERY);
 
   ++skip;
   return skip;

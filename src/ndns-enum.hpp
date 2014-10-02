@@ -20,7 +20,7 @@
 #ifndef NDNS_NDNS_ENUM_HPP
 #define NDNS_NDNS_ENUM_HPP
 
-#include <string>
+#include <ostream>
 
 namespace ndn {
 namespace ndns {
@@ -37,11 +37,8 @@ enum NdnsType {
   NDNS_UNKNOWN = 255
 };
 
-/*
- * @brief convert the ResponseType to String
- */
-std::string
-toString(NdnsType ndnsType);
+std::ostream&
+operator<<(std::ostream& os, const NdnsType ndnsType);
 
 } // namespace ndns
 } // namespace ndn

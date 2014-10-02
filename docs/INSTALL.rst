@@ -9,6 +9,21 @@ Prerequisites
 -  Install the `ndn-cxx library <http://named-data.net/doc/ndn-cxx/current/INSTALL.html>`_
    and its requirements
 
+Another additional libraries include:
+-  ``log4cxx``
+
+   On OS X 10.8, 10.9 and 10.10 with MacPorts:
+
+   ::
+
+       sudo port install log4cxx
+
+   On Ubuntu >= 12.04:
+
+   ::
+
+       sudo apt-get install liblog4cxx10-dev
+
 To build manpages and API documentation:
 
 -  ``doxygen``

@@ -22,21 +22,27 @@
 namespace ndn {
 namespace ndns {
 
-std::string
-toString(NdnsType ndnsType)
+std::ostream&
+operator<<(std::ostream& os, const NdnsType ndnsType)
 {
   switch (ndnsType) {
   case NDNS_RESP:
-    return "NDNS-Resp";
+    os << "NDNS-Resp";
+    break;
   case NDNS_NACK:
-    return "NDNS-Nack";
+    os << "NDNS-Nack";
+    break;
   case NDNS_AUTH:
-    return "NDNS-Auth";
+    os << "NDNS-Auth";
+    break;
   case NDNS_RAW:
-    return "NDNS-Raw";
+    os << "NDNS-Raw";
+    break;
   default:
-    return "UNKNOWN";
+    os << "UNKNOWN";
+    break;
   }
+  return os;
 }
 
 } // namespace ndns
