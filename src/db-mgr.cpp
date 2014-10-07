@@ -109,13 +109,42 @@ DbMgr::close()
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+// Zone
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void
+DbMgr::insert(Zone& zone)
+{
+  if (zone.getId() > 0)
+    return;
+
+  sqlite3_stmt* stmt;
+  const char* sql = "INSERT INTO zones (name, ttl) VALUES (?, ?)";
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
+  if (rc != SQLITE_OK) {
+    throw PrepareError(sql);
+  }
+
+  const Block& zoneName = zone.getName().wireEncode();
+  sqlite3_bind_blob(stmt, 1, zoneName.wire(), zoneName.size(), SQLITE_STATIC);
+  sqlite3_bind_int(stmt,  2, zone.getTtl().count());
+
+  rc = sqlite3_step(stmt);
+  if (rc != SQLITE_DONE) {
+    sqlite3_finalize(stmt);
+    throw ExecuteError(sql);
+  }
+
+  zone.setId(sqlite3_last_insert_rowid(m_conn));
+  sqlite3_finalize(stmt);
+}
 
 bool
-DbMgr::lookup(Zone& zone)
+DbMgr::find(Zone& zone)
 {
   sqlite3_stmt* stmt;
   const char* sql = "SELECT id, ttl FROM zones WHERE name=?";
-  int rc = sqlite3_prepare_v2(m_conn, sql, strlen(sql), &stmt, 0);
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
   if (rc != SQLITE_OK) {
     throw PrepareError(sql);
   }
@@ -136,33 +165,6 @@ DbMgr::lookup(Zone& zone)
 }
 
 void
-DbMgr::insert(Zone& zone)
-{
-  if (zone.getId() > 0)
-    return;
-
-  sqlite3_stmt* stmt;
-  const char* sql = "INSERT INTO zones (name, ttl) VALUES (?, ?)";
-  int rc = sqlite3_prepare_v2(m_conn, sql, strlen(sql), &stmt, 0);
-  if (rc != SQLITE_OK) {
-    throw PrepareError(sql);
-  }
-
-  const Block& zoneName = zone.getName().wireEncode();
-  sqlite3_bind_blob(stmt, 1, zoneName.wire(), zoneName.size(), SQLITE_STATIC);
-  sqlite3_bind_int(stmt,  2, zone.getTtl().count());
-
-  rc = sqlite3_step(stmt);
-  if (rc != SQLITE_DONE) {
-    sqlite3_finalize(stmt);
-    throw ExecuteError(sql);
-  }
-
-  zone.setId(sqlite3_last_insert_rowid(m_conn));
-  sqlite3_finalize(stmt);
-}
-
-void
 DbMgr::remove(Zone& zone)
 {
   if (zone.getId() == 0)
@@ -170,7 +172,7 @@ DbMgr::remove(Zone& zone)
 
   sqlite3_stmt* stmt;
   const char* sql = "DELETE FROM zones where id=?";
-  int rc = sqlite3_prepare_v2(m_conn, sql, strlen(sql), &stmt, 0);
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
   if (rc != SQLITE_OK) {
     throw PrepareError(sql);
   }
@@ -185,10 +187,155 @@ DbMgr::remove(Zone& zone)
 
   sqlite3_finalize(stmt);
 
-  zone.setId(0);
-  zone.setTtl(time::seconds(3600));
+  zone = Zone();
 }
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Rrset
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+void
+DbMgr::insert(Rrset& rrset)
+{
+  if (rrset.getId() != 0)
+    return;
+
+  if (rrset.getZone() == 0) {
+    throw RrsetError("Rrset has not been assigned to a zone");
+  }
+
+  if (rrset.getZone()->getId() == 0) {
+    insert(*rrset.getZone());
+  }
+
+  const char* sql =
+    "INSERT INTO rrsets (zone_id, label, type, version, ttl, data)"
+    "    VALUES (?, ?, ?, ?, ?, ?)";
+
+  sqlite3_stmt* stmt;
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
+  if (rc != SQLITE_OK) {
+    throw PrepareError(sql);
+  }
+
+  sqlite3_bind_int64(stmt, 1, rrset.getZone()->getId());
+
+  const Block& label = rrset.getLabel().wireEncode();
+  sqlite3_bind_blob(stmt,  2, label.wire(),              label.size(),              SQLITE_STATIC);
+  sqlite3_bind_blob(stmt,  3, rrset.getType().wire(),    rrset.getType().size(),    SQLITE_STATIC);
+  sqlite3_bind_blob(stmt,  4, rrset.getVersion().wire(), rrset.getVersion().size(), SQLITE_STATIC);
+  sqlite3_bind_int64(stmt, 5, rrset.getTtl().count());
+  sqlite3_bind_blob(stmt,  6, rrset.getData().wire(),    rrset.getData().size(),    SQLITE_STATIC);
+
+  rc = sqlite3_step(stmt);
+  if (rc != SQLITE_DONE) {
+    sqlite3_finalize(stmt);
+    throw ExecuteError(sql);
+  }
+
+  rrset.setId(sqlite3_last_insert_rowid(m_conn));
+  sqlite3_finalize(stmt);
+}
+
+bool
+DbMgr::find(Rrset& rrset)
+{
+  if (rrset.getZone() == 0) {
+    throw RrsetError("Rrset has not been assigned to a zone");
+  }
+
+  if (rrset.getZone()->getId() == 0) {
+    bool isFound = find(*rrset.getZone());
+    if (!isFound) {
+      return false;
+    }
+  }
+
+  sqlite3_stmt* stmt;
+  const char* sql =
+    "SELECT id, ttl, version, data FROM rrsets"
+    "    WHERE zone_id=? and label=? and type=?";
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
+
+  if (rc != SQLITE_OK) {
+    throw PrepareError(sql);
+  }
+
+  sqlite3_bind_int64(stmt, 1, rrset.getZone()->getId());
+
+  const Block& label = rrset.getLabel().wireEncode();
+  sqlite3_bind_blob(stmt, 2, label.wire(), label.size(), SQLITE_STATIC);
+  sqlite3_bind_blob(stmt, 3, rrset.getType().wire(), rrset.getType().size(), SQLITE_STATIC);
+
+  if (sqlite3_step(stmt) == SQLITE_ROW) {
+    rrset.setId(sqlite3_column_int64(stmt, 0));
+    rrset.setTtl(time::seconds(sqlite3_column_int64(stmt, 1)));
+    rrset.setVersion(Block(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 2)),
+                           sqlite3_column_bytes(stmt, 2)));
+    rrset.setData(Block(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 3)),
+                        sqlite3_column_bytes(stmt, 3)));
+  } else {
+    rrset.setId(0);
+  }
+  sqlite3_finalize(stmt);
+
+  return rrset.getId() != 0;
+}
+
+void
+DbMgr::remove(Rrset& rrset)
+{
+  if (rrset.getId() == 0)
+    throw RrsetError("Attempting to remove Rrset that has no assigned id");
+
+  sqlite3_stmt* stmt;
+  const char* sql = "DELETE FROM rrsets WHERE id=?";
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
+
+  if (rc != SQLITE_OK) {
+    throw PrepareError(sql);
+  }
+
+  sqlite3_bind_int64(stmt, 1, rrset.getId());
+
+  rc = sqlite3_step(stmt);
+  if (rc != SQLITE_DONE) {
+    sqlite3_finalize(stmt);
+    throw ExecuteError(sql);
+  }
+
+  sqlite3_finalize(stmt);
+
+  rrset = Rrset(rrset.getZone());
+}
+
+void
+DbMgr::modify(Rrset& rrset)
+{
+  if (rrset.getId() == 0) {
+    throw RrsetError("Attempting to replace Rrset that has no assigned id");
+  }
+
+  if (rrset.getZone() == 0) {
+    throw RrsetError("Rrset has not been assigned to a zone");
+  }
+
+  sqlite3_stmt* stmt;
+  const char* sql = "UPDATE rrsets SET ttl=?, version=?, data=? WHERE id=?";
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
+
+  if (rc != SQLITE_OK) {
+    throw PrepareError(sql);
+  }
+
+  sqlite3_bind_int64(stmt, 1, rrset.getTtl().count());
+  sqlite3_bind_blob(stmt,  2, rrset.getVersion().wire(), rrset.getVersion().size(), SQLITE_STATIC);
+  sqlite3_bind_blob(stmt,  3, rrset.getData().wire(),    rrset.getData().size(),    SQLITE_STATIC);
+  sqlite3_bind_int64(stmt, 4, rrset.getId());
+
+  sqlite3_step(stmt);
+  sqlite3_finalize(stmt);
+}
 
 } // namespace ndns
 } // namespace ndn

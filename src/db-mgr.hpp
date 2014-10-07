@@ -22,6 +22,7 @@
 
 #include "config.hpp"
 #include "zone.hpp"
+#include "rrset.hpp"
 
 #include <ndn-cxx/common.hpp>
 #include <sqlite3.h>
@@ -42,6 +43,8 @@ class Name : public Base                        \
 
 /**
  * @brief Database Manager, which provides some common DB functionalities
+ *
+ * @note Function naming here follows MongoDB
  */
 class DbMgr : noncopyable
 {
@@ -64,7 +67,7 @@ public:
    * @brief constructor
    */
   explicit
-  DbMgr(const std::string& dbFile = DEFAULT_CONFIG_PATH "/" "ndns.conf");
+  DbMgr(const std::string& dbFile = DEFAULT_CONFIG_PATH "/" "ndns.db");
 
   /**
    * @brief destructor
@@ -108,12 +111,22 @@ public: // Zone manipulation
   DEFINE_ERROR(ZoneError, Error);
 
   /**
+   * @brief insert the m_zone to the database, and set the zone's id.
+   * If the zone is already in the db, handle the exception without leaving it to upper level,
+   * meanwhile, set the zone's id too.
+   * @pre m_zone.getId() == 0
+   * @post m_zone.getId() > 0
+   */
+  void
+  insert(Zone& zone);
+
+  /**
    * @brief lookup the zone by name, fill the m_id and m_ttl
    * @post whatever the previous id is
    * @return true if the record exist
    */
   bool
-  lookup(Zone& zone);
+  find(Zone& zone);
 
   /**
    * @brief remove the zone
@@ -123,15 +136,44 @@ public: // Zone manipulation
   void
   remove(Zone& zone);
 
+public: // Rrset manipulation
+  DEFINE_ERROR(RrsetError, Error);
+
   /**
-   * @brief insert the m_zone to the database, and set the zone's id.
-   * If the zone is already in the db, handle the exception without leaving it to upper level,
-   * meanwhile, set the zone's id too.
-   * @pre m_zone.getId() == 0
-   * @post m_zone.getId() > 0
+   * @brief add the rrset
+   * @pre m_rrset.getId() == 0
+   * @post m_rrset.getId() > 0
    */
   void
-  insert(Zone& zone);
+  insert(Rrset& rrset);
+
+  /**
+   * @brief get the data from db according to `m_zone`, `m_label`, `m_type`.
+   *
+   * If record exists, `m_ttl`, `m_version` and `m_data` is set
+   *
+   * @pre m_rrset.getZone().getId() > 0
+   * @post whatever the previous id is,
+   *       m_rrset.getId() > 0 if record exists, otherwise m_rrset.getId() == 0
+   * @return true if the record exist
+   */
+  bool
+  find(Rrset& rrset);
+
+  /**
+   * @brief remove the rrset
+   * @pre m_rrset.getId() > 0
+   * @post m_rrset.getId() == 0
+   */
+  void
+  remove(Rrset& rrset);
+
+  /**
+   * @brief replace ttl, version, and Data with new values
+   * @pre m_rrset.getId() > 0
+   */
+  void
+  modify(Rrset& rrset);
 
 private:
   /**
