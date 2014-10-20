@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_CASE(NdnsTypeToString)
   BOOST_CHECK_EQUAL(toString(NDNS_RESP), "NDNS-Resp");
   BOOST_CHECK_EQUAL(toString(NDNS_AUTH), "NDNS-Auth");
   BOOST_CHECK_EQUAL(toString(NDNS_NACK), "NDNS-Nack");
-  BOOST_CHECK_EQUAL(toString(NDNS_NULL), "NDNS-Null");
+  BOOST_CHECK_EQUAL(toString(NDNS_RAW), "NDNS-Raw");
 
   BOOST_CHECK_EQUAL(toString(static_cast<NdnsType>(254)), "UNKNOWN");
   BOOST_CHECK_EQUAL(toString(static_cast<NdnsType>(255)), "UNKNOWN");

@@ -17,35 +17,48 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "zone.hpp"
-#include "logger.hpp"
+#include "daemon/zone.hpp"
+#include "../../boost-test.hpp"
+
+#include <ndn-cxx/name.hpp>
 
 namespace ndn {
 namespace ndns {
+namespace tests {
 
-NDNS_LOG_INIT("Zone")
+BOOST_AUTO_TEST_SUITE(Zone)
 
-Zone::Zone()
-  : m_id(0)
-  , m_ttl(3600)
+BOOST_AUTO_TEST_CASE(Basic)
 {
+  Name zoneName("/net/ndnsim");
+  ndns::Zone zone1;
+  zone1.setName(zoneName);
+  zone1.setId(2);
+  zone1.setTtl(time::seconds(4000));
+
+  BOOST_CHECK_EQUAL(zone1.getId(), 2);
+  BOOST_CHECK_EQUAL(zone1.getName(), zoneName);
+  BOOST_CHECK_EQUAL(zone1.getTtl(), time::seconds(4000));
+
+  ndns::Zone zone2(zoneName);
+  BOOST_CHECK_EQUAL(zone1, zone2);
+  BOOST_CHECK_EQUAL(zone2.getName(), zone1.getName());
+
+  BOOST_CHECK_NE(zone1, ndns::Zone("/net/ndnsim2"));
 }
 
-Zone::Zone(const Name& name, const time::seconds& ttl)
-  : m_id(0)
-  , m_name(name)
-  , m_ttl(ttl)
+BOOST_AUTO_TEST_CASE(Ostream)
 {
+  ndns::Zone zone("/test");
+  zone.setId(1);
+
+  boost::test_tools::output_test_stream os;
+  os << zone;
+  BOOST_CHECK(os.is_equal("Zone: Id=1 Name=/test"));
 }
 
+BOOST_AUTO_TEST_SUITE_END()
 
-std::ostream&
-operator<<(std::ostream& os, const Zone& zone)
-{
-  os << "Zone: Id=" << zone.getId()
-     << " Name=" << zone.getName().toUri();
-  return os;
-}
-
+} // namespace tests
 } // namespace ndns
 } // namespace ndn

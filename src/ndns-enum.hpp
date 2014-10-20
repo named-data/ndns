@@ -29,7 +29,7 @@ namespace ndns {
  * @brief NdnsType defined in Response.NdnsMetaInfo.NdnsType
  */
 enum NdnsType {
-  NDNS_NULL = 0, ///< this is not a real type, just mean that MetaInfo does not contain NdnsType
+  NDNS_RAW = 0, ///< this is not a real type, just mean that MetaInfo does not contain NdnsType
   NDNS_RESP = 1, ///< response type means there are requested RR
   NDNS_NACK = 2, ///< no requested RR
   NDNS_AUTH = 3, ///< only has RR for detailed (longer) label

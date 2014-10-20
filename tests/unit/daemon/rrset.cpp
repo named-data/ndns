@@ -17,8 +17,8 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "rrset.hpp"
-#include "../boost-test.hpp"
+#include "daemon/rrset.hpp"
+#include "../../boost-test.hpp"
 
 #include <ndn-cxx/name.hpp>
 

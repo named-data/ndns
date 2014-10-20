@@ -32,8 +32,8 @@ toString(NdnsType ndnsType)
     return "NDNS-Nack";
   case NDNS_AUTH:
     return "NDNS-Auth";
-  case NDNS_NULL:
-    return "NDNS-Null";
+  case NDNS_RAW:
+    return "NDNS-Raw";
   default:
     return "UNKNOWN";
   }
