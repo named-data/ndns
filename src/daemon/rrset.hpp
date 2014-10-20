@@ -17,8 +17,8 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NDNS_RRSET_HPP
-#define NDNS_RRSET_HPP
+#ifndef NDNS_DAEMON_RRSET_HPP
+#define NDNS_DAEMON_RRSET_HPP
 
 #include "zone.hpp"
 
@@ -36,7 +36,7 @@ class Rrset
 {
 public:
   explicit
-  Rrset(Zone* zone = 0);
+  Rrset(Zone* zone = nullptr);
 
   /**
    * @brief get the id
@@ -174,11 +174,7 @@ public:
    * Note that comparison ignores id, TTL, and Data when comparing RR sets
    */
   bool
-  operator==(const Rrset& other) const
-  {
-    return (getZone() == other.getZone() && getLabel() == other.getLabel() &&
-            getType() == other.getType() && getVersion() == other.getVersion());
-  }
+  operator==(const Rrset& other) const;
 
   /**
    * @brief compare two rrset instance
@@ -207,4 +203,4 @@ operator<<(std::ostream& os, const Rrset& Rrset);
 } // namespace ndns
 } // namespace ndn
 
-#endif // NDNS_RRSET_HPP
+#endif // NDNS_DAEMON_RRSET_HPP

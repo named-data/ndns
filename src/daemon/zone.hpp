@@ -17,8 +17,8 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NDNS_ZONE_HPP
-#define NDNS_ZONE_HPP
+#ifndef NDNS_DAEMON_ZONE_HPP
+#define NDNS_DAEMON_ZONE_HPP
 
 #include <ndn-cxx/name.hpp>
 
@@ -133,4 +133,4 @@ operator<<(std::ostream& os, const Zone& zone);
 } // namespace ndns
 } // namespace ndn
 
-#endif // NDNS_ZONE_HPP
+#endif // NDNS_DAEMON_ZONE_HPP

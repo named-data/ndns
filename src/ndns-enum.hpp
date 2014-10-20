@@ -40,6 +40,14 @@ enum NdnsType {
 std::ostream&
 operator<<(std::ostream& os, const NdnsType ndnsType);
 
+/**
+ * @brief define Return code of Update's Response
+ */
+enum UpdateReturnCode {
+  UPDATE_OK = 0, ///< Update succeeds
+  UPDATE_FAILURE = 1 ///< Update fails
+};
+
 } // namespace ndns
 } // namespace ndn
 

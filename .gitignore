@@ -6,3 +6,4 @@
 build/
 VERSION
 *.db
+unit-tests.log4cxx

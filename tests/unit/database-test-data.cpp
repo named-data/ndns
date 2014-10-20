@@ -28,53 +28,42 @@ namespace tests {
 NDNS_LOG_INIT("TestFakeData")
 
 const boost::filesystem::path DbTestData::TEST_DATABASE = TEST_CONFIG_PATH "/" "test-ndns.db";
-const Name DbTestData::TEST_IDENTITY_NAME("/");
+const Name DbTestData::TEST_IDENTITY_NAME("/test19");
 const boost::filesystem::path DbTestData::TEST_CERT =
   TEST_CONFIG_PATH "/" "anchors/root.cert";
 
 DbTestData::DbTestData()
-  : doesTestIdentityExist(false)
-  , m_session(TEST_DATABASE.string())
+  : m_session(TEST_DATABASE.string())
 {
   NDNS_LOG_TRACE("start creating test data");
-  // m_session.clearAllData();
 
   ndns::Validator::VALIDATOR_CONF_FILE = TEST_CONFIG_PATH "/" "validator.conf";
 
-  if (!m_keyChain.doesIdentityExist(TEST_IDENTITY_NAME)) {
-    m_keyChain.createIdentity(TEST_IDENTITY_NAME);
-  }
-  else {
-    doesTestIdentityExist = true;
-  }
+  m_certName = m_keyChain.createIdentity(TEST_IDENTITY_NAME);
 
-  m_keyName = m_keyChain.generateRsaKeyPair(TEST_IDENTITY_NAME, false);
-
-  shared_ptr<IdentityCertificate> scert = m_keyChain.selfSign(m_keyName);
-  m_keyChain.addCertificate(*scert);
-  m_certName = scert->getName();
-
-  ndn::io::save(*scert, TEST_CERT.string());
-  NDNS_LOG_TRACE("test key: " << m_keyName);
-  NDNS_LOG_TRACE("save test root cert " << m_certName << " to: " << TEST_CERT.string());
+  ndn::io::save(*(m_keyChain.getCertificate(m_certName)), TEST_CERT.string());
+  NDNS_LOG_INFO("save test root cert " << m_certName << " to: " << TEST_CERT.string());
 
   BOOST_CHECK_GT(m_certName.size(), 0);
   NDNS_LOG_TRACE("test certName: " << m_certName);
 
-  Zone root("/");
-  Zone net("/net");
-  Zone ndnsim("/net/ndnsim");
+  m_root = Zone(TEST_IDENTITY_NAME);
+  Name name(TEST_IDENTITY_NAME);
+    name.append("net");
+  m_net = Zone(name);
+  name.append("ndnsim");
+  m_ndnsim =Zone(name);
 
-  m_session.insert(root);
-  BOOST_CHECK_GT(root.getId(), 0);
-  m_session.insert(net);
-  BOOST_CHECK_GT(net.getId(), 0);
-  m_session.insert(ndnsim);
-  BOOST_CHECK_GT(ndnsim.getId(), 0);
+  m_session.insert(m_root);
+  BOOST_CHECK_GT(m_root.getId(), 0);
+  m_session.insert(m_net);
+  BOOST_CHECK_GT(m_net.getId(), 0);
+  m_session.insert(m_ndnsim);
+  BOOST_CHECK_GT(m_ndnsim.getId(), 0);
 
-  m_zones.push_back(root);
-  m_zones.push_back(net);
-  m_zones.push_back(ndnsim);
+  m_zones.push_back(m_root);
+  m_zones.push_back(m_net);
+  m_zones.push_back(m_ndnsim);
 
   int certificateIndex = 0;
   function<void(const Name&,Zone&,const name::Component&)> addQueryRrset =
@@ -93,25 +82,25 @@ DbTestData::DbTestData()
 
     addRrset(zone, label, type, ttl, version, qType, ndnsType, os.str());
   };
-  addQueryRrset("/dsk-1", root, label::CERT_RR_TYPE);
-  addQueryRrset("/net/ksk-2", root, label::CERT_RR_TYPE);
-  addQueryRrset("/dsk-3", net, label::CERT_RR_TYPE);
-  addQueryRrset("/ndnsim/ksk-4", net, label::CERT_RR_TYPE);
-  addQueryRrset("/dsk-5", ndnsim, label::CERT_RR_TYPE);
 
-  addQueryRrset("net", root, label::NS_RR_TYPE);
-  addQueryRrset("ndnsim", net, label::NS_RR_TYPE);
-  addQueryRrset("www", ndnsim, label::TXT_RR_TYPE);
-  addQueryRrset("doc/www", ndnsim, label::TXT_RR_TYPE);
+  addQueryRrset("/dsk-1", m_root, label::CERT_RR_TYPE);
+  addQueryRrset("/net/ksk-2", m_root, label::CERT_RR_TYPE);
+  addQueryRrset("/dsk-3", m_net, label::CERT_RR_TYPE);
+  addQueryRrset("/ndnsim/ksk-4", m_net, label::CERT_RR_TYPE);
+  addQueryRrset("/dsk-5", m_ndnsim, label::CERT_RR_TYPE);
+
+  addQueryRrset("net", m_root, label::NS_RR_TYPE);
+  addQueryRrset("ndnsim", m_net, label::NS_RR_TYPE);
+  addQueryRrset("www", m_ndnsim, label::TXT_RR_TYPE);
+  addQueryRrset("doc/www", m_ndnsim, label::TXT_RR_TYPE);
 
 
-  addRrset(ndnsim, Name("doc"), label::NS_RR_TYPE , time::seconds(2000),
-    name::Component("1234"), label::NDNS_ITERATIVE_QUERY, NDNS_AUTH, std::string(""));
+  addRrset(m_ndnsim, Name("doc"), label::NS_RR_TYPE , time::seconds(2000),
+           name::Component::fromVersion(1234), label::NDNS_ITERATIVE_QUERY, NDNS_AUTH,
+           std::string(""));
 
   NDNS_LOG_INFO("insert testing data: OK");
 }
-
-
 
 void
 DbTestData::addRrset(Zone& zone, const Name& label, const name::Component& type,
@@ -163,14 +152,7 @@ DbTestData::~DbTestData()
   boost::filesystem::remove(TEST_DATABASE);
   boost::filesystem::remove(TEST_CERT);
 
-  if (doesTestIdentityExist) {
-    m_keyChain.deleteCertificate(m_certName);
-    m_keyChain.deleteKey(m_keyName);
-    NDNS_LOG_TRACE("delete key: " << m_keyName << " and certificate: " << m_certName);
-  }
-  else{
-    m_keyChain.deleteIdentity(TEST_IDENTITY_NAME);
-  }
+  // m_keyChain.deleteIdentity(TEST_IDENTITY_NAME);
 
   NDNS_LOG_INFO("remove database: " << TEST_DATABASE);
 }

@@ -92,8 +92,8 @@ def build (bld):
     bld.recurse('tools')
 
     bld(features='subst',
-        source='validator.conf.sample.in',
-        target='validator.conf',
+        source=['validator.conf.sample.in', 'ndns.conf.sample.in'],
+        target=['validator.conf.sample', 'ndns.conf.sample'],
         install_path='${SYSCONFDIR}/ndns',
         name='validator-sample',
         ANCHORPATH='anchors/root.cert',

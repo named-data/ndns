@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(Basic)
 {
   ndns::Rrset rrset1;
   rrset1.setId(1);
-  rrset1.setZone(0);
+  rrset1.setZone(nullptr);
   rrset1.setLabel("/www/1");
   rrset1.setType(name::Component("NS"));
   rrset1.setVersion(name::Component::fromVersion(1));
@@ -40,29 +40,36 @@ BOOST_AUTO_TEST_CASE(Basic)
   rrset1.setData(Name("/test/1").wireEncode());
 
   BOOST_CHECK_EQUAL(rrset1.getId(), 1);
-  BOOST_CHECK_EQUAL(rrset1.getZone(), static_cast<Zone*>(0));
+  BOOST_CHECK_EQUAL(rrset1.getZone() == nullptr, true);
   BOOST_CHECK_EQUAL(rrset1.getLabel(), Name("/www/1"));
   BOOST_CHECK_EQUAL(rrset1.getType(), name::Component("NS"));
   BOOST_CHECK_EQUAL(rrset1.getVersion(), name::Component::fromVersion(1));
   BOOST_CHECK_EQUAL(rrset1.getTtl(), time::seconds(10));
   BOOST_CHECK(rrset1.getData() == Name("/test/1").wireEncode());
 
-  Name zoneName("/net/ndnsim");
-
   ndns::Rrset rrset2(rrset1);
-  BOOST_CHECK_EQUAL(rrset1, rrset2);
+  // rrset2.setZone(nullptr);
+  BOOST_CHECK_EQUAL(rrset1, rrset2); // zone point to nullptr
 
   rrset2.setId(2);
-  BOOST_CHECK_EQUAL(rrset1, rrset2);
-  rrset2 = rrset1;
+  BOOST_CHECK_EQUAL(rrset1, rrset2); // with different Id
 
-  Zone zone;
+  Zone zone("/ndn");
+  Zone zone2("/ndn2");
   rrset2.setZone(&zone);
+  BOOST_CHECK_NE(rrset1, rrset2); // with different zone name
+
+  rrset1.setZone(&zone);
+  BOOST_CHECK_EQUAL(rrset1, rrset2);
+
+  Zone zone3("/ndn");
+  rrset1.setZone(&zone3);
+  BOOST_CHECK_EQUAL(rrset1, rrset2);
+
+  rrset1.setZone(&zone2);
   BOOST_CHECK_NE(rrset1, rrset2);
 
   rrset2 = rrset1;
-  BOOST_CHECK_EQUAL(rrset1, rrset2);
-
   rrset2.setLabel(Name("/www/2"));
   BOOST_CHECK_NE(rrset1, rrset2);
   rrset2 = rrset1;

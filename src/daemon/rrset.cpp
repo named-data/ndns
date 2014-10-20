@@ -32,13 +32,29 @@ std::ostream&
 operator<<(std::ostream& os, const Rrset& rrset)
 {
   os << "Rrset: Id=" << rrset.getId();
-  if (rrset.getZone() != 0)
+  if (rrset.getZone() != nullptr)
     os << " Zone=(" << *rrset.getZone() << ")";
 
   os << " Label=" << rrset.getLabel()
      << " Type=" << rrset.getType()
      << " Version=" << rrset.getVersion();
   return os;
+}
+
+bool
+Rrset::operator==(const Rrset& other) const
+{
+  if (getZone() == nullptr && other.getZone() != nullptr)
+    return false;
+  else if (getZone() != nullptr && other.getZone() == nullptr)
+    return false;
+  else if (getZone() == nullptr && other.getZone() == nullptr)
+    return (getLabel() == other.getLabel() &&
+            getType() == other.getType() && getVersion() == other.getVersion());
+  else
+    return (*getZone() == *other.getZone() && getLabel() == other.getLabel() &&
+            getType() == other.getType() && getVersion() == other.getVersion());
+
 }
 
 } // namespace ndns

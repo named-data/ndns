@@ -26,8 +26,8 @@
 #include "validator.hpp"
 
 #include "../boost-test.hpp"
-
 #include <ndn-cxx/security/key-chain.hpp>
+#include <ndn-cxx/util/dummy-client-face.hpp>
 #include <boost/filesystem.hpp>
 
 namespace ndn {
@@ -48,15 +48,16 @@ public:
 private:
   void
   addRrset(Zone& zone, const Name& label, const name::Component& type,
-                       const time::seconds& ttl, const name::Component& version,
-                       const name::Component& qType, NdnsType ndnsType, const std::string& msg);
+           const time::seconds& ttl, const name::Component& version,
+           const name::Component& qType, NdnsType ndnsType, const std::string& msg);
 public:
   Name m_certName;
-  Name m_keyName;
   std::vector<Zone>  m_zones;
   std::vector<Rrset> m_rrsets;
 
-  bool doesTestIdentityExist;
+  Zone m_root;
+  Zone m_net;
+  Zone m_ndnsim;
   DbMgr m_session;
   KeyChain m_keyChain;
 };

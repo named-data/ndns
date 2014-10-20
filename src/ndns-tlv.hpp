@@ -32,7 +32,10 @@ namespace tlv {
 enum {
   NdnsType = 180, ///< Detailed Types are defined in NdnsType in ndns-enum.hpp
   Rr = 190,
-  RrData = 191
+  RrData = 191,
+
+  UpdateReturnCode = 160,
+  UpdateReturnMsg = 161
 };
 
 } // namespace tlv

@@ -38,23 +38,7 @@ namespace ndn {
 namespace ndns {
 
 /**
- * @brief content when update succeeds
- */
-const Block UPDATE_OK = dataBlock(ndn::tlv::Content, "Update OK", 9);
-
-/**
- * @brief content when update fails because of the out-dated update message
- */
-const Block UPDATE_FAIL_OLD_VERSION = dataBlock(ndn::tlv::Content,
-                                                "Update Fails. Error: old version update", 39);
-
-/**
- * @brief string prefix to judge Update fails or not
- */
-const std::string UPDATE_FAIL("Update Fails. Error: ");
-
-/**
- *@brief Default life time of resource record
+ * @brief Default life time of resource record
  */
 const time::seconds DEFAULT_RR_FRESHNESS_PERIOD(3600);
 
