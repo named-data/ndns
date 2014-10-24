@@ -32,8 +32,10 @@ def configure(conf):
 
     conf.check_sqlite3(mandatory=True)
 
+
     if conf.options.with_tests:
         conf.env['WITH_TESTS'] = True
+        conf.define('NDNS_HAVE_TESTS', 1)
 
     USED_BOOST_LIBS = ['system', 'filesystem']
     if conf.env['WITH_TESTS']:
@@ -43,8 +45,8 @@ def configure(conf):
     if not conf.options.with_sqlite_locking:
         conf.define('DISABLE_SQLITE3_FS_LOCKING', 1)
 
-    conf.define("DEFAULT_CONFIG_PATH", "%s/ndn" % conf.env['SYSCONFDIR'])
-    conf.define("DEFAULT_DATABASE_PATH", "%s/ndn/ndns" % conf.env['LOCALSTATEDIR'])
+    conf.define("DEFAULT_CONFIG_PATH", "%s/ndns" % conf.env['SYSCONFDIR'])
+    conf.define("DEFAULT_DATABASE_PATH", "%s/ndns" % conf.env['LOCALSTATEDIR'])
 
     conf.write_config_header('src/config.hpp')
 
@@ -70,7 +72,7 @@ def build (bld):
         features='cxx',
         name='ndns-objects',
         source=bld.path.ant_glob(['src/**/*.cpp'],
-                                 excl=['src/main.cpp']),
+                                 excl=['src/main.cpp',]),
         use='version NDN_CXX LOG4CXX BOOST',
         includes='src',
         export_includes='src',
@@ -88,7 +90,25 @@ def build (bld):
     bld.recurse('tests')
 
     bld.recurse('tools')
-    # bld.install_files('${SYSCONFDIR}/ndn', 'ndns.conf.sample')
+
+    bld(features='subst',
+        source='validator.conf.sample.in',
+        target='validator.conf',
+        install_path='${SYSCONFDIR}/ndns',
+        name='validator-sample',
+        ANCHORPATH='anchors/root.cert',
+        RELATION='is-prefix-of',
+        help='the validator configuration of ndns',
+    )
+
+    bld(features='subst',
+        source='log4cxx.properties.sample.in',
+        target='log4cxx.properties.sample',
+        install_path='${SYSCONFDIR}/ndns',
+        is_copy = True,
+        name='log4cxx-sample',
+        help='the log4cxx configration file',
+    )
 
 def docs(bld):
     from waflib import Options

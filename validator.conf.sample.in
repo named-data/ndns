@@ -1,0 +1,28 @@
+rule
+{
+  id "NDNS Validator"
+  for data
+  checker
+  {
+    type customized
+    sig-type rsa-sha256
+    key-locator
+    {
+      type name
+      hyper-relation
+      {
+        k-regex ^(<>*)<KEY>(<>*)<><ID-CERT>$
+        k-expand \\1\\2
+        h-relation @RELATION@ ; data is only allowed to be signed by the zone key
+        p-regex ^(<>*)[<KEY><NDNS>](<>*)<><>$
+        p-expand \\1\\2
+      }
+    }
+  }
+}
+
+trust-anchor
+{
+  type file
+  file-name @ANCHORPATH@
+}
