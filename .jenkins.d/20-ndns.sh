@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -x
+set -e
 
 ./waf distclean --color=yes
 ./waf configure --debug --with-tests --color=yes
