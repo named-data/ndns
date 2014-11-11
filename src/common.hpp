@@ -17,29 +17,23 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define BOOST_TEST_MAIN 1
-#define BOOST_TEST_DYN_LINK 1
+#ifndef COMMON_HPP
+#define COMMON_HPP
 
-#include <boost/test/unit_test.hpp>
+#ifdef NDNS_HAVE_TESTS
+#define NDNS_VIRTUAL_WITH_TESTS virtual
+#define NDNS_PUBLIC_WITH_TESTS_ELSE_PROTECTED public
+#define NDNS_PUBLIC_WITH_TESTS_ELSE_PRIVATE public
+#define NDNS_PROTECTED_WITH_TESTS_ELSE_PRIVATE protected
+#else
+#define NDNS_VIRTUAL_WITH_TESTS
+#define NDNS_PUBLIC_WITH_TESTS_ELSE_PROTECTED protected
+#define NDNS_PUBLIC_WITH_TESTS_ELSE_PRIVATE private
+#define NDNS_PROTECTED_WITH_TESTS_ELSE_PRIVATE private
+#endif
 
-#include "logger.hpp"
-#include "config.hpp"
 
-namespace ndn {
-namespace ndns {
-namespace tests {
 
-class UnitTestsLogging : boost::noncopyable
-{
-public:
-  UnitTestsLogging()
-  {
-    log::init("unit-tests.log4cxx");
-  }
-};
 
-BOOST_GLOBAL_FIXTURE(UnitTestsLogging)
 
-} // namespace tests
-} // namespace ndns
-} // namespace ndn
+#endif // COMMON_HPP

@@ -35,7 +35,7 @@ namespace ndns {
 namespace log {
 
 void
-init(const std::string& configFile/* = "log4cxx.properties"*/)
+init(const std::string& configFile/*= DEFAULT_CONFIG_PATH "/" "log4cxx.properties"*/)
 {
   using namespace log4cxx;
   using namespace log4cxx::helpers;

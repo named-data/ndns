@@ -17,29 +17,52 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define BOOST_TEST_MAIN 1
-#define BOOST_TEST_DYN_LINK 1
+#ifndef NDNS_TESTS_UNIT_DATABASE_TEST_DATA_HPP
+#define NDNS_TESTS_UNIT_DATABASE_TEST_DATA_HPP
 
-#include <boost/test/unit_test.hpp>
+#include "daemon/db-mgr.hpp"
+#include "clients/response.hpp"
+#include "clients/query.hpp"
+#include "validator.hpp"
 
-#include "logger.hpp"
-#include "config.hpp"
+#include "../boost-test.hpp"
+
+#include <ndn-cxx/security/key-chain.hpp>
+#include <boost/filesystem.hpp>
 
 namespace ndn {
 namespace ndns {
 namespace tests {
 
-class UnitTestsLogging : boost::noncopyable
+class DbTestData
 {
 public:
-  UnitTestsLogging()
-  {
-    log::init("unit-tests.log4cxx");
-  }
-};
+  static const boost::filesystem::path TEST_DATABASE;
+  static const Name TEST_IDENTITY_NAME;
+  static const boost::filesystem::path TEST_CERT;
 
-BOOST_GLOBAL_FIXTURE(UnitTestsLogging)
+  DbTestData();
+
+  ~DbTestData();
+
+private:
+  void
+  addRrset(Zone& zone, const Name& label, const name::Component& type,
+                       const time::seconds& ttl, const name::Component& version,
+                       const name::Component& qType, NdnsType ndnsType, const std::string& msg);
+public:
+  Name m_certName;
+  Name m_keyName;
+  std::vector<Zone>  m_zones;
+  std::vector<Rrset> m_rrsets;
+
+  bool doesTestIdentityExist;
+  DbMgr m_session;
+  KeyChain m_keyChain;
+};
 
 } // namespace tests
 } // namespace ndns
 } // namespace ndn
+
+#endif // NDNS_TESTS_UNIT_DATABASE_TEST_DATA_HPP

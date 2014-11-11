@@ -20,6 +20,7 @@
 #ifndef NDNS_LOGGER_HPP
 #define NDNS_LOGGER_HPP
 
+#include "config.hpp"
 #include <log4cxx/logger.h>
 
 namespace ndn {
@@ -27,7 +28,7 @@ namespace ndns {
 namespace log {
 
 void
-init(const std::string& configFile = "log4cxx.properties");
+init(const std::string& configFile = DEFAULT_CONFIG_PATH "/" "log4cxx.properties");
 
 // The following has to be pre-processor defines in order to properly determine
 // log locations
