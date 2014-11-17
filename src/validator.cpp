@@ -92,17 +92,14 @@ Validator::validate(const Data& data,
   NDNS_LOG_TRACE("[* ?? *] verify data: " << data.getName() << ". KeyLocator: "
                  << data.getSignature().getKeyLocator().getName());
   ValidatorConfig::validate(data,
-                            [this, onValidated](const shared_ptr<const Data>& data)
-                            // onValidated here cannot use reference, since this is non-block
-                            {
-                              onValidated(data);
+                            [this, onValidated] (const shared_ptr<const Data>& data) {
                               this->onDataValidated(data);
+                              onValidated(data);
                             },
-                            [this, onValidationFailed](const shared_ptr<const Data>& data,
-                                                       const std::string& str)
-                            {
-                              onValidationFailed(data, str);
+                            [this, onValidationFailed] (const shared_ptr<const Data>& data,
+                                                        const std::string& str) {
                               this->onDataValidationFailed(data, str);
+                              onValidationFailed(data, str);
                             }
                             );
 }

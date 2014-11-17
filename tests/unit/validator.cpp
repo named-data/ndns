@@ -18,9 +18,10 @@
  */
 
 #include "validator.hpp"
-#include "dummy-client-face.hpp"
-#include <ndn-cxx/security/key-chain.hpp>
 #include "../boost-test.hpp"
+#include <ndn-cxx/util/dummy-client-face.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
+#include <boost/asio.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -38,7 +39,7 @@ public:
     , m_testId3("/test02/ndn/edu")
     , m_randomId("/test03")
     , m_version(name::Component::fromVersion(0))
-    , m_face(::ndn::tests::makeDummyClientFace())
+    , m_face(ndn::util::makeDummyClientFace(ndn::util::DummyClientFace::Options { false, true }))
   {
     m_keyChain.deleteIdentity(m_testId1);
     m_keyChain.deleteIdentity(m_testId2);
@@ -57,7 +58,7 @@ public:
     m_keyChain.addCertificate(*cert);
     NDNS_LOG_TRACE("add cert: " << cert->getName() << " to KeyChain");
 
-    m_face->onInterest += bind(&Fixture::respondInterest, this, _1, _2);
+    m_face->onInterest += bind(&Fixture::respondInterest, this, _1);
   }
 
   ~Fixture()
@@ -118,7 +119,7 @@ public:
 
 
   void
-  respondInterest(const Interest& interest, ndn::tests::DummyClientTransport* transport)
+  respondInterest(const Interest& interest)
   {
     Name certName = interest.getName();
     if (certName.isPrefixOf(m_selfSignCert)) {
@@ -130,7 +131,7 @@ public:
     NDNS_LOG_TRACE("validator needs: " << certName);
     BOOST_CHECK_EQUAL(m_keyChain.doesCertificateExist(certName), true);
     auto cert = m_keyChain.getCertificate(certName);
-    transport->receive(cert->wireEncode());
+    m_face->receive<Data>(*cert);
   }
 
 public:
@@ -153,7 +154,7 @@ public:
 
   name::Component m_version;
 
-  shared_ptr<ndn::tests::DummyClientFace> m_face;
+  shared_ptr<ndn::util::DummyClientFace> m_face;
 };
 
 
