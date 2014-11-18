@@ -167,7 +167,6 @@ BOOST_AUTO_TEST_CASE(UpdateReplaceRr)
     Response resp;
 
     BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
-    std::cout << resp << std::endl;
     BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RESP); // by default NDNS_RAW is enough
     BOOST_CHECK_GT(resp.getRrs().size(), 0);
     Block block = resp.getRrs()[0];
@@ -220,7 +219,6 @@ BOOST_AUTO_TEST_CASE(UpdateInsertNewRr)
     Response resp;
 
     BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
-    std::cout << resp << std::endl;
     BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RESP); // by default NDNS_RAW is enough
     BOOST_CHECK_GT(resp.getRrs().size(), 0);
     Block block = resp.getRrs()[0];
@@ -401,7 +399,6 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
       Response resp;
 
       BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
-      std::cout << resp << std::endl;
       BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RESP); // by default NDNS_RAW is enough
       BOOST_CHECK_GT(resp.getRrs().size(), 0);
       Block block = resp.getRrs()[0];

@@ -179,6 +179,33 @@ BOOST_FIXTURE_TEST_CASE(Rrsets, DbMgrFixture)
   BOOST_CHECK_NO_THROW(session.remove(rrset1));
 }
 
+BOOST_FIXTURE_TEST_CASE(FindAllZones, DbMgrFixture)
+{
+  Zone zone("/ndn");
+  zone.setTtl(time::seconds(1600));
+  session.insert(zone);
+
+  Zone zone2("/ndn/ucla");
+  zone2.setTtl(time::seconds(2600));
+  session.insert(zone2);
+
+  std::vector<Zone> vec = session.listZones();
+  BOOST_CHECK_EQUAL(vec.size(), 2);
+
+  std::sort(vec.begin(),
+            vec.end(),
+            [] (const Zone& n1, const Zone& n2) {
+              return n1.getName().size() < n2.getName().size();
+            });
+  BOOST_CHECK_EQUAL(vec[0].getId(), zone.getId());
+  BOOST_CHECK_EQUAL(vec[0].getName(), "/ndn");
+  BOOST_CHECK_EQUAL(vec[0].getTtl(), time::seconds(1600));
+
+  BOOST_CHECK_EQUAL(vec[1].getId(), zone2.getId());
+  BOOST_CHECK_EQUAL(vec[1].getName(), "/ndn/ucla");
+  BOOST_CHECK_EQUAL(vec[1].getTtl(), time::seconds(2600));
+
+}
 
 BOOST_FIXTURE_TEST_CASE(FindRrsets, DbMgrFixture)
 {

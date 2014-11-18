@@ -5,7 +5,7 @@ NDNS authors
 
 * Xiaoke Jiang          <http://netarchlab.tsinghua.edu.cn/~shock/>
 * Alexander Afanasyev   <http://lasr.cs.ucla.edu/afanasyev/index.html>
-
+* Jiewen Tan            <alanwake@ucla.edu>
 
 ## All project authors and contributors
 

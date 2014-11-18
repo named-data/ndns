@@ -174,6 +174,31 @@ DbMgr::find(Zone& zone)
   return zone.getId() != 0;
 }
 
+std::vector<Zone>
+DbMgr::listZones()
+{
+  sqlite3_stmt* stmt;
+  const char* sql = "SELECT id, name, ttl FROM zones";
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
+  if (rc != SQLITE_OK) {
+    throw PrepareError(sql);
+  }
+
+  std::vector<Zone> vec;
+
+  while (sqlite3_step(stmt) == SQLITE_ROW) {
+    vec.emplace_back();
+    Zone& zone = vec.back();
+    zone.setId(sqlite3_column_int64(stmt, 0));
+    zone.setTtl(time::seconds(sqlite3_column_int(stmt, 2)));
+    zone.setName(Name(Block(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 1)),
+                            sqlite3_column_bytes(stmt, 1))));
+  }
+  sqlite3_finalize(stmt);
+
+  return vec;
+}
+
 void
 DbMgr::remove(Zone& zone)
 {

@@ -113,6 +113,12 @@ public: // Zone manipulation
   find(Zone& zone);
 
   /**
+   * @brief get all zones in the database
+   */
+  std::vector<Zone>
+  listZones();
+
+  /**
    * @brief remove the zone
    * @pre m_zone.getId() > 0
    * @post m_zone.getId() == 0
