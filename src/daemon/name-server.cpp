@@ -137,7 +137,9 @@ NameServer::handleUpdate(const Name& prefix, const Interest& interest, const lab
     m_validator.validate(*data,
                          bind(&NameServer::doUpdate, this, interest.shared_from_this(), data),
                          [this] (const shared_ptr<const Data>& data, const std::string& msg) {
-                           NDNS_LOG_WARN("Ignoring update that did not pass the verification");
+                           NDNS_LOG_WARN("Ignoring update that did not pass the verification. "
+                                         << "Validator cannot fetch certificate from the face "
+                                         << "that used by validator itself to send Interest");
                          });
   }
 }
@@ -213,7 +215,8 @@ NameServer::doUpdate(const shared_ptr<const Interest>& interest,
     blk.push_back(nonNegativeIntegerBlock(ndn::ndns::tlv::UpdateReturnCode, UPDATE_FAILURE));
     blk.encode(); // must
     answer->setContent(blk);
-    NDNS_LOG_INFO("Error processing the update: " << e.what());
+    NDNS_LOG_INFO("Error processing the update: " << e.what()
+                  << ". Update may need sudo privilege to write DbFile");
     NDNS_LOG_TRACE("exception happens and answer update with UPDATE_FAILURE");
   }
   m_keyChain.sign(*answer, m_certName);

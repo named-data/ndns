@@ -1,6 +1,7 @@
 zones
 {
-  ; dbFile /usr/local/var/ndns/ndns.db
+  ; dbFile @DEFAULT_DATABASE_PATH@/ndns.db
+  ; validatorConfigFile @DEFAULT_CONFIG_PATH@/validator.conf
 
   zone
   {
@@ -18,6 +19,7 @@ zones
              ; omit cert to select the default certificate of above identity
   ; }
 }
+
 hints
 {
   ; hint /ucla

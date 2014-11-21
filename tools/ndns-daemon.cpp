@@ -36,18 +36,17 @@ NDNS_LOG_INIT("NdnsDaemon");
  */
 class NdnsDaemon : noncopyable
 {
+public:
   DEFINE_ERROR(Error, std::runtime_error);
 
-public:
   explicit
-  NdnsDaemon(const std::string& configFile, Face& face)
-    : m_configFile(configFile)
-    , m_face(face)
-    , m_validator(face)
+  NdnsDaemon(const std::string& configFile, Face& face, Face& validatorFace)
+    : m_face(face)
+    , m_validatorFace(validatorFace)
   {
     try {
       ConfigFile config;
-      NDNS_LOG_TRACE("configFile: " << configFile);
+      NDNS_LOG_INFO("NnsnDaemon ConfigFile = " << configFile);
 
       config.addSectionHandler("zones",
                                bind(&NdnsDaemon::processZonesSection, this, _1, _3));
@@ -88,16 +87,21 @@ public:
       throw Error("zones section is empty");
     }
 
+    std::string dbFile = DEFAULT_DATABASE_PATH "/" "ndns.db";
     ConfigSection::const_assoc_iterator item = section.find("dbFile");
     if (item != section.not_found()) {
-      m_dbFile = item->second.get_value<std::string>();
+      dbFile = item->second.get_value<std::string>();
     }
-    else {
-      m_dbFile = "/usr/local/var/ndns/ndns.db";
-    }
-    NDNS_LOG_TRACE("dbFile " << m_dbFile);
+    NDNS_LOG_INFO("DbFile = " << dbFile);
+    m_dbMgr = unique_ptr<DbMgr>(new DbMgr(dbFile));
 
-    m_dbMgr = make_shared<DbMgr>(m_dbFile);
+    std::string validatorConfigFile = DEFAULT_CONFIG_PATH "/" "validator.conf";
+    item = section.find("validatorConfigFile");
+    if (item != section.not_found()) {
+      validatorConfigFile = item->second.get_value<std::string>();
+    }
+    NDNS_LOG_INFO("ValidatorConfigFile = " << validatorConfigFile);
+    m_validator = unique_ptr<Validator>(new Validator(m_validatorFace, validatorConfigFile));
 
     for (const auto& option : section) {
       Name name;
@@ -117,8 +121,21 @@ public:
           ;
         }
 
+
+        if (!m_keyChain.doesIdentityExist(name)) {
+          NDNS_LOG_FATAL("Identity: " << name << " does not exist in the KeyChain");
+          throw Error("Identity does not exist in the KeyChain");
+        }
+
         if (cert.empty()) {
-          cert = m_keyChain.getDefaultCertificateNameForIdentity(name);
+          try {
+            cert = m_keyChain.getDefaultCertificateNameForIdentity(name);
+          }
+          catch (std::exception& e) {
+            NDNS_LOG_FATAL("Identity: " << name << " does not have default certificate. "
+                           << e.what());
+            throw Error("identity does not have default certificate");
+          }
         }
         else {
           if (!m_keyChain.doesCertificateExist(cert)) {
@@ -127,18 +144,17 @@ public:
         }
         NDNS_LOG_TRACE("name = " << name << " cert = " << cert);
         m_servers.push_back(make_shared<NameServer>(name, cert, m_face, *m_dbMgr,
-                                                    m_keyChain, m_validator));
+                                                    m_keyChain, *m_validator));
       }
     } // for
   }
 
 private:
-  std::string m_configFile;
   Face& m_face;
-  Validator m_validator;
-  std::string m_dbFile;
-  shared_ptr<DbMgr> m_dbMgr;
-  std::vector<shared_ptr<NameServer> > m_servers;
+  Face& m_validatorFace;
+  unique_ptr<Validator> m_validator;
+  unique_ptr<DbMgr> m_dbMgr;
+  std::vector<shared_ptr<NameServer>> m_servers;
   KeyChain m_keyChain;
 };
 
@@ -194,21 +210,24 @@ main(int argc, char* argv[])
     return 1;
   }
 
+  boost::asio::io_service io;
+  ndn::Face face(io);
+  ndn::Face validatorFace(io);
+
   try {
-    ndn::Face face;
-    NdnsDaemon nsd(configFile, face);
+    // NFD does not to forward Interests to the face it was received from.
+    // If the name server and its validator share same face,
+    // the validator cannot be forwarded to the name server itself
+    // refs: http://redmine.named-data.net/issues/2206
+    // @TODO enhance validator to get the certificate from the local db if it has
 
-    boost::asio::signal_set signalSet(face.getIoService(), SIGINT, SIGTERM);
-
-    signalSet.async_wait([&face] (const boost::system::error_code&, const int) {
-        face.getIoService().stop();
-      });
+    NdnsDaemon daemon(configFile, face, validatorFace);
 
     face.processEvents();
   }
   catch (std::exception& e) {
     NDNS_LOG_FATAL("ERROR: " << e.what());
-    return 2;
+    return 1;
   }
 
   return 0;

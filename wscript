@@ -98,6 +98,8 @@ def build (bld):
         name='validator-sample',
         ANCHORPATH='anchors/root.cert',
         RELATION='is-prefix-of',
+        DEFAULT_CONFIG_PATH="%s/ndns" % bld.env['SYSCONFDIR'],
+        DEFAULT_DATABASE_PATH="%s/ndns" % bld.env['LOCALSTATEDIR'],
         help='the validator configuration of ndns',
     )
 
