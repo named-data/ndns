@@ -10,28 +10,35 @@ def build(bld):
     dst = bld.bldnode.make_node("conf-test/anchors")
     dst.mkdir()
 
-    bld(features = "subst",
-        name = 'test-validator-conf',
-        source = '../validator.conf.sample.in',
-        target = '../conf-test/validator.conf',
-        use = 'validator-sample',
+    bld(features="subst",
+        name='test-validator-conf',
+        source='../validator.conf.sample.in',
+        target='../conf-test/validator.conf',
+        use='validator-sample',
         ANCHORPATH='\"anchors/root.cert\"',
         RELATION='is-prefix-of',
     )
 
-    bld(features = "subst",
-        name = 'test-logger-conf',
-        source = '../log4cxx.properties.sample.in',
-        target = '../conf-test/log4cxx.properties.sample',
-        is_copy = True,
-        use = 'log4cxx-sample',
+    bld(features="subst",
+        name='test-logger-conf',
+        source='../log4cxx.properties.sample.in',
+        target='../conf-test/log4cxx.properties.sample',
+        is_copy=True,
+        use='log4cxx-sample',
     )
+
+    bld(features='cxx',
+        name='unit-tests-main',
+        target='unit-tests-main',
+        source='main.cpp',
+        defines=['BOOST_TEST_MODULE=NDNS Unit Tests'],
+        use='ndns-objects BOOST')
 
     unit_tests = bld.program(
         target='../unit-tests',
         features='cxx cxxprogram',
-        source=bld.path.ant_glob(['**/*.cpp']),
-        use='ndns-objects',
+        source=bld.path.ant_glob(['**/*.cpp'], excl=['main.cpp']),
+        use='ndns-objects unit-tests-main BOOST',
         install_path=None,
         defines='TEST_CONFIG_PATH=\"%s/conf-test\"' %(bld.bldnode)
     )
