@@ -76,6 +76,7 @@ public:
                   << " with rrLabel = " << this->m_update.getRrLabel()
                   << " and rrType = " << this->m_rrType
                   << " =================================== ");
+    NDNS_LOG_INFO("certificate to sign the data is: " << m_certName);
 
     Interest interest = this->makeUpdateInterest();
     NDNS_LOG_TRACE("[* <- *] send Update: " << m_update);
@@ -210,6 +211,12 @@ public:
     return m_hasError;
   }
 
+  const Response&
+  getUpdate() const
+  {
+    return m_update;
+  }
+
 private:
   name::Component m_queryType; ///< NDNS or KEY
   name::Component m_rrType;
@@ -245,8 +252,9 @@ main(int argc, char* argv[])
   string rrType = "TXT";
   string ndnsTypeStr = "resp";
   Name certName;
-  string content;
+  std::vector<string> contents;
   string contentFile;
+  string dstFile;
   ndn::Block block;
   try {
     namespace po = boost::program_options;
@@ -263,7 +271,8 @@ main(int argc, char* argv[])
       ("ndnsType,n", po::value<string>(&ndnsTypeStr), "Set the ndnsType of the resource record. "
        "Potential values are [resp|nack|auth|raw]. Default: resp")
       ("cert,c", po::value<Name>(&certName), "set the name of certificate to sign the update")
-      ("content,o", po::value<string>(&content), "set the content of the RR")
+      ("content,o", po::value<std::vector<string>>(&contents)->multitoken(),
+       "set the content of the RR")
       ("contentFile,f", po::value<string>(&contentFile), "set the path of file which contain"
        " content of the RR in base64 format")
       ;
@@ -293,7 +302,7 @@ main(int argc, char* argv[])
     po::notify(vm);
 
     if (vm.count("help")) {
-      std::cout << "Usage: ndns-update zone rrLabel [-t rrType] [-w waitingSec] "
+      std::cout << "Usage: ndns-update zone rrLabel [-t rrType] [-T TTL] "
         "[-H hint] [-n NdnsType] [-c cert] [-f contentFile]|[-o content]" << std::endl;
       std::cout << visible << std::endl;
       return 0;
@@ -301,7 +310,22 @@ main(int argc, char* argv[])
 
     KeyChain keyChain;
     if (certName.empty()) {
-      certName = keyChain.getDefaultCertificateName().toUri();
+      Name name = Name().append(zone).append(rrLabel);
+      // choosing the longest match of the identity who also have default certificate
+      for (size_t i = name.size() + 1; i > 0; --i) { // i >=0 will present warnning
+        Name tmp = name.getPrefix(i - 1);
+        if (keyChain.doesIdentityExist(tmp)) {
+          try {
+            certName = keyChain.getDefaultCertificateNameForIdentity(tmp);
+            break;
+          }
+          catch (std::exception&) {
+            // If it cannot get a default certificate from one identity,
+            // just ignore this one try next identity.
+            ;
+          }
+        }
+      }
     }
     else {
       if (!keyChain.doesCertificateExist(certName)) {
@@ -310,18 +334,19 @@ main(int argc, char* argv[])
       }
     }
 
+    if (certName.empty()) {
+      std::cerr << "cannot figure out the certificate automatically. "
+                << "please set it with -c CERT_NAEME" << std::endl;
+    }
+
     if (vm.count("content") && vm.count("contentFile")) {
-      std::cerr <<"both content and contentFile are set. Only one is allowed" << std::endl;
+      std::cerr << "both content and contentFile are set. Only one is allowed" << std::endl;
       return 0;
     }
 
     if (!contentFile.empty()) {
       shared_ptr<ndn::Data> data = ndn::io::load<ndn::Data>(contentFile);
       block = data->wireEncode();
-    }
-    else {
-      if (!content.empty())
-        block = ndn::dataBlock(ndn::ndns::tlv::RrData, content.c_str(), content.size());
     }
   }
   catch (const std::exception& ex) {
@@ -336,11 +361,27 @@ main(int argc, char* argv[])
                     ndnsType, certName, face);
   update.setInterestLifetime(ndn::time::seconds(ttl));
 
-  if (!block.empty()) {
-    if (ndnsType == ndn::ndns::NDNS_RAW)
-      update.setUpdateAppContent(block);
-    else
-      update.addUpdateRr(block);
+  if (!contentFile.empty()) {
+    if (!block.empty()) {
+      if (ndnsType == ndn::ndns::NDNS_RAW)
+        update.setUpdateAppContent(block);
+      else {
+        update.addUpdateRr(block);
+      }
+    }
+  }
+  else {
+    if (ndnsType == ndn::ndns::NDNS_RAW) {
+      // since NDNS_RAW's message tlv type cannot be decided, here we stop this option
+      std::cerr << "--content (-o) does not support NDNS-RAW Response" << std::endl;
+      return 0;
+    }
+    else {
+      for (const auto& content : contents) {
+        block = ndn::dataBlock(ndn::ndns::tlv::RrData, content.c_str(), content.size());
+        update.addUpdateRr(block);
+      }
+    }
   }
 
   update.run();

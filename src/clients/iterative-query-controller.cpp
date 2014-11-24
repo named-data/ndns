@@ -74,10 +74,7 @@ IterativeQueryController::onData(const ndn::Interest& interest, const Data& data
   switch (m_step) {
   case QUERY_STEP_QUERY_NS:
     if (ndnsType == NDNS_NACK) {
-      if (m_nFinishedComps + m_nTryComps == m_dstLabel.size() && m_rrType != label::NS_RR_TYPE)
-        m_step = QUERY_STEP_QUERY_RR;
-      else
-        m_step = QUERY_STEP_ANSWER_STUB;
+      m_step = QUERY_STEP_QUERY_RR;
     }
     else if (ndnsType == NDNS_RESP) {
       if (m_nFinishedComps + m_nTryComps == m_dstLabel.size() && m_rrType == label::NS_RR_TYPE) {

@@ -17,28 +17,44 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NDNS_UTIL_UTIL_HPP
-#define NDNS_UTIL_UTIL_HPP
-
-#include "ndns-enum.hpp"
-#include <ndn-cxx/data.hpp>
+#include "util.hpp"
+#include <ndn-cxx/security/cryptopp.hpp>
 
 namespace ndn {
 namespace ndns {
 
 NdnsType
-toNdnsType(const std::string& str);
+toNdnsType(const std::string& str)
+{
+  if (str == "resp")
+    return NDNS_RESP;
+  else if (str == "nack")
+    return NDNS_NACK;
+  else if (str == "auth")
+    return NDNS_AUTH;
+  else if (str == "raw")
+    return NDNS_RAW;
+  else
+    return NDNS_UNKNOWN;
+}
 
-/**
- * @brief print the data in a flexible way
- * @param data The data to be printed
- * @param os the ostream that received printed message
- * @param isPretty whether to use pretty way
- */
 void
-output(const Data& data, std::ostream& os, const bool isPretty);
+output(const Data& data, std::ostream& os, const bool isPretty)
+{
+  using namespace CryptoPP;
+  const Block& block = data.wireEncode();
+  if (!isPretty) {
+    StringSource ss(block.wire(), block.size(), true,
+                    new Base64Encoder(new FileSink(os), true, 64));
+  }
+  else {
+    os << "Name: " << data.getName().toUri() << std::endl;
+    os << "KeyLocator: " << data.getSignature().getKeyLocator().getName().toUri() << std::endl;
+    StringSource ss(block.wire(), block.size(), true,
+                    new Base64Encoder(new FileSink(os), true, 64));
+    os << std::endl;
+  }
+}
 
 } // namespace ndns
 } // namespace ndn
-
-#endif // NDNS_UTIL_UTIL_HPP

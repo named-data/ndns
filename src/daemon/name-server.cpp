@@ -138,8 +138,7 @@ NameServer::handleUpdate(const Name& prefix, const Interest& interest, const lab
                          bind(&NameServer::doUpdate, this, interest.shared_from_this(), data),
                          [this] (const shared_ptr<const Data>& data, const std::string& msg) {
                            NDNS_LOG_WARN("Ignoring update that did not pass the verification. "
-                                         << "Validator cannot fetch certificate from the face "
-                                         << "that used by validator itself to send Interest");
+                                         << "Check the root certificate")
                          });
   }
 }

@@ -218,11 +218,12 @@ main(int argc, char* argv[])
     // NFD does not to forward Interests to the face it was received from.
     // If the name server and its validator share same face,
     // the validator cannot be forwarded to the name server itself
+    // For current, two faces are used here.
+
     // refs: http://redmine.named-data.net/issues/2206
     // @TODO enhance validator to get the certificate from the local db if it has
 
     NdnsDaemon daemon(configFile, face, validatorFace);
-
     face.processEvents();
   }
   catch (std::exception& e) {

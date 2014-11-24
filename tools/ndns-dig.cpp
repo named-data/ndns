@@ -23,6 +23,7 @@
 #include "clients/query.hpp"
 #include "clients/iterative-query-controller.hpp"
 #include "validator.hpp"
+#include "util/util.hpp"
 
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/face.hpp>
@@ -33,7 +34,6 @@
 
 #include <memory>
 #include <string>
-
 
 namespace ndn {
 namespace ndns {
@@ -86,14 +86,56 @@ private:
   void
   onSucceed(const Data& data, const Response& response)
   {
-    NDNS_LOG_INFO("Dig get following final Response (need verification):");
+    NDNS_LOG_INFO("Dig get following Response (need verification):");
+    Name name = Name().append(response.getZone()).append(response.getRrLabel());
+    if (name == m_dstLabel && m_rrType == response.getRrType()) {
+      NDNS_LOG_INFO("This is the final response returned by zone=" << response.getZone()
+                    << " and NdnsType=" << response.getNdnsType()
+                    << ". It contains " << response.getRrs().size() << " RR(s)");
+
+      std::string msg;
+      size_t i = 0;
+      for (const auto& rr : response.getRrs()) {
+        try {
+          msg = std::string(reinterpret_cast<const char*>(rr.value()), rr.value_size());
+          NDNS_LOG_INFO("succeed to get the info from RR[" << i << "]"
+                        "type=" << rr.type() << " content=" << msg);
+        }
+        catch (std::exception& e) {
+          NDNS_LOG_INFO("error to get the info from RR[" << i << "]"
+                        "type=" << rr.type());
+        }
+        ++i;
+      }
+    }
+    else {
+      NDNS_LOG_INFO("[* !! *] This is not final response.The target Label: "
+                    << m_dstLabel << " may not exist");
+    }
+
+    if (m_dstFile.empty()) {
+      ;
+    }
+    else if (m_dstFile == "-") {
+      output(data, std::cout, true);
+    }
+    else {
+      NDNS_LOG_INFO("output Data packet to " << m_dstFile << " with BASE64 encoding format");
+      std::filebuf fb;
+      fb.open(m_dstFile, std::ios::out);
+      std::ostream os(&fb);
+      output(data, os, false);
+    }
+
     NDNS_LOG_INFO(response);
+
     NDNS_LOG_TRACE("to verify the response");
     m_validator.validate(data,
                          bind(&NdnsDig::onDataValidated, this, _1),
                          bind(&NdnsDig::onDataValidationFailed, this, _1, _2)
                          );
   }
+
 
   void
   onFail(uint32_t errCode, const std::string& errMsg)
@@ -131,6 +173,12 @@ public:
     return m_hasError;
   }
 
+  void
+  setDstFile(const std::string& dstFile)
+  {
+    m_dstFile = dstFile;
+  }
+
 private:
   Name m_dstLabel;
   name::Component m_rrType;
@@ -145,6 +193,7 @@ private:
   std::unique_ptr<QueryController> m_ctr;
 
   bool m_hasError;
+  std::string m_dstFile;
 };
 
 } // namespace ndns
@@ -161,7 +210,7 @@ main(int argc, char* argv[])
   Name dstLabel;
   int ttl = 4;
   string rrType = "TXT";
-
+  string dstFile;
   try {
     namespace po = boost::program_options;
     po::variables_map vm;
@@ -171,8 +220,10 @@ main(int argc, char* argv[])
 
     po::options_description config("Configuration");
     config.add_options()
-      ("timeout,T", po::value<int>(&ttl), "waiting seconds of query. default: 10 sec")
+      ("timeout,T", po::value<int>(&ttl), "waiting seconds of query. default: 4 sec")
       ("rrtype,t", po::value<std::string>(&rrType), "set request RR Type. default: TXT")
+      ("dstFile,d", po::value<std::string>(&dstFile), "set output file of the received Data. "
+       "if omitted, not print; if set to be -, print to stdout; else print to file")
       ;
 
     po::options_description hidden("Hidden Options");
@@ -188,7 +239,10 @@ main(int argc, char* argv[])
     po::options_description config_file_options;
     config_file_options.add(config).add(hidden);
 
-    po::options_description visible("Allowed options");
+    po::options_description visible("Usage: ndns-dig /name/to/be/resolved [-t rrType] [-T ttl]"
+                                    "[-d dstFile]\n"
+                                    "Allowed options");
+
     visible.add(generic).add(config);
 
     po::parsed_options parsed =
@@ -198,7 +252,6 @@ main(int argc, char* argv[])
     po::notify(vm);
 
     if (vm.count("help")) {
-      std::cout << "Usage: dig /name/to/be/resolved [-t rrType] [-T ttl]" << std::endl;
       std::cout << visible << std::endl;
       return 0;
     }
@@ -210,6 +263,7 @@ main(int argc, char* argv[])
 
   ndn::ndns::NdnsDig dig("", dstLabel, ndn::name::Component(rrType));
   dig.setInterestLifetime(ndn::time::milliseconds(ttl * 1000));
+  dig.setDstFile(dstFile);
 
   dig.run();
   if (dig.hasError())
