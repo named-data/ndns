@@ -148,7 +148,8 @@ main(int argc, char* argv[])
       ttl = time::seconds(ttlInt);
     uint64_t version = static_cast<uint64_t>(versionInt);
 
-    ndn::ndns::ManagementTool tool(db);
+    ndn::KeyChain keyChain;
+    ndn::ndns::ManagementTool tool(db, keyChain);
     tool.addRrSet(zoneName, label, type, ndnsType, version, content, dsk, ttl);
 
     /// @todo Report success or failure

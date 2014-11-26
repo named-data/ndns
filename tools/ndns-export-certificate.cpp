@@ -93,7 +93,8 @@ main(int argc, char* argv[])
   try {
     Name certName(certStr);
 
-    ndn::ndns::ManagementTool tool(db);
+    ndn::KeyChain keyChain;
+    ndn::ndns::ManagementTool tool(db, keyChain);
     tool.exportCertificate(certName, output);
   }
   catch (const std::exception& ex) {

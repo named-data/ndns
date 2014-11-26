@@ -108,7 +108,8 @@ main(int argc, char* argv[])
     else
       ttl = time::seconds(ttlInt);
 
-    ndn::ndns::ManagementTool tool(db);
+    ndn::KeyChain keyChain;
+    ndn::ndns::ManagementTool tool(db, keyChain);
     tool.addRrSet(zoneName, file, ttl, dskName);
   }
   catch (const std::exception& ex) {

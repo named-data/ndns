@@ -51,6 +51,13 @@ private:
            const time::seconds& ttl, const name::Component& version,
            const name::Component& qType, NdnsType ndnsType, const std::string& msg);
 public:
+  class PreviousStateCleaner
+  {
+  public:
+    PreviousStateCleaner();
+  };
+
+  PreviousStateCleaner m_cleaner;
   Name m_certName;
   std::vector<Zone>  m_zones;
   std::vector<Rrset> m_rrsets;

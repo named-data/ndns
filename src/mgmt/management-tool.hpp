@@ -65,8 +65,7 @@ public:
   /** @param certDir Path to the directory to store certificates
    *  @param dbFile Path to the local database
    */
-  explicit
-  ManagementTool(const std::string& dbFile);
+  ManagementTool(const std::string& dbFile, KeyChain& keyChain);
 
   /** @brief Create a Zone according to a given name.
    *
@@ -88,15 +87,17 @@ public:
    *
    *  @param zoneName zone's name
    *  @param parentZoneName parent zone's name
-   *  @param ttl ttl for the created zone
+   *  @param cacheTtl default TTL for RR sets in the zone
+   *  @param certValidity validity for automatically created DSK certificate (@p dskCertName
+   *                      should not be empty)
    *  @param kskCertName if given, a zone will be created with this ksk certificate and its key
-   *  @param kskCertName if given, a zone will be created with this dsk certificate and its key
+   *  @param dskCertName if given, a zone will be created with this dsk certificate and its key
    */
   void
   createZone(const Name& zoneName,
              const Name& parentZoneName,
              const time::seconds& cacheTtl = DEFAULT_CACHE_TTL,
-             const time::seconds& certTtl = DEFAULT_CERT_TTL,
+             const time::seconds& certValidity = DEFAULT_CERT_TTL,
              const Name& kskCertName = DEFAULT_CERT,
              const Name& dskCertName = DEFAULT_CERT);
 
@@ -178,7 +179,7 @@ public:
    *  @param type rrset's type
    *  @param os the ostream to print information to
    *  @param isPP indicate pretty print
-    */
+   */
   void
   getRrSet(const Name& zoneName,
            const Name& label,
@@ -191,7 +192,8 @@ public:
    *  @param zoneName the name of the zone to investigate
    *  @param os the ostream to print information to
    *  @param printRaw set to print content of ndns-raw rrset
-    */
+   *  @throw Error if zoneName does not exist in the database
+   */
   void
   listZone(const Name& zoneName, std::ostream& os, const bool printRaw = false);
 
@@ -224,10 +226,11 @@ private:
   matchCertificate(const Name& certName, const Name& identity);
 
 private:
-  KeyChain m_keyChain;
+  KeyChain& m_keyChain;
   DbMgr m_dbMgr;
 };
 
 } // namespace ndns
 } // namespace ndn
+
 #endif // NDNS_MGMT_MANAGEMENT_TOOL_HPP

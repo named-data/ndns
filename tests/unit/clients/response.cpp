@@ -31,7 +31,7 @@ BOOST_AUTO_TEST_SUITE(Response)
 
 BOOST_AUTO_TEST_CASE(Basic)
 {
-  KeyChain keyChain;
+  KeyChain keyChain("sqlite3", "file");
   Name hint;
   Name zone("/net");
   name::Component qType = ndns::label::NDNS_ITERATIVE_QUERY;

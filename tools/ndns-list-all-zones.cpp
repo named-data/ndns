@@ -70,7 +70,8 @@ main(int argc, char* argv[])
   }
 
   try {
-    ndn::ndns::ManagementTool tool(db);
+    ndn::KeyChain keyChain;
+    ndn::ndns::ManagementTool tool(db, keyChain);
     tool.listAllZones(std::cout);
   }
   catch (const std::exception& ex) {

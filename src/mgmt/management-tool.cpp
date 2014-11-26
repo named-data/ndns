@@ -28,6 +28,7 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/util/regex.hpp>
@@ -39,8 +40,9 @@ namespace ndns {
 
 NDNS_LOG_INIT("ManagementTool");
 
-ManagementTool::ManagementTool(const std::string& dbFile)
-  : m_dbMgr(dbFile)
+ManagementTool::ManagementTool(const std::string& dbFile, KeyChain& keyChain)
+  : m_keyChain(keyChain)
+  , m_dbMgr(dbFile)
 {
 }
 
@@ -48,7 +50,7 @@ void
 ManagementTool::createZone(const Name &zoneName,
                            const Name& parentZoneName,
                            const time::seconds& cacheTtl,
-                           const time::seconds& certTtl,
+                           const time::seconds& certValidity,
                            const Name& kskCertName,
                            const Name& dskCertName)
 {
@@ -87,7 +89,7 @@ ManagementTool::createZone(const Name &zoneName,
   //first generate KSK and DSK to the keyChain system, and add DSK as default
   NDNS_LOG_INFO("Start generating KSK and DSK and their corresponding certificates");
   time::system_clock::TimePoint notBefore = time::system_clock::now();
-  time::system_clock::TimePoint notAfter = notBefore + certTtl;
+  time::system_clock::TimePoint notAfter = notBefore + certValidity;
   shared_ptr<IdentityCertificate> kskCert;
 
   if (kskCertName == DEFAULT_CERT) {
@@ -95,18 +97,12 @@ ManagementTool::createZone(const Name &zoneName,
     Name kskName = m_keyChain.generateRsaKeyPair(zoneName, true);
     std::vector<CertificateSubjectDescription> kskDesc;
     kskCert = m_keyChain.prepareUnsignedIdentityCertificate(kskName, zoneName, notBefore, notAfter,
-                                                            kskDesc);
-    //prepare the correct name for the ksk certificate
-    Name newScertName = parentZoneName;
-    newScertName.append(label::NDNS_CERT_QUERY);
-    newScertName.append(zoneName.getSubName(parentZoneName.size()));
-    //remove the zone prefix and KEY
-    newScertName.append(kskCert->getName().getSubName(zoneName.size()+1));
-    kskCert->setName(newScertName);
+                                                            kskDesc, parentZoneName);
+    kskCert->setFreshnessPeriod(cacheTtl);
 
     m_keyChain.selfSign(*kskCert);
     m_keyChain.addCertificate(*kskCert);
-    NDNS_LOG_INFO("Generated KSK: " << kskCert->getName().toUri());
+    NDNS_LOG_INFO("Generated KSK: " << kskCert->getName());
   }
   else {
     kskCert = m_keyChain.getCertificate(kskCertName);
@@ -119,10 +115,11 @@ ManagementTool::createZone(const Name &zoneName,
     //create DSK's certificate
     std::vector<CertificateSubjectDescription> dskDesc;
     dskCert = m_keyChain.prepareUnsignedIdentityCertificate(dskName, zoneName, notBefore, notAfter,
-                                                            dskDesc);
+                                                            dskDesc, zoneName);
+    dskCert->setFreshnessPeriod(cacheTtl);
     m_keyChain.sign(*dskCert, kskCert->getName());
     m_keyChain.addCertificateAsKeyDefault(*dskCert);
-    NDNS_LOG_INFO("Generated DSK: " << dskCert->getName().toUri());
+    NDNS_LOG_INFO("Generated DSK: " << dskCert->getName());
   }
   else {
     dskCert = m_keyChain.getCertificate(dskCertName);
@@ -157,9 +154,6 @@ ManagementTool::deleteZone(const Name& zoneName)
 
   //second remove zone from local ndns database
   removeZone(zone);
-
-  //third remove identity
-  m_keyChain.deleteIdentity(zoneName);
 }
 
 void
@@ -249,14 +243,15 @@ ManagementTool::addRrSet(const Name& zoneName,
     }
   }
 
+  time::seconds actualTtl = ttl;
+  if (ttl == DEFAULT_RR_TTL)
+    actualTtl = zone.getTtl();
+
   // set rrset
   Rrset rrset(&zone);
   rrset.setLabel(label);
   rrset.setType(type);
-  if (ttl == DEFAULT_RR_TTL)
-    rrset.setTtl(zone.getTtl());
-  else
-    rrset.setTtl(ttl);
+  rrset.setTtl(actualTtl);
 
   // set response
   Response re;
@@ -265,6 +260,7 @@ ManagementTool::addRrSet(const Name& zoneName,
   re.setRrLabel(label);
   re.setRrType(type);
   re.setNdnsType(ndnsType);
+  re.setFreshnessPeriod(actualTtl);
 
   //set content according to ndns type
   if (ndnsType == NDNS_RAW) {
@@ -282,21 +278,21 @@ ManagementTool::addRrSet(const Name& zoneName,
     }
   }
 
-  shared_ptr<Data> data = re.toData();
   if (version != VERSION_USE_UNIX_TIMESTAMP) {
     name::Component tmp = name::Component::fromVersion(version);
     re.setVersion(tmp);
   }
+  shared_ptr<Data> data = re.toData();
   m_keyChain.sign(*data, dskCertName);
 
   rrset.setVersion(re.getVersion());
   rrset.setData(data->wireEncode());
 
   if (m_dbMgr.find(rrset)) {
-    throw Error("Rrset with label=" + label.toUri() + " is already in local NDNS databse");
+    throw Error("Duplicate " + boost::lexical_cast<std::string>(rrset));
   }
-  NDNS_LOG_INFO("Add rrset with zone-id: " << zone.getId() << " label: " << label << " type: "
-                << type);
+  NDNS_LOG_INFO("Added " << rrset);
+
   m_dbMgr.insert(rrset);
 }
 
@@ -389,19 +385,18 @@ ManagementTool::addRrSet(const Name& zoneName,
   rrset.setData(data->wireEncode());
 
   if (m_dbMgr.find(rrset)) {
-    throw Error("Rrset with label=" + label.toUri() + " is already in local NDNS databse");
+    throw Error("Duplicate " + boost::lexical_cast<std::string>(rrset));
   }
-  NDNS_LOG_INFO("Add rrset with zone-id: " << zone.getId() << " label: " << label << " type: "
-                << type);
+  NDNS_LOG_INFO("Added " << rrset);
   m_dbMgr.insert(rrset);
 }
 
 void
-ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool printRaw) {
+ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool printRaw)
+{
   Zone zone(zoneName);
   if (!m_dbMgr.find(zone)) {
-    os << "No record is found" << std::endl;
-    return;
+    throw Error("Zone " + zoneName.toUri() + " is not found in the database");
   }
 
   //first output the zone name
@@ -500,9 +495,8 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
             os << "; " << token << std::endl;
             content.erase(0, pos + delimiter.length());
         }
-
-        os << std::endl;
       }
+      os << std::endl;
     }
     else {
       os << std::endl;

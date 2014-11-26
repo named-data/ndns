@@ -32,13 +32,21 @@ const Name DbTestData::TEST_IDENTITY_NAME("/test19");
 const boost::filesystem::path DbTestData::TEST_CERT =
   TEST_CONFIG_PATH "/" "anchors/root.cert";
 
+DbTestData::PreviousStateCleaner::PreviousStateCleaner()
+{
+  boost::filesystem::remove(TEST_DATABASE);
+  boost::filesystem::remove(TEST_CERT);
+}
+
 DbTestData::DbTestData()
   : m_session(TEST_DATABASE.string())
+  , m_keyChain("sqlite3", "file")
 {
   NDNS_LOG_TRACE("start creating test data");
 
   ndns::Validator::VALIDATOR_CONF_FILE = TEST_CONFIG_PATH "/" "validator.conf";
 
+  m_keyChain.deleteIdentity(TEST_IDENTITY_NAME);
   m_certName = m_keyChain.createIdentity(TEST_IDENTITY_NAME);
 
   ndn::io::save(*(m_keyChain.getCertificate(m_certName)), TEST_CERT.string());
@@ -148,13 +156,6 @@ DbTestData::~DbTestData()
     m_session.remove(rrset);
 
   m_session.close();
-
-  boost::filesystem::remove(TEST_DATABASE);
-  boost::filesystem::remove(TEST_CERT);
-
-  // m_keyChain.deleteIdentity(TEST_IDENTITY_NAME);
-
-  NDNS_LOG_INFO("remove database: " << TEST_DATABASE);
 }
 
 } // namespace tests

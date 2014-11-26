@@ -102,7 +102,8 @@ main(int argc, char* argv[])
     Name label(rrLabelStr);
     name::Component type(rrTypeStr);
 
-    ndn::ndns::ManagementTool tool(db);
+    ndn::KeyChain keyChain;
+    ndn::ndns::ManagementTool tool(db, keyChain);
     tool.removeRrSet(zoneName, label, type);
 
     /// @todo Report how many records have been removed

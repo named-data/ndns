@@ -78,7 +78,8 @@ main(int argc, char* argv[])
   try {
     Name zone(zoneStr);
 
-    ndn::ndns::ManagementTool tool(db);
+    ndn::KeyChain keyChain;
+    ndn::ndns::ManagementTool tool(db, keyChain);
     tool.deleteZone(zone);
   }
   catch (const std::exception& ex) {

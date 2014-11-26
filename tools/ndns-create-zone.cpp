@@ -123,7 +123,8 @@ main(int argc, char* argv[])
     else
       certTtl = time::seconds(certTtlInt);
 
-    ndn::ndns::ManagementTool tool(db);
+    ndn::KeyChain keyChain;
+    ndn::ndns::ManagementTool tool(db, keyChain);
     tool.createZone(zone, parent, cacheTtl, certTtl, ksk, dsk);
   }
   catch (const std::exception& ex) {

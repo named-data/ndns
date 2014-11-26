@@ -38,6 +38,7 @@ public:
     , m_testId2("/test02/ndn")
     , m_testId3("/test02/ndn/edu")
     , m_randomId("/test03")
+    , m_keyChain("sqlite3", "file")
     , m_version(name::Component::fromVersion(0))
     , m_face(ndn::util::makeDummyClientFace(ndn::util::DummyClientFace::Options { false, true }))
   {
