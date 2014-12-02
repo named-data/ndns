@@ -47,50 +47,34 @@ NDNS_LOG_INIT("NdnsUpdate");
 class NdnsUpdate : noncopyable
 {
 public:
-  NdnsUpdate(const Name& hint, const Name& zone, const Name& rrLabel,
-             const name::Component& rrType, NdnsType ndnsType, const Name& certName,
-             Face& face)
-    : m_queryType(rrType == label::CERT_RR_TYPE ?
-                  label::NDNS_CERT_QUERY : label::NDNS_ITERATIVE_QUERY)
-    , m_rrType(rrType)
-    , m_hint(hint)
+  NdnsUpdate(const Name& hint, const Name& zone, const shared_ptr<Data>& update, Face& face)
+    : m_hint(hint)
     , m_zone(zone)
-    , m_certName(certName)
     , m_interestLifetime(DEFAULT_INTEREST_LIFETIME)
     , m_face(face)
     , m_validator(face)
+    , m_update(update)
     , m_hasError(false)
   {
-    m_update.setZone(m_zone);
-    m_update.setRrLabel(rrLabel);
-    m_update.setQueryType(m_queryType);
-    m_update.setRrType(name::Component(rrType));
-    m_update.setNdnsType(ndnsType);
   }
 
   void
-  run()
+  start()
   {
-    NDNS_LOG_INFO(" =================================== "
+    NDNS_LOG_INFO(" ================ "
                   << "start to update RR at Zone = " << this->m_zone
-                  << " with rrLabel = " << this->m_update.getRrLabel()
-                  << " and rrType = " << this->m_rrType
-                  << " =================================== ");
-    NDNS_LOG_INFO("certificate to sign the data is: " << m_certName);
+                  << " new RR is: " << m_update->getName()
+                  <<" =================== ");
+
+    NDNS_LOG_INFO("new RR is signed by: "
+                  << m_update->getSignature().getKeyLocator().getName());
 
     Interest interest = this->makeUpdateInterest();
-    NDNS_LOG_TRACE("[* <- *] send Update: " << m_update);
+    NDNS_LOG_TRACE("[* <- *] send Update: " << m_update->getName().toUri());
     m_face.expressInterest(interest,
                            bind(&NdnsUpdate::onData, this, _1, _2),
                            bind(&NdnsUpdate::onTimeout, this, _1) //dynamic binding
                            );
-    try {
-      m_face.processEvents();
-    }
-    catch (std::exception& e) {
-      NDNS_LOG_FATAL("Face fails to process events: " << e.what());
-      m_hasError = true;
-    }
   }
 
   void
@@ -151,11 +135,8 @@ private:
   Interest
   makeUpdateInterest()
   {
-    shared_ptr<Data> data = m_update.toData();
-    m_keyChain.sign(*data, m_certName);
-
     Query q(m_hint, m_zone, label::NDNS_ITERATIVE_QUERY);
-    q.setRrLabel(Name().append(data->wireEncode()));
+    q.setRrLabel(Name().append(m_update->wireEncode()));
     q.setRrType(label::NDNS_UPDATE_LABEL);
     q.setInterestLifetime(m_interestLifetime);
 
@@ -187,17 +168,6 @@ private:
   }
 
 public:
-  void
-  setUpdateAppContent(const Block& block)
-  {
-    m_update.setAppContent(block);
-  }
-
-  void
-  addUpdateRr(const Block& block)
-  {
-    m_update.addRr(block);
-  }
 
   void
   setInterestLifetime(const time::milliseconds& interestLifetime)
@@ -211,26 +181,17 @@ public:
     return m_hasError;
   }
 
-  const Response&
-  getUpdate() const
-  {
-    return m_update;
-  }
-
 private:
-  name::Component m_queryType; ///< NDNS or KEY
-  name::Component m_rrType;
-
   Name m_hint;
   Name m_zone;
-  Name m_certName;
+
   time::milliseconds m_interestLifetime;
 
   Face& m_face;
   Validator m_validator;
   KeyChain m_keyChain;
 
-  Response m_update;
+  shared_ptr<Data> m_update;
   bool m_hasError;
 };
 
@@ -254,8 +215,8 @@ main(int argc, char* argv[])
   Name certName;
   std::vector<string> contents;
   string contentFile;
-  string dstFile;
-  ndn::Block block;
+  shared_ptr<Data> update;
+
   try {
     namespace po = boost::program_options;
     po::variables_map vm;
@@ -274,7 +235,7 @@ main(int argc, char* argv[])
       ("content,o", po::value<std::vector<string>>(&contents)->multitoken(),
        "set the content of the RR")
       ("contentFile,f", po::value<string>(&contentFile), "set the path of file which contain"
-       " content of the RR in base64 format")
+       " Response packet in base64 format")
       ;
 
     po::options_description hidden("Hidden Options");
@@ -292,7 +253,11 @@ main(int argc, char* argv[])
     po::options_description config_file_options;
     config_file_options.add(config).add(hidden);
 
-    po::options_description visible("Allowed options");
+    po::options_description visible("Usage: ndns-update zone rrLabel [-t rrType] [-T TTL] "
+                                    "[-H hint] [-n NdnsType] [-c cert] "
+                                    "[-f contentFile]|[-o content]\n"
+                                    "Allowed options");
+
     visible.add(generic).add(config);
 
     po::parsed_options parsed =
@@ -302,92 +267,165 @@ main(int argc, char* argv[])
     po::notify(vm);
 
     if (vm.count("help")) {
-      std::cout << "Usage: ndns-update zone rrLabel [-t rrType] [-T TTL] "
-        "[-H hint] [-n NdnsType] [-c cert] [-f contentFile]|[-o content]" << std::endl;
       std::cout << visible << std::endl;
       return 0;
     }
 
-    KeyChain keyChain;
-    if (certName.empty()) {
-      Name name = Name().append(zone).append(rrLabel);
-      // choosing the longest match of the identity who also have default certificate
-      for (size_t i = name.size() + 1; i > 0; --i) { // i >=0 will present warnning
-        Name tmp = name.getPrefix(i - 1);
-        if (keyChain.doesIdentityExist(tmp)) {
-          try {
-            certName = keyChain.getDefaultCertificateNameForIdentity(tmp);
-            break;
-          }
-          catch (std::exception&) {
-            // If it cannot get a default certificate from one identity,
-            // just ignore this one try next identity.
-            ;
-          }
-        }
-      }
-    }
-    else {
-      if (!keyChain.doesCertificateExist(certName)) {
-        std::cerr << "certificate: " << certName << " does not exist" << std::endl;
-        return 0;
-      }
-    }
-
-    if (certName.empty()) {
-      std::cerr << "cannot figure out the certificate automatically. "
-                << "please set it with -c CERT_NAEME" << std::endl;
-    }
 
     if (vm.count("content") && vm.count("contentFile")) {
-      std::cerr << "both content and contentFile are set. Only one is allowed" << std::endl;
-      return 0;
+      std::cerr << "both -o content and -f contentFile are set. Only one is allowed" << std::endl;
+      return 1;
     }
 
-    if (!contentFile.empty()) {
-      shared_ptr<ndn::Data> data = ndn::io::load<ndn::Data>(contentFile);
-      block = data->wireEncode();
+    if (!vm.count("contentFile")) {
+      NDNS_LOG_TRACE("content option is set. try to figure out the certificate");
+      if (!vm.count("zone") || !vm.count("rrlabel")) {
+        std::cerr << "-o option must be set together with -z zone and -r rrLabel" << std::endl;
+        return 1;
+      }
+
+      KeyChain keyChain;
+      if (certName.empty()) {
+        Name name = Name().append(zone).append(rrLabel);
+        // choosing the longest match of the identity who also have default certificate
+        for (size_t i = name.size() + 1; i > 0; --i) { // i >=0 will present warnning
+          Name tmp = name.getPrefix(i - 1);
+          if (keyChain.doesIdentityExist(tmp)) {
+            try {
+              certName = keyChain.getDefaultCertificateNameForIdentity(tmp);
+              break;
+            }
+            catch (std::exception&) {
+              // If it cannot get a default certificate from one identity,
+              // just ignore this one try next identity.
+              ;
+            }
+          }
+        } // for
+
+        if (certName.empty()) {
+          std::cerr << "cannot figure out the certificate automatically. "
+                    << "please set it with -c CERT_NAEME" << std::endl;
+          return 1;
+        }
+      }
+      else {
+        if (!keyChain.doesCertificateExist(certName)) {
+          std::cerr << "certificate: " << certName << " does not exist" << std::endl;
+          return 1;
+        }
+      }
+
+      NdnsType ndnsType = toNdnsType(ndnsTypeStr);
+
+      if (ndnsType == ndns::NDNS_UNKNOWN) {
+        std::cerr << "unknown NdnsType: " << ndnsTypeStr << std::endl;
+        return 1;
+      }
+
+      Response re;
+      re.setZone(zone);
+      re.setRrLabel(rrLabel);
+      name::Component qType = (rrType == "ID-CERT" ?
+                               ndns::label::NDNS_CERT_QUERY : ndns::label::NDNS_ITERATIVE_QUERY);
+
+      re.setQueryType(qType);
+      re.setRrType(name::Component(rrType));
+      re.setNdnsType(ndnsType);
+
+      for (const auto& content : contents) {
+        re.addRr(ndn::dataBlock(ndn::ndns::tlv::RrData, content.c_str(), content.size()));
+
+        // re.addRr(content);
+      }
+
+      update = re.toData();
+      keyChain.sign(*update, certName);
+    }
+    else {
+      try {
+        update = ndn::io::load<ndn::Data>(contentFile);
+        NDNS_LOG_TRACE("load data " << update->getName() << " from content file: " << contentFile);
+      }
+      catch (const std::exception& e) {
+        std::cerr << "Error: load Data packet from file: " << contentFile
+                  << ". Due to: " << e.what() << std::endl;
+        return 1;
+      }
+
+      try {
+        // must check the Data is a legal Response with right name
+        shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<KEY>(<>+)<ID-CERT><>*");
+        shared_ptr<Regex> regex2 = make_shared<Regex>("(<>*)<NDNS>(<>+)");
+
+        Name zone2;
+        if (regex->match(update->getName())) {
+          zone2 = regex->expand("\\1");
+        }
+        else if (regex2->match(update->getName())) {
+          zone2 = regex2->expand("\\1");
+        }
+        else {
+          std::cerr << "The loaded Data packet cannot be stored in NDNS "
+            "since its does not have a proper name" << std::endl;
+          return 1;
+        }
+
+        if (vm.count("zone") && zone != zone2) {
+          std::cerr << "The loaded Data packet is supposed to be stored at zone: " << zone2
+                    << " instead of zone: " << zone << std::endl;
+          return 1;
+        }
+        else {
+          zone = zone2;
+        }
+
+        Response re;
+        re.fromData(hint, zone, *update);
+
+        if (vm.count("rrlabel") && rrLabel != re.getRrLabel()) {
+          std::cerr << "The loaded Data packet is supposed to have rrLabel: " << re.getRrLabel()
+                    << " instead of label: " << rrLabel << std::endl;
+          return 1;
+        }
+
+        if (vm.count("rrtype") && name::Component(rrType) != re.getRrType()) {
+          std::cerr << "The loaded Data packet is supposed to have rrType: " << re.getRrType()
+                    << " instead of label: " << rrType << std::endl;
+          return 1;
+        }
+      }
+      catch (const std::exception& e) {
+        std::cerr << "Error: the loaded Data packet cannot parse to a Response stored at zone: "
+                  << zone << std::endl;
+        return 1;
+      }
+
     }
   }
   catch (const std::exception& ex) {
     std::cerr << "Parameter Error: " << ex.what() << std::endl;
-    return 0;
+    return 1;
   }
 
   Face face;
-  NdnsType ndnsType = toNdnsType(ndnsTypeStr);
+  try {
+    NdnsUpdate updater(hint, zone, update, face);
+    updater.setInterestLifetime(ndn::time::seconds(ttl));
 
-  NdnsUpdate update(hint, zone, rrLabel, ndn::name::Component(rrType),
-                    ndnsType, certName, face);
-  update.setInterestLifetime(ndn::time::seconds(ttl));
-
-  if (!contentFile.empty()) {
-    if (!block.empty()) {
-      if (ndnsType == ndn::ndns::NDNS_RAW)
-        update.setUpdateAppContent(block);
-      else {
-        update.addUpdateRr(block);
-      }
-    }
-  }
-  else {
-    if (ndnsType == ndn::ndns::NDNS_RAW) {
-      // since NDNS_RAW's message tlv type cannot be decided, here we stop this option
-      std::cerr << "--content (-o) does not support NDNS-RAW Response" << std::endl;
+    updater.start();
+    face.processEvents();
+    if (updater.hasError())
+      return 1;
+    else
       return 0;
-    }
-    else {
-      for (const auto& content : contents) {
-        block = ndn::dataBlock(ndn::ndns::tlv::RrData, content.c_str(), content.size());
-        update.addUpdateRr(block);
-      }
-    }
   }
-
-  update.run();
-
-  if (update.hasError())
+  catch (const ndn::ValidatorConfig::Error& e) {
+    std::cerr << "Fail to create the validator: " << e.what() << std::endl;
     return 1;
-  else
-    return 0;
+  }
+  catch (const std::exception& e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+    return 1;
+  }
 }
