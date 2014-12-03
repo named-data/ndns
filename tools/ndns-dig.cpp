@@ -35,26 +35,36 @@
 #include <memory>
 #include <string>
 
+NDNS_LOG_INIT("NdnsDig");
+
 namespace ndn {
 namespace ndns {
-NDNS_LOG_INIT("NdnsDig");
 
 class NdnsDig
 {
 public:
   NdnsDig(const Name& hint, const Name& dstLabel,
-          const name::Component& rrType)
+          const name::Component& rrType, bool shouldValidateIntermediate)
     : m_dstLabel(dstLabel)
     , m_rrType(rrType)
     , m_hint(hint)
     , m_interestLifetime(DEFAULT_INTEREST_LIFETIME)
     , m_validator(m_face)
-    , m_ctr(new IterativeQueryController(m_dstLabel, m_rrType, m_interestLifetime,
-                                         bind(&NdnsDig::onSucceed, this, _1, _2),
-                                         bind(&NdnsDig::onFail, this, _1, _2),
-                                         m_face))
+    , m_shouldValidateIntermediate(shouldValidateIntermediate)
     , m_hasError(false)
   {
+    if (m_shouldValidateIntermediate)
+      m_ctr = std::unique_ptr<IterativeQueryController>
+        (new IterativeQueryController(m_dstLabel, m_rrType, m_interestLifetime,
+                                      bind(&NdnsDig::onSucceed, this, _1, _2),
+                                      bind(&NdnsDig::onFail, this, _1, _2),
+                                      m_face, &m_validator));
+    else
+      m_ctr = std::unique_ptr<IterativeQueryController>
+        (new IterativeQueryController(m_dstLabel, m_rrType, m_interestLifetime,
+                                      bind(&NdnsDig::onSucceed, this, _1, _2),
+                                      bind(&NdnsDig::onFail, this, _1, _2),
+                                      m_face, nullptr));
   }
 
   void
@@ -70,7 +80,7 @@ public:
       m_face.processEvents();
     }
     catch (std::exception& e) {
-      NDNS_LOG_FATAL("Error: Face fails to process events: " << e.what());
+      std::cerr << "Error: " << e.what();
       m_hasError = true;
     }
   }
@@ -80,6 +90,12 @@ public:
   {
     m_face.getIoService().stop();
     NDNS_LOG_TRACE("application stops.");
+  }
+
+  void
+  setStartZone(const Name& start)
+  {
+    m_ctr->setStartComponentIndex(start.size());
   }
 
 private:
@@ -190,6 +206,7 @@ private:
   Face m_face;
 
   Validator m_validator;
+  bool m_shouldValidateIntermediate;
   std::unique_ptr<QueryController> m_ctr;
 
   bool m_hasError;
@@ -211,6 +228,9 @@ main(int argc, char* argv[])
   int ttl = 4;
   string rrType = "TXT";
   string dstFile;
+  bool shouldValidateIntermediate = true;
+  Name start("/ndn");
+
   try {
     namespace po = boost::program_options;
     po::variables_map vm;
@@ -224,6 +244,8 @@ main(int argc, char* argv[])
       ("rrtype,t", po::value<std::string>(&rrType), "set request RR Type. default: TXT")
       ("dstFile,d", po::value<std::string>(&dstFile), "set output file of the received Data. "
        "if omitted, not print; if set to be -, print to stdout; else print to file")
+      ("start,s", po::value<Name>(&start)->default_value("/ndn"), "set first zone to query")
+      ("not-validate,n", "trigger not validate intermediate results")
       ;
 
     po::options_description hidden("Hidden Options");
@@ -255,17 +277,40 @@ main(int argc, char* argv[])
       std::cout << visible << std::endl;
       return 0;
     }
+
+    if (!start.isPrefixOf(dstLabel)) {
+      std::cerr << "Error: start zone " << start << " is not prefix of the target label "
+                << dstLabel << std::endl;
+      return 1;
+    }
+
+    if (vm.count("not-validate")) {
+      shouldValidateIntermediate = false;
+    }
+
+    if (ttl < 0) {
+      std::cerr << "Error: ttl parameter cannot be negative" << std::endl;
+      return 1;
+    }
   }
   catch (const std::exception& ex) {
     std::cerr << "Parameter Error: " << ex.what() << std::endl;
-    return 0;
+    return 1;
   }
 
-  ndn::ndns::NdnsDig dig("", dstLabel, ndn::name::Component(rrType));
-  dig.setInterestLifetime(ndn::time::milliseconds(ttl * 1000));
+  NDNS_LOG_TRACE("validateIntermediate=" << shouldValidateIntermediate);
+
+  ndn::ndns::NdnsDig dig("", dstLabel, ndn::name::Component(rrType), !shouldValidateIntermediate);
+  dig.setInterestLifetime(ndn::time::seconds(ttl));
   dig.setDstFile(dstFile);
 
+  // Due to ndn testbed does not contain the root zone
+  // dig here starts from the TLD (Top-level Domain)
+  // precondition is that TLD : 1) only contains one component in its name; 2) its name is routable
+  dig.setStartZone(start);
+
   dig.run();
+
   if (dig.hasError())
     return 1;
   else

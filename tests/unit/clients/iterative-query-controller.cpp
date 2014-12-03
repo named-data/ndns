@@ -98,7 +98,7 @@ BOOST_FIXTURE_TEST_CASE(Basic, QueryControllerFixture)
   // IterativeQueryController is a whole process
   // the tester should not send Interest one by one
   // instead of starting it and letting it handle Interest/Data automatically
-  ctr->setNFinishedComps(1);
+  ctr->setStartComponentIndex(1);
 
   ctr->start();
 

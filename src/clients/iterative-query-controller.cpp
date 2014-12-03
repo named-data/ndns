@@ -17,6 +17,7 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "validator.hpp"
 #include "iterative-query-controller.hpp"
 #include "logger.hpp"
 #include <iostream>
@@ -30,14 +31,14 @@ IterativeQueryController::IterativeQueryController(const Name& dstLabel,
                                                    const time::milliseconds& interestLifetime,
                                                    const QuerySucceedCallback& onSucceed,
                                                    const QueryFailCallback& onFail,
-                                                   Face& face)
+                                                   Face& face,
+                                                   Validator* validator)
   : QueryController(dstLabel, rrType, interestLifetime, onSucceed, onFail, face)
+  , m_validator(validator)
   , m_step(QUERY_STEP_QUERY_NS)
   , m_nFinishedComps(0)
   , m_nTryComps(1)
 {
-  if (m_dstLabel.size() == 1) // the first one is to Query RR directly
-    m_step = QUERY_STEP_QUERY_RR;
 }
 
 void
@@ -70,7 +71,22 @@ IterativeQueryController::onData(const ndn::Interest& interest, const Data& data
 
   NDNS_LOG_TRACE("[* -> *] get a " << ndnsType
                  << " Response: " << data.getName());
-
+  if (m_validator == nullptr) {
+    this->onDataValidated(make_shared<Data>(data), ndnsType);
+  }
+  else {
+    m_validator->validate(data,
+                          bind(&IterativeQueryController::onDataValidated, this, _1, ndnsType),
+                          [this] (const shared_ptr<const Data>& data, const std::string& str) {
+                            NDNS_LOG_WARN("data: " << data->getName() << " fails verification");
+                            this->abort();
+                          }
+                          );
+  }
+}
+void
+IterativeQueryController::onDataValidated(const shared_ptr<const Data>& data, NdnsType ndnsType)
+{
   switch (m_step) {
   case QUERY_STEP_QUERY_NS:
     if (ndnsType == NDNS_NACK) {
@@ -118,9 +134,9 @@ IterativeQueryController::onData(const ndn::Interest& interest, const Data& data
     this->express(this->makeLatestInterest()); // express new Expres
   else if (m_step == QUERY_STEP_ANSWER_STUB) {
     NDNS_LOG_TRACE("query ends: " << *this);
-    Response re = this->parseFinalResponse(data);
+    Response re = this->parseFinalResponse(*data);
     if (m_onSucceed != nullptr)
-      m_onSucceed(data, re);
+      m_onSucceed(*data, re);
     else
       NDNS_LOG_TRACE("succeed callback is nullptr");
   }
@@ -137,6 +153,9 @@ IterativeQueryController::hasEnded()
 void
 IterativeQueryController::start()
 {
+  if (m_dstLabel.size() == m_nFinishedComps)
+    m_step = QUERY_STEP_QUERY_RR;
+
   Interest interest = this->makeLatestInterest();
   express(interest);
 }

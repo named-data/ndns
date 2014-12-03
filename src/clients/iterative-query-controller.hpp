@@ -26,6 +26,7 @@
 #include "query-controller.hpp"
 #include "config.hpp"
 #include "common.hpp"
+#include "validator.hpp"
 
 #include <ndn-cxx/common.hpp>
 #include <ndn-cxx/data.hpp>
@@ -59,7 +60,7 @@ public:
   IterativeQueryController(const Name& dstLabel, const name::Component& rrType,
                            const time::milliseconds& interestLifetime,
                            const QuerySucceedCallback& onSucceed, const QueryFailCallback& onFail,
-                           Face& face);
+                           Face& face, Validator* validator = nullptr);
 
   virtual void
   start();
@@ -74,6 +75,9 @@ public:
 NDNS_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   onData(const ndn::Interest& interest, const Data& data);
+
+  void
+  onDataValidated(const shared_ptr<const Data>& data, NdnsType ndnsType);
 
   /**
    * @brief change the Controller state according to timeout. For current,
@@ -98,13 +102,13 @@ NDNS_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
   express(const Interest& interest);
 
+public:
   void
-  setNFinishedComps(size_t finished)
+  setStartComponentIndex(size_t finished)
   {
     m_nFinishedComps = finished;
   }
 
-public:
   QueryStep
   getStep() const
   {
@@ -124,6 +128,7 @@ public:
   }
 
 protected:
+  Validator* m_validator;
   /**
    * @brief current query step
    */

@@ -68,6 +68,9 @@ public:
   virtual bool
   hasEnded() = 0;
 
+  virtual void
+  setStartComponentIndex(size_t startIndex) = 0;
+
 public:
   ////////////////
   // getter
