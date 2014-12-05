@@ -70,7 +70,7 @@ Validator::Validator(Face& face, const std::string& confFile /* = VALIDATOR_CONF
       "  file-name \""
       ;
 
-    config += "anchors/root.cert";
+    config += DEFAULT_CONFIG_PATH "/" "anchors/root.cert";
 
     config +=
       "\"                                                                         \n"

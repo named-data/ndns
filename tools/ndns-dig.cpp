@@ -240,7 +240,7 @@ main(int argc, char* argv[])
 
     po::options_description config("Configuration");
     config.add_options()
-      ("timeout,T", po::value<int>(&ttl), "waiting seconds of query. default: 4 sec")
+      ("timeout,T", po::value<int>(&ttl), "query timeout. default: 4 sec")
       ("rrtype,t", po::value<std::string>(&rrType), "set request RR Type. default: TXT")
       ("dstFile,d", po::value<std::string>(&dstFile), "set output file of the received Data. "
        "if omitted, not print; if set to be -, print to stdout; else print to file")
@@ -262,7 +262,7 @@ main(int argc, char* argv[])
     config_file_options.add(config).add(hidden);
 
     po::options_description visible("Usage: ndns-dig /name/to/be/resolved [-t rrType] [-T ttl]"
-                                    "[-d dstFile]\n"
+                                    "[-d dstFile] [-s startZone] [-n]\n"
                                     "Allowed options");
 
     visible.add(generic).add(config);
@@ -276,6 +276,12 @@ main(int argc, char* argv[])
     if (vm.count("help")) {
       std::cout << visible << std::endl;
       return 0;
+    }
+
+    if (!vm.count("name")) {
+      std::cerr << "must contain a target label parameter." << std::endl;
+      std::cerr << visible << std::endl;
+      return 1;
     }
 
     if (!start.isPrefixOf(dstLabel)) {
@@ -298,21 +304,30 @@ main(int argc, char* argv[])
     return 1;
   }
 
-  NDNS_LOG_TRACE("validateIntermediate=" << shouldValidateIntermediate);
+  try {
+    ndn::ndns::NdnsDig dig("", dstLabel, ndn::name::Component(rrType), shouldValidateIntermediate);
+    dig.setInterestLifetime(ndn::time::seconds(ttl));
+    dig.setDstFile(dstFile);
 
-  ndn::ndns::NdnsDig dig("", dstLabel, ndn::name::Component(rrType), !shouldValidateIntermediate);
-  dig.setInterestLifetime(ndn::time::seconds(ttl));
-  dig.setDstFile(dstFile);
+    // Due to ndn testbed does not contain the root zone
+    // dig here starts from the TLD (Top-level Domain)
+    // precondition is that TLD : 1) only contains one component in its name; 2) its name is routable
+    dig.setStartZone(start);
 
-  // Due to ndn testbed does not contain the root zone
-  // dig here starts from the TLD (Top-level Domain)
-  // precondition is that TLD : 1) only contains one component in its name; 2) its name is routable
-  dig.setStartZone(start);
+    dig.run();
 
-  dig.run();
-
-  if (dig.hasError())
+    if (dig.hasError())
+      return 1;
+    else
+      return 0;
+  }
+  catch (const ndn::ValidatorConfig::Error& e) {
+    std::cerr << "Fail to create the validator: " << e.what() << std::endl;
     return 1;
-  else
-    return 0;
+  }
+  catch (const std::exception& e) {
+    std::cerr << "Error: " << e.what() << std::endl;
+    return 1;
+  }
+
 }
