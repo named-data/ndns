@@ -59,7 +59,7 @@ public:
     m_keyChain.addCertificate(*cert);
     NDNS_LOG_TRACE("add cert: " << cert->getName() << " to KeyChain");
 
-    m_face->onInterest += bind(&Fixture::respondInterest, this, _1);
+    m_face->onSendInterest.connect(bind(&Fixture::respondInterest, this, _1));
   }
 
   ~Fixture()

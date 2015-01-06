@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(NdnsQuery)
 
   bool hasDataBack = false;
 
-  face->onData += [&] (const Data& data) {
+  face->onSendData.connectSingleShot([&] (const Data& data) {
     hasDataBack = true;
     NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE(NdnsQuery)
     Response resp;
     BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
     BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RESP);
-  };
+  });
 
   face->receive(q.toInterest());
 
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
   size_t nDataBack = 0;
 
   // will ask for non-existing record
-  face->onData += [&] (const Data& data) {
+  face->onSendData.connectSingleShot([&] (const Data& data) {
     ++nDataBack;
     NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
@@ -108,14 +108,13 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
     Response resp;
     BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
     BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_NACK);
-  };
+  });
 
   face->receive(q.toInterest());
   run();
 
   // will ask for the existing record (will have type NDNS_RAW, as it is certificate)
-  face->onData.clear();
-  face->onData += [&] (const Data& data) {
+  face->onSendData.connectSingleShot([&] (const Data& data) {
     ++nDataBack;
     NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
@@ -123,7 +122,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
     Response resp;
     BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
     BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RAW);
-  };
+  });
 
   q.setRrLabel("dsk-1");
 
@@ -160,7 +159,7 @@ BOOST_AUTO_TEST_CASE(UpdateReplaceRr)
 
   bool hasDataBack = false;
 
-  face->onData += [&] (const Data& data) {
+  face->onSendData.connectSingleShot([&] (const Data& data) {
     hasDataBack = true;
     NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
@@ -177,7 +176,7 @@ BOOST_AUTO_TEST_CASE(UpdateReplaceRr)
     BOOST_CHECK_EQUAL(val->type(), ndns::tlv::UpdateReturnCode); // the first must be return code
     ret = readNonNegativeInteger(*val);
     BOOST_CHECK_EQUAL(ret, 0);
-  };
+  });
 
   face->receive(q.toInterest());
   run();
@@ -212,7 +211,7 @@ BOOST_AUTO_TEST_CASE(UpdateInsertNewRr)
 
   bool hasDataBack = false;
 
-  face->onData += [&] (const Data& data) {
+  face->onSendData.connectSingleShot([&] (const Data& data) {
     hasDataBack = true;
     NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
@@ -229,7 +228,7 @@ BOOST_AUTO_TEST_CASE(UpdateInsertNewRr)
     BOOST_CHECK_EQUAL(val->type(), ndns::tlv::UpdateReturnCode); // the first must be return code
     ret = readNonNegativeInteger(*val);
     BOOST_CHECK_EQUAL(ret, 0);
-  };
+  });
 
   face->receive(q.toInterest());
   run();
@@ -289,10 +288,10 @@ BOOST_AUTO_TEST_CASE(UpdateValidatorCannotFetchCert)
   bool hasDataBack = false;
 
   // no data back, since the Update cannot pass verification
-  face->onData += [&] (const Data& data) {
+  face->onSendData.connectSingleShot([&] (const Data& data) {
     hasDataBack = true;
     BOOST_FAIL("UNEXPECTED");
-  };
+  });
 
   face->receive(q.toInterest());
   run();
@@ -312,10 +311,10 @@ public:
   {
     // ensure prefix is registered
     run();
-    validatorFace->onInterest += [&] (const Interest& interest) {
+    validatorFace->onSendInterest.connect([&] (const Interest& interest) {
       NDNS_LOG_TRACE("validatorFace get Interest: " << interest.getName());
       face->receive(interest);
-    };
+    });
   }
 
   void
@@ -387,7 +386,7 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
   bool hasDataBack = false;
 
   shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<KEY>(<>+)<ID-CERT><>");
-  face->onData += [&] (const Data& data) {
+  face->onSendData.connectSingleShot([&] (const Data& data) {
     if (regex->match(data.getName())) {
       validatorFace->receive(data); // It's data requested by validator
     }
@@ -410,7 +409,7 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
       ret = readNonNegativeInteger(*val);
       BOOST_CHECK_EQUAL(ret, 0);
     }
-  };
+  });
 
   face->receive(q.toInterest());
   run();

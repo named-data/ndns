@@ -44,10 +44,18 @@ public:
     , ndnsim(m_ndnsim.getName(), m_certName, *producerFace, m_session, m_keyChain, validator)
   {
     run();
-    producerFace->onInterest += [&] (const Interest& interest) { consumerFace->receive(interest); };
-    consumerFace->onInterest += [&] (const Interest& interest) { producerFace->receive(interest); };
-    producerFace->onData += [&] (const Data& data) { consumerFace->receive(data); };
-    consumerFace->onData += [&] (const Data& data) { producerFace->receive(data); };
+    producerFace->onSendInterest.connect([this] (const Interest& interest) {
+      io.post([=] { consumerFace->receive(interest); });
+    });
+    consumerFace->onSendInterest.connect([this] (const Interest& interest) {
+      io.post([=] { producerFace->receive(interest); });
+    });
+    producerFace->onSendData.connect([this] (const Data& data) {
+      io.post([=] { consumerFace->receive(data); });
+    });
+    consumerFace->onSendData.connect([this] (const Data& data) {
+      io.post([=] { producerFace->receive(data); });
+    });
   }
 
   void
