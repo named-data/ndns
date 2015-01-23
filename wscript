@@ -24,6 +24,11 @@ def configure(conf):
                'boost', 'default-compiler-flags', 'doxygen', 'sphinx_build',
                'sqlite3', 'pch', 'coverage'])
 
+    if not os.environ.has_key('PKG_CONFIG_PATH'):
+        os.environ['PKG_CONFIG_PATH'] = ':'.join([
+            '/usr/local/lib/pkgconfig',
+            '/opt/local/lib/pkgconfig'])
+
     conf.check_cfg(package='liblog4cxx', args=['--cflags', '--libs'],
                   uselib_store='LOG4CXX', mandatory=True)
 
@@ -31,7 +36,6 @@ def configure(conf):
                    uselib_store='NDN_CXX', mandatory=True)
 
     conf.check_sqlite3(mandatory=True)
-
 
     if conf.options.with_tests:
         conf.env['WITH_TESTS'] = True
