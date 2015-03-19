@@ -654,6 +654,21 @@ BOOST_FIXTURE_TEST_CASE(AddRrSet5, ManagementToolFixture)
                                        dskCert->getName()));
 }
 
+BOOST_FIXTURE_TEST_CASE(AddRrSet6, ManagementToolFixture)
+{
+  //check using user provided certificate
+  Name parentZoneName("/ndns-test");
+  Name zoneName = Name(parentZoneName).append("child-zone");
+  m_tool.createZone(zoneName, parentZoneName);
+
+  //check invalid output
+  Name content = "invalid data packet";
+  std::string output = TEST_CERTDIR.string() + "/ss.cert";
+  ndn::io::save(content, output);
+
+  BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, output), ndns::ManagementTool::Error);
+}
+
 BOOST_FIXTURE_TEST_CASE(ListAllZones, ManagementToolFixture)
 {
   m_tool.createZone(ROOT_ZONE, ROOT_ZONE, time::seconds(1), time::days(1), rootKsk, rootDsk);

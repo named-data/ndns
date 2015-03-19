@@ -334,6 +334,10 @@ ManagementTool::addRrSet(const Name& zoneName,
   else
     data = ndn::io::load<ndn::Data>(inFile);
 
+  if (data == nullptr) {
+    throw Error("input does not contain a valid Data packet (is it in base64 format?)");
+  }
+
   //determine whether the data is a self-signed certificate
   shared_ptr<Regex> regex1 = make_shared<Regex>("(<>*)<KEY>(<>+)<ID-CERT><>");
   if (regex1->match(data->getName())) {
