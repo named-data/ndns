@@ -31,6 +31,7 @@
 #include <boost/lexical_cast.hpp>
 
 #include <ndn-cxx/util/regex.hpp>
+#include <ndn-cxx/util/indented-stream.hpp>
 #include <ndn-cxx/encoding/oid.hpp>
 #include <ndn-cxx/security/cryptopp.hpp>
 
@@ -480,19 +481,17 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
       os << std::endl;
 
       if (printRaw && re.getNdnsType() == NDNS_RAW) {
-        using namespace CryptoPP;
-        std::stringstream sstream;
-        StringSource ss(re.getAppContent().wire(), re.getAppContent().size(), true,
-                        new Base64Encoder(new FileSink(sstream), true, 64));
+        util::IndentedStream istream(os, "; ");
 
-        std::string content = sstream.str();
-        std::string delimiter = "\n";
-        size_t pos = 0;
-        std::string token;
-        while ((pos = content.find(delimiter)) != std::string::npos) {
-            token = content.substr(0, pos);
-            os << "; " << token << std::endl;
-            content.erase(0, pos + delimiter.length());
+        if (re.getRrType() == label::CERT_RR_TYPE) {
+          shared_ptr<Data> data = re.toData();
+          IdentityCertificate cert(*data);
+          cert.printCertificate(istream);
+        }
+        else {
+          using namespace CryptoPP;
+          StringSource ss(re.getAppContent().wire(), re.getAppContent().size(), true,
+                          new Base64Encoder(new FileSink(istream), true, 64));
         }
       }
       os << std::endl;
