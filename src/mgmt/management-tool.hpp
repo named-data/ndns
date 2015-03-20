@@ -31,6 +31,7 @@
 #include <ndn-cxx/common.hpp>
 #include <ndn-cxx/security/identity-certificate.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
+#include <ndn-cxx/util/io.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -156,12 +157,14 @@ public:
    *  @param dataPath the path to the supplied data
    *  @param ttl the ttl of the rrset
    *  @param dskName the DSK to signed the special case, default is the zone's DSK
+   *  @param encoding the encoding of the input file
     */
   void
   addRrSet(const Name& zoneName,
            const std::string& inFile = DEFAULT_IO,
            const time::seconds& ttl = DEFAULT_RR_TTL,
-           const Name& dskCertName = DEFAULT_CERT);
+           const Name& dskCertName = DEFAULT_CERT,
+           const ndn::io::IoEncoding encoding = ndn::io::BASE_64);
 
   /** @brief remove rrset from the NDNS local database
    *
@@ -178,7 +181,6 @@ public:
    *  @param label rrset's label
    *  @param type rrset's type
    *  @param os the ostream to print information to
-   *  @param isPP indicate pretty print
    */
   void
   getRrSet(const Name& zoneName,

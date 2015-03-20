@@ -702,6 +702,50 @@ BOOST_FIXTURE_TEST_CASE(AddRrSet7, ManagementToolFixture)
   BOOST_CHECK_EQUAL(rrset.getVersion(), name::Component::fromVersion(version));
 }
 
+BOOST_FIXTURE_TEST_CASE(AddRrSet8, ManagementToolFixture)
+{
+  //check input with different formats
+  Name parentZoneName("/ndns-test");
+  Name zoneName = Name(parentZoneName).append("child-zone");
+  m_tool.createZone(zoneName, parentZoneName);
+
+  std::string output = TEST_CERTDIR.string() + "/a.cert";
+
+  // base64
+  Name dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
+  shared_ptr<IdentityCertificate> dskCert = m_keyChain.selfSign(dskName);
+
+  ndn::io::save(*dskCert, output, ndn::io::BASE_64);
+  BOOST_CHECK_NO_THROW(
+    m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::BASE_64));
+
+  // raw
+  dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
+  dskCert = m_keyChain.selfSign(dskName);
+
+  ndn::io::save(*dskCert, output, ndn::io::NO_ENCODING);
+  BOOST_CHECK_NO_THROW(
+    m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::NO_ENCODING));
+
+  // hex
+  dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
+  dskCert = m_keyChain.selfSign(dskName);
+
+  ndn::io::save(*dskCert, output, ndn::io::HEX);
+  BOOST_CHECK_NO_THROW(
+    m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::HEX));
+
+  // incorrect encoding input
+  dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
+  dskCert = m_keyChain.selfSign(dskName);
+
+  ndn::io::save(*dskCert, output, ndn::io::HEX);
+  BOOST_CHECK_THROW(
+    m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT,
+                    static_cast<ndn::io::IoEncoding>(127)),
+    ndns::ManagementTool::Error);
+}
+
 BOOST_FIXTURE_TEST_CASE(ListAllZones, ManagementToolFixture)
 {
   m_tool.createZone(ROOT_ZONE, ROOT_ZONE, time::seconds(1), time::days(1), rootKsk, rootDsk);

@@ -24,6 +24,8 @@
 #include <boost/filesystem.hpp>
 #include <string>
 
+#include <ndn-cxx/util/io.hpp>
+
 
 // @todo combine this command with ndns-add-rr
 int
@@ -39,6 +41,7 @@ main(int argc, char* argv[])
   string dskStr;
   string db;
   string file = "-";
+  string encoding = "base64";
   try {
     namespace po = boost::program_options;
     po::variables_map vm;
@@ -56,6 +59,8 @@ main(int argc, char* argv[])
       ("dsk,d", po::value<std::string>(&dskStr), "Set the name of DSK's certificate. "
         "Default: use default DSK and its default certificate")
       ("ttl,a", po::value<int>(&ttlInt), "Set ttl of the rrset. Default: 3600 seconds")
+      ("encoding,e", po::value<string>(&encoding),
+        "Set encoding format of input. Default: base64")
       ;
 
     options.add(config);
@@ -82,8 +87,8 @@ main(int argc, char* argv[])
     po::notify(vm);
 
     if (vm.count("help")) {
-      std::cout << "Usage: ndns-add-rr-from-file [-b db] zone [-f file] [-d dskCert] [-a ttl]"
-        " [file]" << std::endl
+      std::cout << "Usage: ndns-add-rr-from-file [-b db] zone [-f file] [-d dskCert] [-a ttl] "
+          "[-e raw|base64|hex] [file]" << std::endl
                 << std::endl;
       std::cout << options << std::endl;
       return 0;
@@ -108,9 +113,25 @@ main(int argc, char* argv[])
     else
       ttl = time::seconds(ttlInt);
 
+    ndn::io::IoEncoding ioEncoding;
+    if (encoding == "raw") {
+      ioEncoding = ndn::io::NO_ENCODING;
+    }
+    else if (encoding == "hex") {
+      ioEncoding = ndn::io::HEX;
+    }
+    else if (encoding == "base64") {
+      ioEncoding = ndn::io::BASE_64;
+    }
+    else {
+      std::cerr << "Error: not supported encoding format '" << encoding
+                << "' (valid options are: raw, hex, and base64)" << std::endl;
+      return 1;
+    }
+
     ndn::KeyChain keyChain;
     ndn::ndns::ManagementTool tool(db, keyChain);
-    tool.addRrSet(zoneName, file, ttl, dskName);
+    tool.addRrSet(zoneName, file, ttl, dskName, ioEncoding);
   }
   catch (const std::exception& ex) {
     std::cerr << "Error: " << ex.what() << std::endl;

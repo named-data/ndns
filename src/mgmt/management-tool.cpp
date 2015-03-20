@@ -30,7 +30,6 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/util/regex.hpp>
 #include <ndn-cxx/encoding/oid.hpp>
 #include <ndn-cxx/security/cryptopp.hpp>
@@ -297,7 +296,8 @@ void
 ManagementTool::addRrSet(const Name& zoneName,
                          const std::string& inFile,
                          const time::seconds& ttl,
-                         const Name& inputDskCertName)
+                         const Name& inputDskCertName,
+                         const ndn::io::IoEncoding encoding)
 {
   //check precondition
   Zone zone(zoneName);
@@ -327,12 +327,12 @@ ManagementTool::addRrSet(const Name& zoneName,
   //first load the data
   shared_ptr<Data> data;
   if (inFile == DEFAULT_IO)
-    data = ndn::io::load<ndn::Data>(std::cin);
+    data = ndn::io::load<ndn::Data>(std::cin, encoding);
   else
-    data = ndn::io::load<ndn::Data>(inFile);
+    data = ndn::io::load<ndn::Data>(inFile, encoding);
 
   if (data == nullptr) {
-    throw Error("input does not contain a valid Data packet (is it in base64 format?)");
+    throw Error("input does not contain a valid Data packet");
   }
 
   //determine whether the data is a self-signed certificate
