@@ -288,11 +288,8 @@ ManagementTool::addRrSet(const Name& zoneName,
   rrset.setVersion(re.getVersion());
   rrset.setData(data->wireEncode());
 
-  if (m_dbMgr.find(rrset)) {
-    throw Error("Duplicate " + boost::lexical_cast<std::string>(rrset));
-  }
+  checkRrsetVersion(rrset);
   NDNS_LOG_INFO("Added " << rrset);
-
   m_dbMgr.insert(rrset);
 }
 
@@ -388,9 +385,7 @@ ManagementTool::addRrSet(const Name& zoneName,
   rrset.setVersion(re.getVersion());
   rrset.setData(data->wireEncode());
 
-  if (m_dbMgr.find(rrset)) {
-    throw Error("Duplicate " + boost::lexical_cast<std::string>(rrset));
-  }
+  checkRrsetVersion(rrset);
   NDNS_LOG_INFO("Added " << rrset);
   m_dbMgr.insert(rrset);
 }
@@ -634,6 +629,23 @@ ManagementTool::matchCertificate(const Name& certName, const Name& identity)
   }
 
   return true;
+}
+
+void
+ManagementTool::checkRrsetVersion(const Rrset& rrset)
+{
+  Rrset originalRrset(rrset);
+  if (m_dbMgr.find(originalRrset)) {
+    // update only if rrset has a newer version
+    if (originalRrset.getVersion() == rrset.getVersion()) {
+      throw Error("Duplicate: " + boost::lexical_cast<std::string>(originalRrset));
+    }
+    else if (originalRrset.getVersion() > rrset.getVersion()) {
+      throw Error("Newer version exists: " + boost::lexical_cast<std::string>(originalRrset));
+    }
+
+    m_dbMgr.remove(originalRrset);
+  }
 }
 
 } // namespace ndns

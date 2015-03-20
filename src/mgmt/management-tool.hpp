@@ -225,6 +225,11 @@ private:
   bool
   matchCertificate(const Name& certName, const Name& identity);
 
+  /** @brief determine whether an older version of the rrset exists
+   */
+  void
+  checkRrsetVersion(const Rrset& rrset);
+
 private:
   KeyChain& m_keyChain;
   DbMgr m_dbMgr;

@@ -656,17 +656,50 @@ BOOST_FIXTURE_TEST_CASE(AddRrSet5, ManagementToolFixture)
 
 BOOST_FIXTURE_TEST_CASE(AddRrSet6, ManagementToolFixture)
 {
-  //check using user provided certificate
+  //check invalid output
   Name parentZoneName("/ndns-test");
   Name zoneName = Name(parentZoneName).append("child-zone");
   m_tool.createZone(zoneName, parentZoneName);
 
-  //check invalid output
   Name content = "invalid data packet";
   std::string output = TEST_CERTDIR.string() + "/ss.cert";
   ndn::io::save(content, output);
 
   BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, output), ndns::ManagementTool::Error);
+}
+
+BOOST_FIXTURE_TEST_CASE(AddRrSet7, ManagementToolFixture)
+{
+  //check version control
+  Name parentZoneName("/ndns-test");
+  Name zoneName = Name(parentZoneName).append("child-zone");
+  m_tool.createZone(zoneName, parentZoneName);
+
+  Name label("/label");
+  uint64_t version = 110;
+
+  m_tool.addRrSet(zoneName, label, label::NS_RR_TYPE, NDNS_RESP, version);
+  // throw error when adding duplicated rrset with the same version
+  BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, label, label::NS_RR_TYPE, NDNS_RESP, version),
+                    ndns::ManagementTool::Error);
+  version--;
+  // throw error when adding duplicated rrset with older version
+  BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, label, label::NS_RR_TYPE, NDNS_RESP, version),
+                    ndns::ManagementTool::Error);
+
+  version++;
+  version++;
+  BOOST_CHECK_NO_THROW(m_tool.addRrSet(zoneName, label, label::NS_RR_TYPE, NDNS_RESP, version));
+
+  Zone zone(zoneName);
+  m_dbMgr.find(zone);
+  Rrset rrset;
+  rrset.setZone(&zone);
+  rrset.setLabel(label);
+  rrset.setType(label::NS_RR_TYPE);
+  m_dbMgr.find(rrset);
+
+  BOOST_CHECK_EQUAL(rrset.getVersion(), name::Component::fromVersion(version));
 }
 
 BOOST_FIXTURE_TEST_CASE(ListAllZones, ManagementToolFixture)
