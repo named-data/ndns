@@ -70,15 +70,15 @@ ManagementTool::createZone(const Name &zoneName,
     throw Error(parentZoneName.toUri() + " is not a prefix of " + zoneName.toUri());
   }
 
-  if (kskCertName != DEFAULT_CERT) {
-    if (!matchCertificate(kskCertName, zoneName)) {
-      throw Error("Cannot verify KSK certificate");
-    }
-  }
-
+  // if dsk is provided, there is no need to check ksk
   if (dskCertName != DEFAULT_CERT) {
     if (!matchCertificate(dskCertName, zoneName)) {
       throw Error("Cannot verify DSK certificate");
+    }
+  }
+  else if (kskCertName != DEFAULT_CERT) {
+    if (!matchCertificate(kskCertName, zoneName)) {
+      throw Error("Cannot verify KSK certificate");
     }
   }
 
@@ -88,29 +88,30 @@ ManagementTool::createZone(const Name &zoneName,
 
   //first generate KSK and DSK to the keyChain system, and add DSK as default
   NDNS_LOG_INFO("Start generating KSK and DSK and their corresponding certificates");
-  time::system_clock::TimePoint notBefore = time::system_clock::now();
-  time::system_clock::TimePoint notAfter = notBefore + certValidity;
-  shared_ptr<IdentityCertificate> kskCert;
-
-  if (kskCertName == DEFAULT_CERT) {
-    //create KSK's certificate
-    Name kskName = m_keyChain.generateRsaKeyPair(zoneName, true);
-    std::vector<CertificateSubjectDescription> kskDesc;
-    kskCert = m_keyChain.prepareUnsignedIdentityCertificate(kskName, zoneName, notBefore, notAfter,
-                                                            kskDesc, parentZoneName);
-    kskCert->setFreshnessPeriod(cacheTtl);
-
-    m_keyChain.selfSign(*kskCert);
-    m_keyChain.addCertificate(*kskCert);
-    NDNS_LOG_INFO("Generated KSK: " << kskCert->getName());
-  }
-  else {
-    kskCert = m_keyChain.getCertificate(kskCertName);
-  }
-
   Name dskName;
   shared_ptr<IdentityCertificate> dskCert;
   if (dskCertName == DEFAULT_CERT) {
+    // if no dsk provided, then generate a dsk either signed by ksk auto generated or user provided
+    time::system_clock::TimePoint notBefore = time::system_clock::now();
+    time::system_clock::TimePoint notAfter = notBefore + certValidity;
+    shared_ptr<IdentityCertificate> kskCert;
+
+    if (kskCertName == DEFAULT_CERT) {
+      //create KSK's certificate
+      Name kskName = m_keyChain.generateRsaKeyPair(zoneName, true);
+      std::vector<CertificateSubjectDescription> kskDesc;
+      kskCert = m_keyChain.prepareUnsignedIdentityCertificate(kskName, zoneName, notBefore,
+                                                              notAfter, kskDesc, parentZoneName);
+      kskCert->setFreshnessPeriod(cacheTtl);
+
+      m_keyChain.selfSign(*kskCert);
+      m_keyChain.addCertificate(*kskCert);
+      NDNS_LOG_INFO("Generated KSK: " << kskCert->getName());
+    }
+    else {
+      kskCert = m_keyChain.getCertificate(kskCertName);
+    }
+
     dskName = m_keyChain.generateRsaKeyPairAsDefault(zoneName, false);
     //create DSK's certificate
     std::vector<CertificateSubjectDescription> dskDesc;

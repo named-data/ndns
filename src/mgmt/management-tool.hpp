@@ -91,8 +91,9 @@ public:
    *  @param cacheTtl default TTL for RR sets in the zone
    *  @param certValidity validity for automatically created DSK certificate (@p dskCertName
    *                      should not be empty)
-   *  @param kskCertName if given, a zone will be created with this ksk certificate and its key
-   *  @param dskCertName if given, a zone will be created with this dsk certificate and its key
+   *  @param kskCertName if given, a zone will be created with this ksk certificate
+   *  @param dskCertName if given, a zone will be created with this dsk certificate and provided
+   *  ksk certificate will be ignored
    */
   void
   createZone(const Name& zoneName,

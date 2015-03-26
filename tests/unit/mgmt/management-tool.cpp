@@ -353,14 +353,15 @@ BOOST_FIXTURE_TEST_CASE(ZoneCreatePreconditions, ManagementToolFixture)
   BOOST_CHECK_EQUAL(getCerts("/net/ndnsim").size(), 2);
   m_tool.deleteZone("/net/ndnsim");
 
+  // no ksk and dsk will be generated
   BOOST_CHECK_NO_THROW(m_tool.createZone("/net/ndnsim", "/",
                                          time::seconds(1), time::days(1), Name(), dsk));
-  BOOST_CHECK_EQUAL(getCerts("/net/ndnsim").size(), 3);
+  BOOST_CHECK_EQUAL(getCerts("/net/ndnsim").size(), 2);
   m_tool.deleteZone("/net/ndnsim");
 
   BOOST_CHECK_NO_THROW(m_tool.createZone("/net/ndnsim", "/",
                                          time::seconds(1), time::days(1), ksk, Name()));
-  BOOST_CHECK_EQUAL(getCerts("/net/ndnsim").size(), 4);
+  BOOST_CHECK_EQUAL(getCerts("/net/ndnsim").size(), 3);
   m_tool.deleteZone("/net/ndnsim");
 
   BOOST_CHECK_THROW(m_tool.createZone("/net/ndnsim", "/net",
