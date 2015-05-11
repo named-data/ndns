@@ -132,7 +132,9 @@ public:
     NDNS_LOG_TRACE("validator needs: " << certName);
     BOOST_CHECK_EQUAL(m_keyChain.doesCertificateExist(certName), true);
     auto cert = m_keyChain.getCertificate(certName);
-    m_face->receive<Data>(*cert);
+    m_face->getIoService().post([this, cert] {
+        m_face->receive<Data>(*cert);
+      });
   }
 
 public:

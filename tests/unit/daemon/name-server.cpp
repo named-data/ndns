@@ -311,9 +311,14 @@ public:
   {
     // ensure prefix is registered
     run();
-    validatorFace->onSendInterest.connect([&] (const Interest& interest) {
+
+    validatorFace->onSendInterest.connect([this] (const Interest& interest) {
       NDNS_LOG_TRACE("validatorFace get Interest: " << interest.getName());
-      face->receive(interest);
+
+      shared_ptr<const Interest> i = interest.shared_from_this();
+      io.post([i, this] {
+          face->receive(*i);
+        });
     });
   }
 
@@ -386,9 +391,12 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
   bool hasDataBack = false;
 
   shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<KEY>(<>+)<ID-CERT><>");
-  face->onSendData.connectSingleShot([&] (const Data& data) {
+  face->onSendData.connect([&] (const Data& data) {
     if (regex->match(data.getName())) {
-      validatorFace->receive(data); // It's data requested by validator
+      shared_ptr<const Data> d = data.shared_from_this();
+      io.post([d, this] {
+          validatorFace->receive(*d); // It's data requested by validator
+        });
     }
     else {
       // cert is requested by validator
