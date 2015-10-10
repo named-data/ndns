@@ -42,7 +42,8 @@
 
 namespace ndn {
 namespace ndns {
-NDNS_LOG_INIT("NdnsUpdate");
+
+NDNS_LOG_INIT("NdnsUpdate")
 
 class NdnsUpdate : noncopyable
 {

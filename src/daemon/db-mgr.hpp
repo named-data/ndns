@@ -39,7 +39,7 @@ class ErrorName : public Base                   \
     : Base(what)                                \
   {                                             \
   }                                             \
-};
+}
 
 
 

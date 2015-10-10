@@ -20,7 +20,9 @@
 #define BOOST_TEST_MAIN 1
 #define BOOST_TEST_DYN_LINK 1
 
+#include <boost/version.hpp>
 #include <boost/test/unit_test.hpp>
+#include <boost/noncopyable.hpp>
 
 #include "logger.hpp"
 #include "config.hpp"
@@ -39,6 +41,9 @@ public:
 };
 
 BOOST_GLOBAL_FIXTURE(UnitTestsLogging)
+#if (BOOST_VERSION >= 105900)
+;
+#endif // BOOST_VERSION >= 105900
 
 } // namespace tests
 } // namespace ndns

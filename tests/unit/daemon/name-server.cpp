@@ -34,7 +34,7 @@ namespace ndn {
 namespace ndns {
 namespace tests {
 
-NDNS_LOG_INIT("NameServerTest");
+NDNS_LOG_INIT("NameServerTest")
 
 class NameServerFixture : public DbTestData
 {

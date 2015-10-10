@@ -27,7 +27,7 @@
 namespace ndn {
 namespace ndns {
 
-NDNS_LOG_INIT("NdnsDaemon");
+NDNS_LOG_INIT("NdnsDaemon")
 
 /**
  * @brief Name Server Daemon

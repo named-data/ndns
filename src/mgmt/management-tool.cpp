@@ -38,7 +38,7 @@
 namespace ndn {
 namespace ndns {
 
-NDNS_LOG_INIT("ManagementTool");
+NDNS_LOG_INIT("ManagementTool")
 
 ManagementTool::ManagementTool(const std::string& dbFile, KeyChain& keyChain)
   : m_keyChain(keyChain)

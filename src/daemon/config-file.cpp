@@ -50,7 +50,7 @@
 namespace ndn {
 namespace ndns {
 
-NDNS_LOG_INIT("ConfigFile");
+NDNS_LOG_INIT("ConfigFile")
 
 void
 ConfigFile::throwErrorOnUnknownSection(const std::string& filename,

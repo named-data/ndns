@@ -30,7 +30,8 @@
 namespace ndn {
 namespace ndns {
 namespace tests {
-NDNS_LOG_INIT("IterativeQueryControllerTest");
+
+NDNS_LOG_INIT("IterativeQueryControllerTest")
 
 class QueryControllerFixture : public DbTestData
 {

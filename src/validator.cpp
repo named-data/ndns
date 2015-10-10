@@ -27,7 +27,8 @@
 
 namespace ndn {
 namespace ndns {
-NDNS_LOG_INIT("validator");
+
+NDNS_LOG_INIT("validator")
 
 std::string Validator::VALIDATOR_CONF_FILE = DEFAULT_CONFIG_PATH "/" "validator.conf";
 

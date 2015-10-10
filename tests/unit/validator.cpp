@@ -26,7 +26,8 @@
 namespace ndn {
 namespace ndns {
 namespace tests {
-NDNS_LOG_INIT("ValidatorTest");
+
+NDNS_LOG_INIT("ValidatorTest")
 
 BOOST_AUTO_TEST_SUITE(Validator)
 

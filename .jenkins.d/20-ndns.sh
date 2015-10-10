@@ -2,7 +2,8 @@
 set -x
 set -e
 
-COVERAGE=$( python -c "print '--with-coverage --debug' if 'code-coverage' in '$JOB_NAME' else ''" )
+JDIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+source "$JDIR"/util.sh
 
 # Cleanup
 sudo ./waf -j1 --color=yes distclean
@@ -21,11 +22,20 @@ sudo ./waf -j1 --color=yes distclean
 # Cleanup
 sudo ./waf -j1 --color=yes distclean
 
-# Configure/build in optimized mode
-./waf -j1 --color=yes configure --with-tests $COVERAGE
+# Configure/build in debug mode
+if [[ "$JOB_NAME" == *"code-coverage" ]]; then
+    COVERAGE="--with-coverage"
+fi
+./waf -j1 --color=yes configure --debug --with-tests $COVERAGE
 ./waf -j1 --color=yes build
 
-# (tests will be run against optimized version)
+# (tests will be run against debug version)
 
 # Install
 sudo ./waf -j1 --color=yes install
+
+if has Linux $NODE_LABELS; then
+    sudo ldconfig
+elif has FreeBSD $NODE_LABELS; then
+    sudo ldconfig -a
+fi

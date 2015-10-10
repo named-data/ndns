@@ -35,7 +35,7 @@
 #include <memory>
 #include <string>
 
-NDNS_LOG_INIT("NdnsDig");
+NDNS_LOG_INIT("NdnsDig")
 
 namespace ndn {
 namespace ndns {
