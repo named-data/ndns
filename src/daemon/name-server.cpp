@@ -95,7 +95,8 @@ NameServer::handleQuery(const Name& prefix, const Interest& interest, const labe
 
   NDNS_LOG_TRACE("query record: " << interest.getName());
 
-  if (m_dbMgr.find(rrset)) {
+  if (m_dbMgr.find(rrset) &&
+      (re.version.empty() || re.version == rrset.getVersion())) {
     // find the record: NDNS-RESP, NDNS-AUTH, NDNS-RAW, or NDNS-NACK
     shared_ptr<Data> answer = make_shared<Data>(rrset.getData());
     NDNS_LOG_TRACE("answer query with existing Data: " << answer->getName());

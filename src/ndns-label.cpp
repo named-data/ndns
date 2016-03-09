@@ -18,6 +18,7 @@
  */
 
 #include "ndns-label.hpp"
+
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/interest.hpp>
 
@@ -59,7 +60,7 @@ matchName(const Interest& interest,
           const Name& hint, const Name& zone,
           MatchResult& result)
 {
-  // [hint / FHLabel] / zoneName / <Update>|rrLabel / UPDATE|rrType
+  // [hint / FHLabel] / zoneName / <Update>|rrLabel / UPDATE|rrType / [VERSION]
 
   const Name& name = interest.getName();
   size_t skip = calculateSkip(name, hint, zone);
@@ -67,9 +68,17 @@ matchName(const Interest& interest,
   if (name.size() - skip < 1)
     return false;
 
-  result.rrType = name.get(-1);
-  result.rrLabel = name.getSubName(skip, std::max<size_t>(0, name.size() - skip - 1));
-  result.version = name::Component();
+  size_t offset = 1;
+  if (name.get(-offset).isVersion()) {
+    result.version = name.get(-offset);
+    ++offset;
+  }
+  else {
+    result.version = name::Component();
+  }
+
+  result.rrType = name.get(-offset);
+  result.rrLabel = name.getSubName(skip, std::max<size_t>(0, name.size() - skip - offset));
 
   return true;
 }

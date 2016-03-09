@@ -20,27 +20,52 @@
 #define BOOST_TEST_MAIN 1
 #define BOOST_TEST_DYN_LINK 1
 
+#include "config.hpp"
+#include "logger.hpp"
+
 #include <boost/version.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/filesystem.hpp>
 
-#include "logger.hpp"
-#include "config.hpp"
+#include <fstream>
+#include <iostream>
 
 namespace ndn {
 namespace ndns {
 namespace tests {
 
-class UnitTestsLogging : boost::noncopyable
+class GlobalConfigurationFixture : boost::noncopyable
 {
 public:
-  UnitTestsLogging()
+  GlobalConfigurationFixture()
   {
     log::init("unit-tests.log4cxx");
+
+    if (std::getenv("HOME"))
+      m_home = std::getenv("HOME");
+
+    boost::filesystem::path dir(TEST_CONFIG_PATH);
+    dir /= "test-home";
+    setenv("HOME", dir.generic_string().c_str(), 1);
+    boost::filesystem::create_directories(dir);
+    std::ofstream clientConf((dir / ".ndn" / "client.conf").generic_string().c_str());
+    clientConf << "pib=pib-sqlite3\n"
+               << "tpm=tpm-file" << std::endl;
   }
+
+  ~GlobalConfigurationFixture()
+  {
+    if (!m_home.empty()) {
+      setenv("HOME", m_home.c_str(), 1);
+    }
+  }
+
+private:
+  std::string m_home;
 };
 
-BOOST_GLOBAL_FIXTURE(UnitTestsLogging)
+BOOST_GLOBAL_FIXTURE(GlobalConfigurationFixture)
 #if (BOOST_VERSION >= 105900)
 ;
 #endif // BOOST_VERSION >= 105900

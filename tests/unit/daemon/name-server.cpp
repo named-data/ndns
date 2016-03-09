@@ -130,6 +130,34 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
   run();
 
   BOOST_CHECK_EQUAL(nDataBack, 2);
+
+  // explicit interest with correct version
+  face->receive(Interest("/test19/KEY/dsk-1/ID-CERT/%FDd"));
+
+  face->onSendData.connectSingleShot([&] (const Data& data) {
+    ++nDataBack;
+
+    Response resp;
+    BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
+    BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RAW);
+  });
+
+  run();
+  BOOST_CHECK_EQUAL(nDataBack, 3);
+
+  // explicit interest with wrong version
+  face->receive(Interest("/test19/KEY/dsk-1/ID-CERT/%FD010101010"));
+
+  face->onSendData.connectSingleShot([&] (const Data& data) {
+    ++nDataBack;
+
+    Response resp;
+    BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
+    BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_NACK);
+  });
+
+  run();
+  BOOST_CHECK_EQUAL(nDataBack, 4);
 }
 
 BOOST_AUTO_TEST_CASE(UpdateReplaceRr)

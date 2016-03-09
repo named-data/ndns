@@ -42,9 +42,9 @@ BOOST_AUTO_TEST_CASE(MatchInterest)
   BOOST_CHECK_EQUAL(re.version, name::Component());
 
   BOOST_CHECK_EQUAL(matchName(interest2, hint, zone, re), true);
-  BOOST_CHECK_EQUAL(re.rrLabel, Name("/www/dsk-111/NS"));
-  BOOST_CHECK_EQUAL(re.rrType, name::Component::fromEscapedString("%FD%00"));
-  BOOST_CHECK_EQUAL(re.version, name::Component());
+  BOOST_CHECK_EQUAL(re.rrLabel, Name("/www/dsk-111"));
+  BOOST_CHECK_EQUAL(re.rrType, name::Component("NS"));
+  BOOST_CHECK_EQUAL(re.version, name::Component::fromEscapedString("%FD%00"));
 }
 
 BOOST_AUTO_TEST_CASE(MatchData)
@@ -54,7 +54,6 @@ BOOST_AUTO_TEST_CASE(MatchData)
   Name zone("/net/ndnsim");
 
   Data data1("/att/%F0./net/ndnsim/NDNS/www/dsk-111/NS/%FD%00");
-  Data data2("/att/%F0./net/ndnsim/NDNS/www/dsk-111/NS");
 
   MatchResult re;
   BOOST_CHECK_EQUAL(matchName(data1, hint, zone, re), true);
@@ -62,11 +61,6 @@ BOOST_AUTO_TEST_CASE(MatchData)
   BOOST_CHECK_EQUAL(re.rrType, name::Component("NS"));
   BOOST_REQUIRE_NO_THROW(re.version.toVersion());
   BOOST_CHECK_EQUAL(re.version.toVersion(), 0);
-
-  BOOST_CHECK_EQUAL(matchName(data2, hint, zone, re), true);
-  BOOST_CHECK_EQUAL(re.rrLabel, Name("/www"));
-  BOOST_CHECK_EQUAL(re.rrType, name::Component("dsk-111"));
-  BOOST_REQUIRE_THROW(re.version.toVersion(), ndn::tlv::Error);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

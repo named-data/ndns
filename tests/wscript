@@ -31,8 +31,10 @@ def build(bld):
         name='unit-tests-main',
         target='unit-tests-main',
         source='main.cpp',
-        defines=['BOOST_TEST_MODULE=NDNS Unit Tests'],
-        use='ndns-objects BOOST')
+        defines=['BOOST_TEST_MODULE=NDNS Unit Tests',
+                 'TEST_CONFIG_PATH=\"%s/conf-test\"' %(bld.bldnode)],
+        use='ndns-objects BOOST'
+    )
 
     unit_tests = bld.program(
         target='../unit-tests',
