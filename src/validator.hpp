@@ -51,8 +51,6 @@ public:
 
   /**
    * @brief the callback function which is called after validation finishes
-   * @param[in] callback The function is called after validation finishes, no matter validation
-   * succeeds or fails
    */
   explicit
   Validator(Face& face, const std::string& confFile = VALIDATOR_CONF_FILE);

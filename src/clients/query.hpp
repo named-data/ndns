@@ -29,8 +29,11 @@ namespace ndn {
 namespace ndns {
 
 /**
- * @brief NDNS Query abstraction. Query is an Interest whose name follows the format:
- * <hint> /xF0. <zone> [<KEY>|<NDNS>|<NDNS-R>] <rrLabel> <rrType>
+ * @brief NDNS Query abstraction
+ *
+ * Query is an Interest whose name follows the format:
+ *
+ *     <hint> /xF0. <zone> [<KEY>|<NDNS>|<NDNS-R>] <rrLabel> <rrType>
  */
 class Query : noncopyable
 {
@@ -47,8 +50,11 @@ public:
 
   /**
    * @brief extract the query information (rrLabel, rrType) from a Interest
-   * @param[in] interest The Interest to parse; the Interest must have correct hint and zone,
-   *  otherwise it's undefined behavior
+   *
+   * @param hint     Forwarding hint
+   * @param zone     NDNS zone
+   * @param interest The Interest to parse; the Interest must have correct hint and zone,
+   *                 otherwise it's undefined behavior
    */
   bool
   fromInterest(const Name& hint, const Name& zone, const Interest& interest);

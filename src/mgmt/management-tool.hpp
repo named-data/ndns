@@ -63,8 +63,11 @@ public:
     }
   };
 
-  /** @param certDir Path to the directory to store certificates
-   *  @param dbFile Path to the local database
+  /**
+   * @brief Create instance of the tool
+   *
+   * @param dbFile   Path to the local database
+   * @param keyChain Keychain instance
    */
   ManagementTool(const std::string& dbFile, KeyChain& keyChain);
 
@@ -116,7 +119,7 @@ public:
   /** @brief Export the certificate to file system
    *
    *  @param certName the name of the certificate to be exported
-   *  @param output the path to output to-be exported file, including the file name
+   *  @param outFile the path to output to-be exported file, including the file name
    */
   void
   exportCertificate(const Name& certName, const std::string& outFile = DEFAULT_IO);
@@ -132,10 +135,10 @@ public:
    *  @param type the rrset type
    *  @param ndnsType the ndnsType of the response, for user-defined type, just set it NDNS_RAW
    *  @param version the version of the response and rrset, default is Unix Timestamp
-   *  @param content the content of the response
-   *  @param dskName the DSK to signed the response, default is the zone's DSK
+   *  @param contents the content of the response
+   *  @param dskCertName the DSK to signed the response, default is the zone's DSK
    *  @param ttl the ttl of the rrset
-    */
+   */
   void
   addRrSet(const Name& zoneName,
            const Name& label,
@@ -155,11 +158,11 @@ public:
    *  For other cases, the data will be added directly without any modification.
    *
    *  @param zoneName the name of the zone to hold the rrset
-   *  @param dataPath the path to the supplied data
+   *  @param inFile the path to the supplied data
    *  @param ttl the ttl of the rrset
-   *  @param dskName the DSK to signed the special case, default is the zone's DSK
+   *  @param dskCertName the DSK to signed the special case, default is the zone's DSK
    *  @param encoding the encoding of the input file
-    */
+   */
   void
   addRrSet(const Name& zoneName,
            const std::string& inFile = DEFAULT_IO,
@@ -169,16 +172,16 @@ public:
 
   /** @brief remove rrset from the NDNS local database
    *
-   *  @param zonName the name of the zone holding the rrset
+   *  @param zoneName the name of the zone holding the rrset
    *  @param label rrset's label
    *  @param type rrset's type
-    */
+   */
   void
   removeRrSet(const Name& zoneName, const Name& label, const name::Component& type);
 
   /** @brief output the raw data of the selected rrset
    *
-   *  @param zonName the name of the zone holding the rrset
+   *  @param zoneName the name of the zone holding the rrset
    *  @param label rrset's label
    *  @param type rrset's type
    *  @param os the ostream to print information to
@@ -203,23 +206,23 @@ public:
   /** @brief lists all existing zones within this name server.
    *
    *  @param os the ostream to print information to
-    */
+   */
   void
   listAllZones(std::ostream& os);
 
 private:
   /** @brief add ID-CERT to the NDNS local database
-    */
+   */
   void
   addIdCert(Zone& zone, shared_ptr<IdentityCertificate> cert, const time::seconds& ttl);
 
   /** @brief add zone to the NDNS local database
-    */
+   */
   void
   addZone(Zone& zone);
 
   /** @brief remove zone from the NDNS local database
-    */
+   */
   void
   removeZone(Zone& zone);
 

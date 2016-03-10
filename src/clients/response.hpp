@@ -56,10 +56,13 @@ public:
 
   /**
    * @brief fill the attributes from Data packet.
-   * @param[in] data Data.getName() must the same hint (if has) and zone as its prefix,
-   * otherwise it's undefined behavior
+   *
+   * @param hint Forwarding hint
+   * @param zone NDNS zone name
+   * @param data Data.getName() must the same hint (if has) and zone as its prefix,
+   *             otherwise it's undefined behavior
    * @return false if Data.getName() does not follow the structure of NDNS Response without
-   * changing any attributes, otherwise return true and fill the attributes
+   *         changing any attributes, otherwise return true and fill the attributes
    */
   bool
   fromData(const Name& hint, const Name& zone, const Data& data);
@@ -72,8 +75,9 @@ public:
 
   /**
    * @brief add Block which contains string information and its tlv type is ndns::tlv::RrData
-   * Response is service level information, the encoding level abstraction,
-   * i.e., Block is not very convenient.
+   *
+   * @return Response that is service level information, the encoding level abstraction,
+   *         i.e., Block is not very convenient.
    */
   Response&
   addRr(const std::string& rr);
