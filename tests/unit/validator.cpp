@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -41,7 +41,7 @@ public:
     , m_randomId("/test03")
     , m_keyChain("sqlite3", "file")
     , m_version(name::Component::fromVersion(0))
-    , m_face(ndn::util::makeDummyClientFace(ndn::util::DummyClientFace::Options { false, true }))
+    , m_face(m_keyChain, {false, true})
   {
     m_keyChain.deleteIdentity(m_testId1);
     m_keyChain.deleteIdentity(m_testId2);
@@ -60,13 +60,13 @@ public:
     m_keyChain.addCertificate(*cert);
     NDNS_LOG_TRACE("add cert: " << cert->getName() << " to KeyChain");
 
-    m_face->onSendInterest.connect(bind(&Fixture::respondInterest, this, _1));
+    m_face.onSendInterest.connect(bind(&Fixture::respondInterest, this, _1));
   }
 
   ~Fixture()
   {
-    m_face->getIoService().stop();
-    m_face->shutdown();
+    m_face.getIoService().stop();
+    m_face.shutdown();
     m_keyChain.deleteIdentity(m_testId1);
     m_keyChain.deleteIdentity(m_testId2);
     m_keyChain.deleteIdentity(m_testId3);
@@ -133,8 +133,8 @@ public:
     NDNS_LOG_TRACE("validator needs: " << certName);
     BOOST_CHECK_EQUAL(m_keyChain.doesCertificateExist(certName), true);
     auto cert = m_keyChain.getCertificate(certName);
-    m_face->getIoService().post([this, cert] {
-        m_face->receive<Data>(*cert);
+    m_face.getIoService().post([this, cert] {
+        m_face.receive<Data>(*cert);
       });
   }
 
@@ -158,14 +158,14 @@ public:
 
   name::Component m_version;
 
-  shared_ptr<ndn::util::DummyClientFace> m_face;
+  ndn::util::DummyClientFace m_face;
 };
 
 
 BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
 {
   // validator must be created after root key is saved to the target
-  ndns::Validator validator(*m_face, TEST_CONFIG_PATH "/" "validator.conf");
+  ndns::Validator validator(m_face, TEST_CONFIG_PATH "/" "validator.conf");
 
   Name dataName(m_testId3);
   dataName.append("NDNS")
@@ -186,7 +186,7 @@ BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
                        BOOST_CHECK(false);
                      });
 
-  m_face->processEvents(time::milliseconds(-1));
+  m_face.processEvents(time::milliseconds(-1));
 
   BOOST_CHECK_EQUAL(hasValidated, true);
 
@@ -210,7 +210,7 @@ BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
                        BOOST_CHECK(true);
                      });
 
-  m_face->processEvents(time::milliseconds(-1));
+  m_face.processEvents(time::milliseconds(-1));
   // cannot pass verification due to key's owner's name is longer than data owner's
   BOOST_CHECK_EQUAL(hasValidated, true);
 
@@ -234,7 +234,7 @@ BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
                        BOOST_CHECK(true);
                      });
 
-  m_face->processEvents(time::milliseconds(-1));
+  m_face.processEvents(time::milliseconds(-1));
   // cannot pass due to self-sign cert is used
   BOOST_CHECK_EQUAL(hasValidated, true);
 
@@ -257,7 +257,7 @@ BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
                        BOOST_CHECK(true);
                      });
 
-  m_face->processEvents(time::milliseconds(-1));
+  m_face.processEvents(time::milliseconds(-1));
   // cannot pass due to a totally mismatched key
   BOOST_CHECK_EQUAL(hasValidated, true);
 }

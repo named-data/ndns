@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -37,25 +37,25 @@ class QueryControllerFixture : public DbTestData
 {
 public:
   QueryControllerFixture()
-    : producerFace(ndn::util::makeDummyClientFace(io, { false, true }))
-    , consumerFace(ndn::util::makeDummyClientFace(io, { false, true }))
-    , validator(*producerFace)
-    , top(m_root.getName(), m_certName, *producerFace, m_session, m_keyChain, validator)
-    , net(m_net.getName(), m_certName, *producerFace, m_session, m_keyChain, validator)
-    , ndnsim(m_ndnsim.getName(), m_certName, *producerFace, m_session, m_keyChain, validator)
+    : producerFace(io, {false, true})
+    , consumerFace(io, {false, true})
+    , validator(producerFace)
+    , top(m_root.getName(), m_certName, producerFace, m_session, m_keyChain, validator)
+    , net(m_net.getName(), m_certName, producerFace, m_session, m_keyChain, validator)
+    , ndnsim(m_ndnsim.getName(), m_certName, producerFace, m_session, m_keyChain, validator)
   {
     run();
-    producerFace->onSendInterest.connect([this] (const Interest& interest) {
-      io.post([=] { consumerFace->receive(interest); });
+    producerFace.onSendInterest.connect([this] (const Interest& interest) {
+      io.post([=] { consumerFace.receive(interest); });
     });
-    consumerFace->onSendInterest.connect([this] (const Interest& interest) {
-      io.post([=] { producerFace->receive(interest); });
+    consumerFace.onSendInterest.connect([this] (const Interest& interest) {
+      io.post([=] { producerFace.receive(interest); });
     });
-    producerFace->onSendData.connect([this] (const Data& data) {
-      io.post([=] { consumerFace->receive(data); });
+    producerFace.onSendData.connect([this] (const Data& data) {
+      io.post([=] { consumerFace.receive(data); });
     });
-    consumerFace->onSendData.connect([this] (const Data& data) {
-      io.post([=] { producerFace->receive(data); });
+    consumerFace.onSendData.connect([this] (const Data& data) {
+      io.post([=] { producerFace.receive(data); });
     });
   }
 
@@ -68,8 +68,8 @@ public:
 
 public:
   boost::asio::io_service io;
-  shared_ptr<ndn::util::DummyClientFace> producerFace;
-  shared_ptr<ndn::util::DummyClientFace> consumerFace;
+  ndn::util::DummyClientFace producerFace;
+  ndn::util::DummyClientFace consumerFace;
 
   Name hint;
   Validator validator;
@@ -102,7 +102,7 @@ BOOST_FIXTURE_TEST_CASE(Basic, QueryControllerFixture)
     [&hasDataBack] (uint32_t errCode, const std::string& errMsg) {
       BOOST_CHECK(false);
     },
-    *consumerFace);
+    consumerFace);
 
   // IterativeQueryController is a whole process
   // the tester should not send Interest one by one

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -40,10 +40,10 @@ class NameServerFixture : public DbTestData
 {
 public:
   NameServerFixture()
-    : face(ndn::util::makeDummyClientFace({ false, true }))
+    : face({false, true})
     , zone(m_root.getName())
-    , validator(*face)
-    , server(zone, m_certName, *face, m_session, m_keyChain, validator)
+    , validator(face)
+    , server(zone, m_certName, face, m_session, m_keyChain, validator)
   {
     // ensure prefix is registered
     run();
@@ -52,12 +52,12 @@ public:
   void
   run()
   {
-    face->getIoService().poll();
-    face->getIoService().reset();
+    face.getIoService().poll();
+    face.getIoService().reset();
   }
 
 public:
-  shared_ptr<ndn::util::DummyClientFace> face;
+  ndn::util::DummyClientFace face;
   Name hint;
   const Name& zone;
   Validator validator;
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(NdnsQuery)
 
   bool hasDataBack = false;
 
-  face->onSendData.connectSingleShot([&] (const Data& data) {
+  face.onSendData.connectSingleShot([&] (const Data& data) {
     hasDataBack = true;
     NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE(NdnsQuery)
     BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RESP);
   });
 
-  face->receive(q.toInterest());
+  face.receive(q.toInterest());
 
   run();
 
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
   size_t nDataBack = 0;
 
   // will ask for non-existing record
-  face->onSendData.connectSingleShot([&] (const Data& data) {
+  face.onSendData.connectSingleShot([&] (const Data& data) {
     ++nDataBack;
     NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
@@ -110,11 +110,11 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
     BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_NACK);
   });
 
-  face->receive(q.toInterest());
+  face.receive(q.toInterest());
   run();
 
   // will ask for the existing record (will have type NDNS_RAW, as it is certificate)
-  face->onSendData.connectSingleShot([&] (const Data& data) {
+  face.onSendData.connectSingleShot([&] (const Data& data) {
     ++nDataBack;
     NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
@@ -126,15 +126,15 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
 
   q.setRrLabel("dsk-1");
 
-  face->receive(q.toInterest());
+  face.receive(q.toInterest());
   run();
 
   BOOST_CHECK_EQUAL(nDataBack, 2);
 
   // explicit interest with correct version
-  face->receive(Interest("/test19/KEY/dsk-1/ID-CERT/%FDd"));
+  face.receive(Interest("/test19/KEY/dsk-1/ID-CERT/%FDd"));
 
-  face->onSendData.connectSingleShot([&] (const Data& data) {
+  face.onSendData.connectSingleShot([&] (const Data& data) {
     ++nDataBack;
 
     Response resp;
@@ -146,9 +146,9 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
   BOOST_CHECK_EQUAL(nDataBack, 3);
 
   // explicit interest with wrong version
-  face->receive(Interest("/test19/KEY/dsk-1/ID-CERT/%FD010101010"));
+  face.receive(Interest("/test19/KEY/dsk-1/ID-CERT/%FD010101010"));
 
-  face->onSendData.connectSingleShot([&] (const Data& data) {
+  face.onSendData.connectSingleShot([&] (const Data& data) {
     ++nDataBack;
 
     Response resp;
@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE(UpdateReplaceRr)
 
   bool hasDataBack = false;
 
-  face->onSendData.connectSingleShot([&] (const Data& data) {
+  face.onSendData.connectSingleShot([&] (const Data& data) {
     hasDataBack = true;
     NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
@@ -206,7 +206,7 @@ BOOST_AUTO_TEST_CASE(UpdateReplaceRr)
     BOOST_CHECK_EQUAL(ret, 0);
   });
 
-  face->receive(q.toInterest());
+  face.receive(q.toInterest());
   run();
 
   BOOST_CHECK_EQUAL(hasDataBack, true);
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE(UpdateInsertNewRr)
 
   bool hasDataBack = false;
 
-  face->onSendData.connectSingleShot([&] (const Data& data) {
+  face.onSendData.connectSingleShot([&] (const Data& data) {
     hasDataBack = true;
     NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
@@ -258,7 +258,7 @@ BOOST_AUTO_TEST_CASE(UpdateInsertNewRr)
     BOOST_CHECK_EQUAL(ret, 0);
   });
 
-  face->receive(q.toInterest());
+  face.receive(q.toInterest());
   run();
 
   BOOST_CHECK_EQUAL(hasDataBack, true);
@@ -316,12 +316,12 @@ BOOST_AUTO_TEST_CASE(UpdateValidatorCannotFetchCert)
   bool hasDataBack = false;
 
   // no data back, since the Update cannot pass verification
-  face->onSendData.connectSingleShot([&] (const Data& data) {
+  face.onSendData.connectSingleShot([&] (const Data& data) {
     hasDataBack = true;
     BOOST_FAIL("UNEXPECTED");
   });
 
-  face->receive(q.toInterest());
+  face.receive(q.toInterest());
   run();
 
   BOOST_CHECK_EQUAL(hasDataBack, false);
@@ -331,21 +331,21 @@ class NameServerFixture2 : public DbTestData
 {
 public:
   NameServerFixture2()
-    : face(ndn::util::makeDummyClientFace(io, { false, true }))
-    , validatorFace(ndn::util::makeDummyClientFace(io, { false, true }))
+    : face(io, m_keyChain, {false, true})
+    , validatorFace(io, m_keyChain, {false, true})
     , zone(m_root.getName())
-    , validator(*validatorFace) // different face for validator
-    , server(zone, m_certName, *face, m_session, m_keyChain, validator)
+    , validator(validatorFace) // different face for validator
+    , server(zone, m_certName, face, m_session, m_keyChain, validator)
   {
     // ensure prefix is registered
     run();
 
-    validatorFace->onSendInterest.connect([this] (const Interest& interest) {
+    validatorFace.onSendInterest.connect([this] (const Interest& interest) {
       NDNS_LOG_TRACE("validatorFace get Interest: " << interest.getName());
 
       shared_ptr<const Interest> i = interest.shared_from_this();
       io.post([i, this] {
-          face->receive(*i);
+          face.receive(*i);
         });
     });
   }
@@ -359,8 +359,8 @@ public:
 
 public:
   boost::asio::io_service io;
-  shared_ptr<ndn::util::DummyClientFace> face;
-  shared_ptr<ndn::util::DummyClientFace> validatorFace;
+  ndn::util::DummyClientFace face;
+  ndn::util::DummyClientFace validatorFace;
   Name hint;
   const Name& zone;
   Validator validator;
@@ -419,11 +419,11 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
   bool hasDataBack = false;
 
   shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<KEY>(<>+)<ID-CERT><>");
-  face->onSendData.connect([&] (const Data& data) {
+  face.onSendData.connect([&] (const Data& data) {
     if (regex->match(data.getName())) {
       shared_ptr<const Data> d = data.shared_from_this();
       io.post([d, this] {
-          validatorFace->receive(*d); // It's data requested by validator
+          validatorFace.receive(*d); // It's data requested by validator
         });
     }
     else {
@@ -447,7 +447,7 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
     }
   });
 
-  face->receive(q.toInterest());
+  face.receive(q.toInterest());
   run();
 
   BOOST_CHECK_EQUAL(hasDataBack, true);
