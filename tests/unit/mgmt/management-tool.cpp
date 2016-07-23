@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -802,7 +802,7 @@ BOOST_FIXTURE_TEST_CASE(ListZone, ManagementToolFixture)
   re2.setRrType(name::Component("USER-DEFINED"));
   re2.setNdnsType(NDNS_RAW);
   re2.setVersion(name::Component::fromVersion(1234567));
-  re2.setAppContent(dataBlock(ndn::tlv::Content, "Hello", sizeof("Hello")));
+  re2.setAppContent(makeBinaryBlock(ndn::tlv::Content, "Hello", sizeof("Hello")));
   shared_ptr<Data> data2 = re2.toData();
   m_keyChain.sign(*data2, otherDsk);
   ndn::io::save(*data2, output);

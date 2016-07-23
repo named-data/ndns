@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -335,7 +335,7 @@ main(int argc, char* argv[])
       re.setNdnsType(ndnsType);
 
       for (const auto& content : contents) {
-        re.addRr(ndn::dataBlock(ndn::ndns::tlv::RrData, content.c_str(), content.size()));
+        re.addRr(makeBinaryBlock(ndns::tlv::RrData, content.c_str(), content.size()));
 
         // re.addRr(content);
       }

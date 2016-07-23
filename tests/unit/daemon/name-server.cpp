@@ -170,9 +170,9 @@ BOOST_AUTO_TEST_CASE(UpdateReplaceRr)
   re.setNdnsType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
-  re.addRr(dataBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
   str = "ns2.ndnsim.net";
-  re.addRr(dataBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
 
   shared_ptr<Data> data = re.toData();
   m_keyChain.sign(*data, m_certName);
@@ -222,9 +222,9 @@ BOOST_AUTO_TEST_CASE(UpdateInsertNewRr)
   re.setNdnsType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
-  re.addRr(dataBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
   str = "ns2.ndnsim.net";
-  re.addRr(dataBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
 
   shared_ptr<Data> data = re.toData();
   m_keyChain.sign(*data, m_certName);
@@ -298,9 +298,9 @@ BOOST_AUTO_TEST_CASE(UpdateValidatorCannotFetchCert)
   re.setNdnsType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
-  re.addRr(dataBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
   str = "ns2.ndnsim.net";
-  re.addRr(dataBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
 
   shared_ptr<Data> data = re.toData();
   m_keyChain.sign(*data, dskCert->getName());
@@ -401,9 +401,9 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
   re.setNdnsType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
-  re.addRr(dataBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
   str = "ns2.ndnsim.net";
-  re.addRr(dataBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
 
   shared_ptr<Data> data = re.toData();
   m_keyChain.sign(*data, dskCert->getName());

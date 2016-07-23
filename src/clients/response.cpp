@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -26,7 +26,7 @@ namespace ndns {
 Response::Response()
   : m_ndnsType(NDNS_RAW)
   , m_freshnessPeriod(DEFAULT_RR_FRESHNESS_PERIOD)
-  , m_appContent(dataBlock(ndn::tlv::Content, reinterpret_cast<const uint8_t*>(0), 0))
+  , m_appContent(makeBinaryBlock(ndn::tlv::Content, reinterpret_cast<const uint8_t*>(0), 0))
 {
 }
 
@@ -35,7 +35,7 @@ Response::Response(const Name& zone, const name::Component& queryType)
   , m_queryType(queryType)
   , m_ndnsType(NDNS_RAW)
   , m_freshnessPeriod(DEFAULT_RR_FRESHNESS_PERIOD)
-  , m_appContent(dataBlock(ndn::tlv::Content, reinterpret_cast<const uint8_t*>(0), 0))
+  , m_appContent(makeBinaryBlock(ndn::tlv::Content, reinterpret_cast<const uint8_t*>(0), 0))
 {
 }
 
@@ -45,7 +45,7 @@ Response::wireEncode(EncodingImpl<T>& block) const
 {
   if (m_ndnsType == NDNS_RAW) {
     // Raw application content
-    return prependBlock(block, m_appContent);
+    return block.prependBlock(m_appContent);
   }
 
   // Content :: = CONTENT-TYPE TLV-LENGTH
@@ -54,7 +54,7 @@ Response::wireEncode(EncodingImpl<T>& block) const
   size_t totalLength = 0;
   for (std::vector<Block>::const_reverse_iterator iter = m_rrs.rbegin();
        iter != m_rrs.rend(); ++iter) {
-    totalLength += prependBlock(block, *iter);
+    totalLength += block.prependBlock(*iter);
   }
 
   totalLength += block.prependVarNumber(totalLength);
@@ -145,7 +145,7 @@ Response::toData()
   info.setFreshnessPeriod(m_freshnessPeriod);
 
   if (m_ndnsType != NDNS_RAW) {
-    info.addAppMetaInfo(nonNegativeIntegerBlock(ndns::tlv::NdnsType, m_ndnsType));
+    info.addAppMetaInfo(makeNonNegativeIntegerBlock(ndns::tlv::NdnsType, m_ndnsType));
     data->setContent(this->wireEncode());
   }
   else {
@@ -167,7 +167,7 @@ Response::addRr(const Block& rr)
 Response&
 Response::addRr(const std::string& rr)
 {
-  return this->addRr(dataBlock(ndns::tlv::RrData, rr.c_str(), rr.size()));
+  return this->addRr(makeBinaryBlock(ndns::tlv::RrData, rr.c_str(), rr.size()));
 }
 
 bool

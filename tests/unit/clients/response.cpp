@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(Basic)
   BOOST_CHECK_EQUAL(r.getQueryType(), qType);
 
   const std::string DATA1("some fake content");
-  r.setAppContent(dataBlock(ndn::tlv::Content, DATA1.c_str(), DATA1.size()));
+  r.setAppContent(makeBinaryBlock(ndn::tlv::Content, DATA1.c_str(), DATA1.size()));
 
   //const Block& block = r.wireEncode();
   shared_ptr<Data> data = r.toData();
@@ -66,10 +66,10 @@ BOOST_AUTO_TEST_CASE(Basic)
   r4.setNdnsType(NDNS_RESP);
 
   std::string str = "Just try it";
-  Block s = dataBlock(ndns::tlv::RrData, str.c_str(), str.size());
+  Block s = makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size());
   r4.addRr(s);
   str = "Go to Hell";
-  // Block s2 = dataBlock(ndns::tlv::RrData, str.c_str(), str.size());
+  // Block s2 = makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size());
   r4.addRr(str);
 
   BOOST_CHECK_NE(r2, r4);

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -97,7 +97,7 @@ BOOST_FIXTURE_TEST_CASE(Rrsets, DbMgrFixture)
   rrset1.setTtl(time::seconds(4600));
 
   static const std::string DATA1 = "SOME DATA";
-  rrset1.setData(dataBlock(ndn::tlv::Content, DATA1.c_str(), DATA1.size()));
+  rrset1.setData(makeBinaryBlock(ndn::tlv::Content, DATA1.c_str(), DATA1.size()));
 
   BOOST_CHECK_EQUAL(rrset1.getId(), 0);
   BOOST_CHECK_NO_THROW(session.insert(rrset1));
@@ -125,7 +125,7 @@ BOOST_FIXTURE_TEST_CASE(Rrsets, DbMgrFixture)
 
   rrset1.setVersion(name::Component::fromVersion(890));
   static const std::string DATA2 = "ANOTHER DATA";
-  rrset1.setData(dataBlock(ndn::tlv::Content, DATA2.c_str(), DATA2.size()));
+  rrset1.setData(makeBinaryBlock(ndn::tlv::Content, DATA2.c_str(), DATA2.size()));
 
   BOOST_CHECK_NO_THROW(session.update(rrset1));
 
@@ -217,7 +217,7 @@ BOOST_FIXTURE_TEST_CASE(FindRrsets, DbMgrFixture)
   rrset1.setTtl(time::seconds(4600));
 
   static const std::string DATA1 = "SOME DATA";
-  rrset1.setData(dataBlock(ndn::tlv::Content, DATA1.data(), DATA1.size()));
+  rrset1.setData(makeBinaryBlock(ndn::tlv::Content, DATA1.data(), DATA1.size()));
   session.insert(rrset1);
 
   Rrset rrset2(&zone);
@@ -226,7 +226,7 @@ BOOST_FIXTURE_TEST_CASE(FindRrsets, DbMgrFixture)
   rrset2.setVersion(name::Component::fromVersion(232));
   rrset2.setTtl(time::seconds(2100));
   std::string data2 = "host1.net";
-  rrset2.setData(dataBlock(ndn::tlv::Content, data2.c_str(), data2.size()));
+  rrset2.setData(makeBinaryBlock(ndn::tlv::Content, data2.c_str(), data2.size()));
   session.insert(rrset2);
 
   std::vector<Rrset> vec = session.findRrsets(zone);

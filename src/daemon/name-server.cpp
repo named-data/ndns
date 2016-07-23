@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -104,7 +104,7 @@ NameServer::handleQuery(const Name& prefix, const Interest& interest, const labe
   }
   else {
     // no record, construct NACK
-    Block block = nonNegativeIntegerBlock(::ndn::ndns::tlv::NdnsType, NDNS_NACK);
+    Block block = makeNonNegativeIntegerBlock(tlv::NdnsType, NDNS_NACK);
     MetaInfo info;
     info.addAppMetaInfo(block);
     info.setFreshnessPeriod(this->getContentFreshness());
@@ -169,7 +169,7 @@ NameServer::doUpdate(const shared_ptr<const Interest>& interest,
   rrset.setLabel(re.rrLabel);
   rrset.setType(re.rrType);
 
-  Block ndnsType = nonNegativeIntegerBlock(::ndn::ndns::tlv::NdnsType, NDNS_RESP);
+  Block ndnsType = makeNonNegativeIntegerBlock(::ndn::ndns::tlv::NdnsType, NDNS_RESP);
   MetaInfo info;
   info.addAppMetaInfo(ndnsType);
   info.setFreshnessPeriod(this->getContentFreshness());
@@ -187,13 +187,13 @@ NameServer::doUpdate(const shared_ptr<const Interest>& interest,
         rrset.setVersion(newVersion);
         rrset.setData(data->wireEncode());
         m_dbMgr.update(rrset);
-        blk.push_back(nonNegativeIntegerBlock(ndn::ndns::tlv::UpdateReturnCode, UPDATE_OK));
+        blk.push_back(makeNonNegativeIntegerBlock(ndn::ndns::tlv::UpdateReturnCode, UPDATE_OK));
         blk.encode(); // must
         answer->setContent(blk);
         NDNS_LOG_TRACE("replace old record and answer update with UPDATE_OK");
       }
       else {
-        blk.push_back(nonNegativeIntegerBlock(ndn::ndns::tlv::UpdateReturnCode, UPDATE_FAILURE));
+        blk.push_back(makeNonNegativeIntegerBlock(ndn::ndns::tlv::UpdateReturnCode, UPDATE_FAILURE));
         blk.encode();
         answer->setContent(blk);
         NDNS_LOG_TRACE("answer update with UPDATE_FAILURE");
@@ -205,14 +205,14 @@ NameServer::doUpdate(const shared_ptr<const Interest>& interest,
       rrset.setData(data->wireEncode());
       rrset.setTtl(m_zone.getTtl());
       m_dbMgr.insert(rrset);
-      blk.push_back(nonNegativeIntegerBlock(ndn::ndns::tlv::UpdateReturnCode, UPDATE_OK));
+      blk.push_back(makeNonNegativeIntegerBlock(ndn::ndns::tlv::UpdateReturnCode, UPDATE_OK));
       blk.encode();
       answer->setContent(blk);
       NDNS_LOG_TRACE("insert new record and answer update with UPDATE_OK");
     }
   }
   catch (std::exception& e) {
-    blk.push_back(nonNegativeIntegerBlock(ndn::ndns::tlv::UpdateReturnCode, UPDATE_FAILURE));
+    blk.push_back(makeNonNegativeIntegerBlock(ndn::ndns::tlv::UpdateReturnCode, UPDATE_FAILURE));
     blk.encode(); // must
     answer->setContent(blk);
     NDNS_LOG_INFO("Error processing the update: " << e.what()
