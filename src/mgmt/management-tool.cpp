@@ -623,8 +623,8 @@ ManagementTool::matchCertificate(const Name& certName, const Name& identity)
     return false;
   }
 
-  if (!m_keyChain.doesKeyExistInTpm(keyName, KEY_CLASS_PRIVATE)) {
-    NDNS_LOG_WARN("Private key: " << keyName.toUri() << " is not presented in KeyChain");
+  if (!m_keyChain.doesKeyExistInTpm(keyName, KeyClass::PRIVATE)) {
+    NDNS_LOG_WARN("Private key: " << keyName.toUri() << " is not present in KeyChain");
     return false;
   }
 
