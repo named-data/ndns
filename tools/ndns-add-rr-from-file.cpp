@@ -121,7 +121,7 @@ main(int argc, char* argv[])
       ioEncoding = ndn::io::HEX;
     }
     else if (encoding == "base64") {
-      ioEncoding = ndn::io::BASE_64;
+      ioEncoding = ndn::io::BASE64;
     }
     else {
       std::cerr << "Error: not supported encoding format '" << encoding

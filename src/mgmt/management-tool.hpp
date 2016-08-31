@@ -168,7 +168,7 @@ public:
            const std::string& inFile = DEFAULT_IO,
            const time::seconds& ttl = DEFAULT_RR_TTL,
            const Name& dskCertName = DEFAULT_CERT,
-           const ndn::io::IoEncoding encoding = ndn::io::BASE_64);
+           const ndn::io::IoEncoding encoding = ndn::io::BASE64);
 
   /** @brief remove rrset from the NDNS local database
    *

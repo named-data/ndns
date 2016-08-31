@@ -716,9 +716,9 @@ BOOST_FIXTURE_TEST_CASE(AddRrSet8, ManagementToolFixture)
   Name dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
   shared_ptr<IdentityCertificate> dskCert = m_keyChain.selfSign(dskName);
 
-  ndn::io::save(*dskCert, output, ndn::io::BASE_64);
+  ndn::io::save(*dskCert, output, ndn::io::BASE64);
   BOOST_CHECK_NO_THROW(
-    m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::BASE_64));
+    m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::BASE64));
 
   // raw
   dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
