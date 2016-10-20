@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -50,8 +50,6 @@ public:
 
       config.addSectionHandler("zones",
                                bind(&NdnsDaemon::processZonesSection, this, _1, _3));
-      config.addSectionHandler("hints",
-                               bind(&NdnsDaemon::processHintsSection, this, _1, _3));
 
       config.parse(configFile, false);
 
@@ -67,13 +65,6 @@ public:
     catch (const std::exception& e) {
       NDNS_LOG_FATAL(e.what());
     }
-  }
-
-  void
-  processHintsSection(const ndn::ndns::ConfigSection& section, const std::string& filename)
-  {
-    // hint is not supported yet
-    ;
   }
 
   void

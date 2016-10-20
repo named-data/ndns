@@ -75,7 +75,7 @@ void
 NameServer::onInterest(const Name& prefix, const Interest& interest)
 {
   label::MatchResult re;
-  if (!label::matchName(interest, "", m_zone.getName(), re))
+  if (!label::matchName(interest, m_zone.getName(), re))
     return;
 
   if (re.rrType == ndns::label::NDNS_UPDATE_LABEL) {
@@ -158,7 +158,7 @@ NameServer::doUpdate(const shared_ptr<const Interest>& interest,
 {
   label::MatchResult re;
   try {
-    if (!label::matchName(*data, "", m_zone.getName(), re))
+    if (!label::matchName(*data, m_zone.getName(), re))
       return;
   }
   catch (std::exception& e) {

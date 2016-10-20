@@ -67,7 +67,6 @@ public:
   ndn::util::DummyClientFace producerFace;
   ndn::util::DummyClientFace consumerFace;
 
-  Name hint;
   Validator validator;
   ndns::NameServer top;
   ndns::NameServer net;
@@ -82,7 +81,6 @@ BOOST_FIXTURE_TEST_CASE(Basic, QueryControllerFixture)
   using std::string;
   using ndns::NameServer;
 
-  string hint;
   Name name = m_ndnsim.getName();
   Name dstLabel(name.append("www"));
   name::Component rrType("TXT");

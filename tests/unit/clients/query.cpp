@@ -31,13 +31,11 @@ BOOST_AUTO_TEST_CASE(TestCase)
 {
   Name zone("/net");
   name::Component qType = ndns::label::NDNS_ITERATIVE_QUERY;
-  Name hint;
-  ndns::Query q(hint, zone, qType);
+  ndns::Query q(zone, qType);
 
   q.setRrLabel(Name("/ndnsim/www"));
   BOOST_CHECK_EQUAL(q.getRrLabel(), Name("ndnsim/www"));
   BOOST_CHECK_EQUAL(q.getRrLabel(), Name("/ndnsim/www"));
-  BOOST_CHECK_EQUAL(q.getHint(), hint);
   BOOST_CHECK_EQUAL(q.getZone(), zone);
   BOOST_CHECK_EQUAL(q.getQueryType(), qType);
 
@@ -46,23 +44,22 @@ BOOST_AUTO_TEST_CASE(TestCase)
 
   Interest interest = q.toInterest();
 
-  ndns::Query q2(hint, zone, qType);
-  BOOST_CHECK_EQUAL(q2.fromInterest(hint, zone, interest), true);
+  ndns::Query q2(zone, qType);
+  BOOST_CHECK_EQUAL(q2.fromInterest(zone, interest), true);
 
   ndns::Query q3;
-  BOOST_CHECK_EQUAL(q3.fromInterest(hint, zone, interest), true);
+  BOOST_CHECK_EQUAL(q3.fromInterest(zone, interest), true);
 
   BOOST_CHECK_EQUAL(q, q3);
   BOOST_CHECK_EQUAL(q, q2);
 
-  hint = Name("att");
-  ndns::Query q4(hint, zone, qType);
+  ndns::Query q4(zone, qType);
   q4.setRrLabel("/ndnsim/www");
   q4.setRrType(ndns::label::TXT_RR_TYPE);
   interest = q4.toInterest();
   ndns::Query q5;
 
-  BOOST_CHECK_EQUAL(q5.fromInterest(hint, zone, interest), true);
+  BOOST_CHECK_EQUAL(q5.fromInterest(zone, interest), true);
   BOOST_CHECK_EQUAL(q4, q5);
   BOOST_CHECK_NE(q2, q4);
  }

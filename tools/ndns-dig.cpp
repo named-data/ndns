@@ -43,11 +43,10 @@ namespace ndns {
 class NdnsDig
 {
 public:
-  NdnsDig(const Name& hint, const Name& dstLabel,
+  NdnsDig(const Name& dstLabel,
           const name::Component& rrType, bool shouldValidateIntermediate)
     : m_dstLabel(dstLabel)
     , m_rrType(rrType)
-    , m_hint(hint)
     , m_interestLifetime(DEFAULT_INTEREST_LIFETIME)
     , m_validator(m_face)
     , m_shouldValidateIntermediate(shouldValidateIntermediate)
@@ -199,7 +198,6 @@ private:
   Name m_dstLabel;
   name::Component m_rrType;
 
-  Name m_hint;
   Name m_certName;
   time::milliseconds m_interestLifetime;
 
@@ -305,7 +303,7 @@ main(int argc, char* argv[])
   }
 
   try {
-    ndn::ndns::NdnsDig dig("", dstLabel, ndn::name::Component(rrType), shouldValidateIntermediate);
+    ndn::ndns::NdnsDig dig(dstLabel, ndn::name::Component(rrType), shouldValidateIntermediate);
     dig.setInterestLifetime(ndn::time::seconds(ttl));
     dig.setDstFile(dstFile);
 

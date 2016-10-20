@@ -29,7 +29,6 @@ BOOST_FIXTURE_TEST_SUITE(Response, IdentityManagementFixture)
 
 BOOST_AUTO_TEST_CASE(Basic)
 {
-  Name hint;
   Name zone("/net");
   name::Component qType = ndns::label::NDNS_ITERATIVE_QUERY;
 
@@ -54,7 +53,7 @@ BOOST_AUTO_TEST_CASE(Basic)
   // m_keyChain.sign(*data);
 
   ndns::Response r2;
-  BOOST_CHECK_EQUAL(r2.fromData(hint, zone, *data), true);
+  BOOST_CHECK_EQUAL(r2.fromData(zone, *data), true);
   BOOST_CHECK_EQUAL(r, r2);
 
   ndns::Response r4(zone, qType);
@@ -76,7 +75,7 @@ BOOST_AUTO_TEST_CASE(Basic)
 
   ndns::Response r5(zone, qType);
 
-  BOOST_CHECK_EQUAL(r5.fromData(hint, zone, *data), true);
+  BOOST_CHECK_EQUAL(r5.fromData(zone, *data), true);
   BOOST_CHECK_EQUAL(r4, r5);
  }
 

@@ -94,10 +94,10 @@ Response::wireDecode(const Block& wire)
 }
 
 bool
-Response::fromData(const Name& hint, const Name& zone, const Data& data)
+Response::fromData(const Name& zone, const Data& data)
 {
   label::MatchResult re;
-  if (!matchName(data, hint, zone, re))
+  if (!matchName(data, zone, re))
     return false;
 
   m_rrLabel = re.rrLabel;
@@ -106,8 +106,6 @@ Response::fromData(const Name& hint, const Name& zone, const Data& data)
 
   m_zone = zone;
   size_t len = zone.size();
-  if (!hint.empty())
-    len += hint.size() + 1;
   m_queryType = data.getName().get(len);
 
   MetaInfo info = data.getMetaInfo();

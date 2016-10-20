@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -33,14 +33,14 @@ namespace ndns {
  *
  * Query is an Interest whose name follows the format:
  *
- *     <hint> /xF0. <zone> [<KEY>|<NDNS>|<NDNS-R>] <rrLabel> <rrType>
+ *      <zone> [<KEY>|<NDNS>|<NDNS-R>] <rrLabel> <rrType>
  */
 class Query : noncopyable
 {
 public:
   Query();
 
-  Query(const Name& hint, const Name& zone, const name::Component& queryType);
+  Query(const Name& zone, const name::Component& queryType);
 
   /**
    * @brief construct an Interest according to the query abstraction
@@ -51,18 +51,17 @@ public:
   /**
    * @brief extract the query information (rrLabel, rrType) from a Interest
    *
-   * @param hint     Forwarding hint
    * @param zone     NDNS zone
-   * @param interest The Interest to parse; the Interest must have correct hint and zone,
+   * @param interest The Interest to parse; the Interest must have correct zone,
    *                 otherwise it's undefined behavior
    */
   bool
-  fromInterest(const Name& hint, const Name& zone, const Interest& interest);
+  fromInterest(const Name& zone, const Interest& interest);
 
   bool
   operator==(const Query& other) const
   {
-    return (getHint() == other.getHint() && getZone() == other.getZone() &&
+    return (getZone() == other.getZone() &&
       getQueryType() == other.getQueryType() && getRrLabel() == other.getRrLabel() &&
       getRrType() == other.getRrType());
   }
@@ -74,27 +73,6 @@ public:
   }
 
 public:
-
-  /**
-   * @brief get forwarding hint. default empty hint (empty() == True),
-   * hint won't add to the name
-   */
-  const Name&
-  getHint() const
-  {
-    return m_hint;
-  }
-
-  /**
-   * @brief set forwarding hint. default empty hint (empty() == True),
-   * hint won't add to the name
-   */
-  void
-  setHint(const Name& hint)
-  {
-    m_hint = hint;
-  }
-
 
   /**
    * @brief get name of authoritative zone
@@ -188,7 +166,6 @@ public:
   }
 
 private:
-  Name m_hint;
   Name m_zone;
   name::Component m_queryType;
   Name m_rrLabel;

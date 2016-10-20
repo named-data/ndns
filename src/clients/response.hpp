@@ -57,15 +57,14 @@ public:
   /**
    * @brief fill the attributes from Data packet.
    *
-   * @param hint Forwarding hint
    * @param zone NDNS zone name
-   * @param data Data.getName() must the same hint (if has) and zone as its prefix,
+   * @param data Data.getName() must the same zone as its prefix,
    *             otherwise it's undefined behavior
    * @return false if Data.getName() does not follow the structure of NDNS Response without
    *         changing any attributes, otherwise return true and fill the attributes
    */
   bool
-  fromData(const Name& hint, const Name& zone, const Data& data);
+  fromData(const Name& zone, const Data& data);
 
   shared_ptr<Data>
   toData();

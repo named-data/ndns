@@ -188,7 +188,7 @@ public:
     Rrset rrset = findRrSet(zone, label, type);
     Data data(rrset.getData());
     Response resp;
-    resp.fromData("", zone.getName(), data);
+    resp.fromData(zone.getName(), data);
     return resp;
   }
 

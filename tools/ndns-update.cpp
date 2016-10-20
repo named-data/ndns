@@ -48,9 +48,8 @@ NDNS_LOG_INIT("NdnsUpdate")
 class NdnsUpdate : noncopyable
 {
 public:
-  NdnsUpdate(const Name& hint, const Name& zone, const shared_ptr<Data>& update, Face& face)
-    : m_hint(hint)
-    , m_zone(zone)
+  NdnsUpdate(const Name& zone, const shared_ptr<Data>& update, Face& face)
+    : m_zone(zone)
     , m_interestLifetime(DEFAULT_INTEREST_LIFETIME)
     , m_face(face)
     , m_validator(face)
@@ -136,7 +135,7 @@ private:
   Interest
   makeUpdateInterest()
   {
-    Query q(m_hint, m_zone, label::NDNS_ITERATIVE_QUERY);
+    Query q(m_zone, label::NDNS_ITERATIVE_QUERY);
     q.setRrLabel(Name().append(m_update->wireEncode()));
     q.setRrType(label::NDNS_UPDATE_LABEL);
     q.setInterestLifetime(m_interestLifetime);
@@ -183,7 +182,6 @@ public:
   }
 
 private:
-  Name m_hint;
   Name m_zone;
 
   time::milliseconds m_interestLifetime;
@@ -207,7 +205,6 @@ main(int argc, char* argv[])
   using namespace ndn;
   using namespace ndn::ndns;
 
-  Name hint;
   Name zone;
   int ttl = 4;
   Name rrLabel;
@@ -227,7 +224,6 @@ main(int argc, char* argv[])
 
     po::options_description config("Configuration");
     config.add_options()
-      ("hint,H", po::value<Name>(&hint), "forwarding hint")
       ("ttl,T", po::value<int>(&ttl), "TTL of query. default: 4 sec")
       ("rrtype,t", po::value<string>(&rrType), "set request RR Type. default: TXT")
       ("ndnsType,n", po::value<string>(&ndnsTypeStr), "Set the ndnsType of the resource record. "
@@ -255,7 +251,7 @@ main(int argc, char* argv[])
     config_file_options.add(config).add(hidden);
 
     po::options_description visible("Usage: ndns-update zone rrLabel [-t rrType] [-T TTL] "
-                                    "[-H hint] [-n NdnsType] [-c cert] "
+                                    "[-n NdnsType] [-c cert] "
                                     "[-f contentFile]|[-o content]\n"
                                     "Allowed options");
 
@@ -382,7 +378,7 @@ main(int argc, char* argv[])
         }
 
         Response re;
-        re.fromData(hint, zone, *update);
+        re.fromData(zone, *update);
 
         if (vm.count("rrlabel") && rrLabel != re.getRrLabel()) {
           std::cerr << "The loaded Data packet is supposed to have rrLabel: " << re.getRrLabel()
@@ -411,7 +407,7 @@ main(int argc, char* argv[])
 
   Face face;
   try {
-    NdnsUpdate updater(hint, zone, update, face);
+    NdnsUpdate updater(zone, update, face);
     updater.setInterestLifetime(ndn::time::seconds(ttl));
 
     updater.start();

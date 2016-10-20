@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -28,25 +28,13 @@ namespace label {
 
 inline size_t
 calculateSkip(const Name& name,
-              const Name& hint, const Name& zone)
+              const Name& zone)
 {
   size_t skip = 0;
 
-  if (!hint.empty()) {
-    // These are only asserts. The caller should supply the right parameters
-    skip = hint.size() + 1 + zone.size();
-    BOOST_ASSERT(name.size() > skip);
-
-    BOOST_ASSERT(name.getPrefix(hint.size()) == hint);
-    BOOST_ASSERT(name.get(hint.size()) == FORWARDING_HINT_LABEL);
-    BOOST_ASSERT(name.getSubName(hint.size() + 1, zone.size()) == zone);
-
-  }
-  else {
-    skip = zone.size();
-    BOOST_ASSERT(name.size() > skip);
-    BOOST_ASSERT(name.getPrefix(zone.size()) == zone);
-  }
+  skip = zone.size();
+  BOOST_ASSERT(name.size() > skip);
+  BOOST_ASSERT(name.getPrefix(zone.size()) == zone);
 
   BOOST_ASSERT(name.get(skip) == NDNS_ITERATIVE_QUERY ||
                name.get(skip) == NDNS_CERT_QUERY);
@@ -57,13 +45,13 @@ calculateSkip(const Name& name,
 
 bool
 matchName(const Interest& interest,
-          const Name& hint, const Name& zone,
+          const Name& zone,
           MatchResult& result)
 {
-  // [hint / FHLabel] / zoneName / <Update>|rrLabel / UPDATE|rrType / [VERSION]
+  //  zoneName / <Update>|rrLabel / UPDATE|rrType / [VERSION]
 
   const Name& name = interest.getName();
-  size_t skip = calculateSkip(name, hint, zone);
+  size_t skip = calculateSkip(name, zone);
 
   if (name.size() - skip < 1)
     return false;
@@ -85,13 +73,13 @@ matchName(const Interest& interest,
 
 bool
 matchName(const Data& data,
-          const Name& hint, const Name& zone,
+          const Name& zone,
           MatchResult& result)
 {
-  // [hint / FHLabel] / zoneName / <Update>|rrLabel / UPDATE|rrType
+  // zoneName / <Update>|rrLabel / UPDATE|rrType
 
   const Name& name = data.getName();
-  size_t skip = calculateSkip(name, hint, zone);
+  size_t skip = calculateSkip(name, zone);
 
   if (name.size() - skip < 2)
     return false;

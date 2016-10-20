@@ -53,7 +53,6 @@ public:
 
 public:
   ndn::util::DummyClientFace face;
-  Name hint;
   const Name& zone;
   Validator validator;
   ndns::NameServer server;
@@ -63,7 +62,7 @@ BOOST_FIXTURE_TEST_SUITE(NameServer, NameServerFixture)
 
 BOOST_AUTO_TEST_CASE(NdnsQuery)
 {
-  Query q(hint, zone, ndns::label::NDNS_ITERATIVE_QUERY);
+  Query q(zone, ndns::label::NDNS_ITERATIVE_QUERY);
   q.setRrLabel(Name("net"));
   q.setRrType(ndns::label::NS_RR_TYPE);
 
@@ -75,7 +74,7 @@ BOOST_AUTO_TEST_CASE(NdnsQuery)
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
 
     Response resp;
-    BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
+    BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
     BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RESP);
   });
 
@@ -88,7 +87,7 @@ BOOST_AUTO_TEST_CASE(NdnsQuery)
 
 BOOST_AUTO_TEST_CASE(KeyQuery)
 {
-  Query q(hint, zone, ndns::label::NDNS_ITERATIVE_QUERY);
+  Query q(zone, ndns::label::NDNS_ITERATIVE_QUERY);
   q.setQueryType(ndns::label::NDNS_CERT_QUERY);
   q.setRrType(ndns::label::CERT_RR_TYPE);
 
@@ -101,7 +100,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
 
     Response resp;
-    BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
+    BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
     BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_NACK);
   });
 
@@ -115,7 +114,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
 
     Response resp;
-    BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
+    BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
     BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RAW);
   });
 
@@ -133,7 +132,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
     ++nDataBack;
 
     Response resp;
-    BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
+    BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
     BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RAW);
   });
 
@@ -147,7 +146,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
     ++nDataBack;
 
     Response resp;
-    BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
+    BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
     BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_NACK);
   });
 
@@ -172,7 +171,7 @@ BOOST_AUTO_TEST_CASE(UpdateReplaceRr)
   shared_ptr<Data> data = re.toData();
   m_keyChain.sign(*data, m_certName);
 
-  Query q(Name(hint), Name(zone), ndns::label::NDNS_ITERATIVE_QUERY);
+  Query q(Name(zone), ndns::label::NDNS_ITERATIVE_QUERY);
   const Block& block = data->wireEncode();
   Name name;
   name.append(block);
@@ -188,7 +187,7 @@ BOOST_AUTO_TEST_CASE(UpdateReplaceRr)
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
     Response resp;
 
-    BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
+    BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
     BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RESP); // by default NDNS_RAW is enough
     BOOST_CHECK_GT(resp.getRrs().size(), 0);
     Block block = resp.getRrs()[0];
@@ -224,7 +223,7 @@ BOOST_AUTO_TEST_CASE(UpdateInsertNewRr)
   shared_ptr<Data> data = re.toData();
   m_keyChain.sign(*data, m_certName);
 
-  Query q(Name(hint), Name(zone), ndns::label::NDNS_ITERATIVE_QUERY);
+  Query q(Name(zone), ndns::label::NDNS_ITERATIVE_QUERY);
   const Block& block = data->wireEncode();
   Name name;
   name.append(block);
@@ -240,7 +239,7 @@ BOOST_AUTO_TEST_CASE(UpdateInsertNewRr)
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
     Response resp;
 
-    BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
+    BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
     BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RESP); // by default NDNS_RAW is enough
     BOOST_CHECK_GT(resp.getRrs().size(), 0);
     Block block = resp.getRrs()[0];
@@ -300,7 +299,7 @@ BOOST_AUTO_TEST_CASE(UpdateValidatorCannotFetchCert)
   shared_ptr<Data> data = re.toData();
   m_keyChain.sign(*data, dskCert->getName());
 
-  Query q(Name(hint), Name(zone), ndns::label::NDNS_ITERATIVE_QUERY);
+  Query q(Name(zone), ndns::label::NDNS_ITERATIVE_QUERY);
   const Block& block = data->wireEncode();
   Name name;
   name.append(block);
@@ -356,7 +355,6 @@ public:
   boost::asio::io_service io;
   ndn::util::DummyClientFace face;
   ndn::util::DummyClientFace validatorFace;
-  Name hint;
   const Name& zone;
   Validator validator;
   ndns::NameServer server;
@@ -403,7 +401,7 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
   shared_ptr<Data> data = re.toData();
   m_keyChain.sign(*data, dskCert->getName());
 
-  Query q(Name(hint), Name(zone), ndns::label::NDNS_ITERATIVE_QUERY);
+  Query q(Name(zone), ndns::label::NDNS_ITERATIVE_QUERY);
   const Block& block = data->wireEncode();
   Name name;
   name.append(block);
@@ -428,7 +426,7 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
       BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
       Response resp;
 
-      BOOST_CHECK_NO_THROW(resp.fromData(hint, zone, data));
+      BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
       BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RESP); // by default NDNS_RAW is enough
       BOOST_CHECK_GT(resp.getRrs().size(), 0);
       Block block = resp.getRrs()[0];

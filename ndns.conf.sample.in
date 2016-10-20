@@ -19,9 +19,3 @@ zones
              ; omit cert to select the default certificate of above identity
   ; }
 }
-
-hints
-{
-  ; hint /ucla
-  ; hint /att
-}

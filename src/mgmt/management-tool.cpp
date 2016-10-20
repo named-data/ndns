@@ -376,8 +376,7 @@ ManagementTool::addRrSet(const Name& zoneName,
 
   // create response for the input data
   Response re;
-  Name hint;
-  re.fromData(hint, zoneName, *data);
+  re.fromData(zoneName, *data);
   Name label = re.getRrLabel();
   name::Component type = re.getRrType();
 
@@ -417,8 +416,7 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
   for (Rrset& rrset : rrsets) {
     Data data(rrset.getData());
     Response re;
-    Name hint;
-    re.fromData(hint, zoneName, data);
+    re.fromData(zoneName, data);
 
     if (rrset.getLabel().toUri().size() > labelWidth)
       labelWidth = rrset.getLabel().toUri().size();
@@ -436,8 +434,7 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
   for (Rrset& rrset : rrsets) {
     Data data(rrset.getData());
     Response re;
-    Name hint;
-    re.fromData(hint, zoneName, data);
+    re.fromData(zoneName, data);
     int iteration = re.getNdnsType() == NDNS_RAW || re.getNdnsType() == NDNS_AUTH ?
                       1 : re.getRrs().size();
     const std::vector<Block> &rrs = re.getRrs();

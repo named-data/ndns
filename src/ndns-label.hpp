@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -41,7 +41,8 @@ const name::Component NDNS_ITERATIVE_QUERY("NDNS");
 /**
  * @brief NDNS recursive query type
  */
-const name::Component NDNS_RECURSIVE_QUERY("NDNS-R");
+// it is not supported now
+// const name::Component NDNS_RECURSIVE_QUERY("NDNS-R");
 
 /**
  * @brief NDNS ID-CERT query type
@@ -49,12 +50,6 @@ const name::Component NDNS_RECURSIVE_QUERY("NDNS-R");
 const name::Component NDNS_CERT_QUERY("KEY");
 
 /////////////////////////////////////////////
-
-/**
- * @brief label of forwarding hint
- * @todo not support forwarding hint yet, for future use
- */
-const name::Component FORWARDING_HINT_LABEL("\xF0.");
 
 /**
  * @brief label of update message, located at the last component in Interest name
@@ -96,8 +91,6 @@ struct MatchResult
  * @brief match the Interest (NDNS query, NDNS update) name
  *
  * @param[in] interest Interest to parse
- * @param[in] hint Forwarding hint that is part of the Interest
- *            (only the length will be taken into account)
  * @param[in] zone Zone that the Interest is related to
  *            (only the length will be taken into account)
  * @param[out] result The matching result
@@ -105,15 +98,13 @@ struct MatchResult
  */
 bool
 matchName(const Interest& interest,
-          const Name& hint, const Name& zone,
+          const Name& zone,
           MatchResult& result);
 
 /**
  * @brief match the Data (NDNS query response, NDNS update response) name
  *
  * @param[in] data Data to parse
- * @param[in] hint Forwarding hint that is part of the Data
- *            (only the length will be taken into account)
  * @param[in] zone Zone that the Data is related to
  *            (only the length will be taken into account)
  * @param[out] result The matching result
@@ -121,7 +112,7 @@ matchName(const Interest& interest,
  */
 bool
 matchName(const Data& data,
-          const Name& hint, const Name& zone,
+          const Name& zone,
           MatchResult& result);
 
 
