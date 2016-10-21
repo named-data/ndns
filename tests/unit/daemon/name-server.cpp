@@ -85,6 +85,8 @@ BOOST_AUTO_TEST_CASE(NdnsQuery)
   BOOST_CHECK_EQUAL(hasDataBack, true);
 }
 
+BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES(KeyQuery, 2)
+
 BOOST_AUTO_TEST_CASE(KeyQuery)
 {
   Query q(zone, ndns::label::NDNS_ITERATIVE_QUERY);

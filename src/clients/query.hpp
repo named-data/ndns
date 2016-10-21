@@ -24,6 +24,7 @@
 #include "ndns-enum.hpp"
 
 #include <ndn-cxx/name.hpp>
+#include <ndn-cxx/link.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -165,12 +166,31 @@ public:
     m_rrType = rrType;
   }
 
+  /**
+   * @brief set link object
+   */
+  void
+  setLink(const Block& link)
+  {
+    m_link = link;
+  }
+
+  /**
+   * @brief get Link object
+   */
+  const Block&
+  getLink() const
+  {
+    return m_link;
+  }
+
 private:
   Name m_zone;
   name::Component m_queryType;
   Name m_rrLabel;
   name::Component m_rrType;
   time::milliseconds m_interestLifetime;
+  Block m_link;
 };
 
 std::ostream&

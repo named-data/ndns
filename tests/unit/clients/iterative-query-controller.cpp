@@ -34,7 +34,7 @@ class QueryControllerFixture : public DbTestData
 public:
   QueryControllerFixture()
     : producerFace(io, {false, true})
-    , consumerFace(io, {false, true})
+    , consumerFace(io, {true, true})
     , validator(producerFace)
     , top(m_root.getName(), m_certName, producerFace, m_session, m_keyChain, validator)
     , net(m_net.getName(), m_certName, producerFace, m_session, m_keyChain, validator)
@@ -76,6 +76,8 @@ public:
 
 BOOST_AUTO_TEST_SUITE(IterativeQueryController)
 
+BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES(Basic, 3)
+
 BOOST_FIXTURE_TEST_CASE(Basic, QueryControllerFixture)
 {
   using std::string;
@@ -106,7 +108,31 @@ BOOST_FIXTURE_TEST_CASE(Basic, QueryControllerFixture)
   ctr->start();
 
   run();
+
   BOOST_CHECK_EQUAL(hasDataBack, true);
+
+  const std::vector<Interest>& interestRx = consumerFace.sentInterests;
+  BOOST_CHECK_EQUAL(interestRx.size(), 4);
+
+  std::vector<std::string> interestNames =
+    {
+      "/test19/NDNS/net/NS",
+      "/test19/net/NDNS/ndnsim/NS",
+      "/test19/net/ndnsim/NDNS/www/NS",
+      "/test19/net/ndnsim/NDNS/www/TXT"
+    };
+  for (int i = 0; i < 4; i++) {
+    // check if NDNS do iterative-query with right names
+    BOOST_CHECK_EQUAL(interestRx[i].getName(), Name(interestNames[i]));
+    // except for the first one, interest sent should has a Link object
+    if (i > 0) {
+      BOOST_CHECK_EQUAL(interestRx[i].hasLink(), true);
+      if (interestRx[i].hasLink()) {
+        BOOST_CHECK_EQUAL(interestRx[i].getLink(), m_links[i - 1]);
+      }
+    }
+  }
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -47,6 +47,13 @@ Query::fromInterest(const Name& zone, const Interest& interest)
 
   m_zone = zone;
 
+  if (interest.hasLink()) {
+    m_link = interest.getLink().wireEncode();
+  } else {
+    m_link = Block();
+  }
+
+
   size_t len = zone.size();
   m_queryType = interest.getName().get(len);
 
@@ -64,7 +71,14 @@ Query::toInterest() const
       .append(this->m_rrLabel)
       .append(this->m_rrType);
 
-  return Interest(name, m_interestLifetime);
+  Interest interest;
+  interest.setName(name);
+  interest.setInterestLifetime(m_interestLifetime);
+  if (m_link.hasWire()) {
+    interest.setLink(m_link);
+  }
+
+  return interest;
 }
 
 std::ostream&

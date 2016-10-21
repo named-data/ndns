@@ -18,6 +18,7 @@
  */
 
 #include "database-test-data.hpp"
+#include "daemon/rrset-factory.hpp"
 
 namespace ndn {
 namespace ndns {
@@ -99,10 +100,13 @@ DbTestData::DbTestData()
   addQueryRrset("www", m_ndnsim, label::TXT_RR_TYPE);
   addQueryRrset("doc/www", m_ndnsim, label::TXT_RR_TYPE);
 
-
   addRrset(m_ndnsim, Name("doc"), label::NS_RR_TYPE , time::seconds(2000),
            name::Component::fromVersion(1234), label::NDNS_ITERATIVE_QUERY, NDNS_AUTH,
            std::string(""));
+
+  // last link is the same as former one
+  BOOST_ASSERT(!m_links.empty());
+  m_links.push_back(m_links.back());
 
   NDNS_LOG_INFO("insert testing data: OK");
 }
@@ -112,35 +116,31 @@ DbTestData::addRrset(Zone& zone, const Name& label, const name::Component& type,
                      const time::seconds& ttl, const name::Component& version,
                      const name::Component& qType, NdnsType ndnsType, const std::string& msg)
 {
-  Rrset rrset(&zone);
-  rrset.setLabel(label);
-  rrset.setType(type);
-  rrset.setTtl(ttl);
-  rrset.setVersion(version);
-
-  Response re;
-  re.setZone(zone.getName());
-  re.setQueryType(qType);
-  re.setRrLabel(label);
-  re.setRrType(type);
-  re.setVersion(version);
-  re.setNdnsType(ndnsType);
-  re.setFreshnessPeriod(ttl);
-
-  if (msg.size() > 0) {
-    if (type == label::CERT_RR_TYPE)
-      re.setAppContent(makeBinaryBlock(ndn::tlv::Content, msg.c_str(), msg.size()));
-    else
-      re.addRr(msg);
+  Rrset rrset;
+  RrsetFactory rf(TEST_DATABASE.string(), zone.getName(),
+                  m_keyChain, m_certName);
+  rf.onlyCheckZone();
+  if (type == label::NS_RR_TYPE) {
+    ndn::Link::DelegationSet ds = {std::pair<uint32_t, Name>(1,"/xx")};
+    rrset = rf.generateNsRrset(label, type, version.toVersion(), ttl, ds);
+    if (ndnsType != NDNS_AUTH) {
+      // do not add AUTH packet to link
+      m_links.push_back(Link(rrset.getData()));
+    }
+  } else if (type == label::TXT_RR_TYPE) {
+    rrset = rf.generateTxtRrset(label, type, version.toVersion(), ttl,
+                           std::vector<std::string>());
+  } else if (type == label::CERT_RR_TYPE) {
+    rrset = rf.generateCertRrset(label, type, version.toVersion(), ttl,
+                                 *m_keyChain.getCertificate(m_certName));
   }
-  shared_ptr<Data> data = re.toData();
-  m_keyChain.sign(*data, m_certName); // now we ignore the certificate to sign the data
+
+  shared_ptr<Data> data = make_shared<Data>(rrset.getData());
+
   shared_ptr<IdentityCertificate> cert = m_keyChain.getCertificate(m_certName);
   BOOST_CHECK_EQUAL(Validator::verifySignature(*data, cert->getPublicKeyInfo()), true);
-  rrset.setData(data->wireEncode());
 
   m_session.insert(rrset);
-
   m_rrsets.push_back(rrset);
 }
 

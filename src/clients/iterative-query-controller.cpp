@@ -93,6 +93,14 @@ IterativeQueryController::onDataValidated(const shared_ptr<const Data>& data, Nd
       m_step = QUERY_STEP_QUERY_RR;
     }
     else if (ndnsType == NDNS_RESP) {
+      if (m_rrType == label::NS_RR_TYPE) {
+        Link link(data->wireEncode());
+        if (link.getDelegations().empty()) {
+          m_lastLink = Block();
+        } else {
+          m_lastLink = data->wireEncode();
+        }
+      }
       if (m_nFinishedComps + m_nTryComps == m_dstLabel.size() && m_rrType == label::NS_RR_TYPE) {
         // NS_RR_TYPE is different, since its record is stored at higher level
         m_step = QUERY_STEP_ANSWER_STUB;
@@ -190,6 +198,12 @@ IterativeQueryController::makeLatestInterest()
 
   query.setZone(m_dstLabel.getPrefix(m_nFinishedComps));
   query.setInterestLifetime(m_interestLifetime);
+
+  // addLink
+  if (m_lastLink.hasWire()) {
+    query.setLink(m_lastLink);
+  }
+
   switch (m_step) {
   case QUERY_STEP_QUERY_NS:
     query.setQueryType(label::NDNS_ITERATIVE_QUERY);
@@ -213,7 +227,6 @@ IterativeQueryController::makeLatestInterest()
     NDNS_LOG_WARN("unexpected state: " << oss.str());
     throw std::runtime_error("call makeLatestInterest() unexpected: " + oss.str());
   }
-
 
   Interest interest = query.toInterest();
   return interest;

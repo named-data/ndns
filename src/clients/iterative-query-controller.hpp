@@ -32,6 +32,7 @@
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/name.hpp>
+#include <ndn-cxx/link.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -145,6 +146,9 @@ protected:
    * used when query the KSK (key signing key), e.g., /net/ndnsim/ksk-1
    */
   size_t m_nTryComps;
+
+private:
+  Block m_lastLink;
 };
 
 std::ostream&

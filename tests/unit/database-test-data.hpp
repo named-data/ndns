@@ -58,6 +58,7 @@ public:
   Name m_certName;
   std::vector<Zone>  m_zones;
   std::vector<Rrset> m_rrsets;
+  std::vector<Link>  m_links;
 
   Zone m_root;
   Zone m_net;

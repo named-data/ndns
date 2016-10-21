@@ -21,14 +21,19 @@
 
 #include "test-common.hpp"
 
+#include <boost/lexical_cast.hpp>
+#include <string>
+#include <ndn-cxx/security/key-chain.hpp>
+
 namespace ndn {
 namespace ndns {
 namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Query)
 
-BOOST_AUTO_TEST_CASE(TestCase)
+BOOST_FIXTURE_TEST_CASE(TestCase, IdentityManagementFixture)
 {
+  Name certName = m_keyChain.createIdentity("/cert/name");
   Name zone("/net");
   name::Component qType = ndns::label::NDNS_ITERATIVE_QUERY;
   ndns::Query q(zone, qType);
@@ -42,7 +47,18 @@ BOOST_AUTO_TEST_CASE(TestCase)
   q.setRrType(ndns::label::CERT_RR_TYPE);
   BOOST_CHECK_EQUAL(q.getRrType(), label::CERT_RR_TYPE);
 
+  auto link = make_shared<Link>("/ndn/link/NDNS/test/NS");
+  for (int i = 1; i <= 5; i++) {
+    link->addDelegation(i, std::string("/link/") + to_string(i));
+  }
+  // link has to be signed first, then wireDecode
+  m_keyChain.sign(*link, certName);
+
+  q.setLink(link->wireEncode());
+  BOOST_CHECK_EQUAL(Link(q.getLink()), *link);
+
   Interest interest = q.toInterest();
+  BOOST_CHECK_EQUAL(interest.getLink(), *link);
 
   ndns::Query q2(zone, qType);
   BOOST_CHECK_EQUAL(q2.fromInterest(zone, interest), true);
