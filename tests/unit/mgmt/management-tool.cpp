@@ -476,416 +476,416 @@ BOOST_FIXTURE_TEST_CASE(ExportCertificate, ManagementToolFixture)
   BOOST_CHECK_EQUAL(acutalOutput, dskValue);
 }
 
-BOOST_FIXTURE_TEST_CASE(AddRrSet1, ManagementToolFixture)
-{
-  // check pre-condition
-  BOOST_CHECK_THROW(m_tool.addRrSet(ROOT_ZONE, "/test", label::NS_RR_TYPE, NDNS_RESP),
-                    ndns::ManagementTool::Error);
-
-  Name zoneName("/ndns-test");
-  Zone zone(zoneName);
-  m_dbMgr.insert(zone);
-
-  BOOST_CHECK_THROW(m_tool.addRrSet(ROOT_ZONE, "/test", label::NS_RR_TYPE, NDNS_UNKNOWN),
-                    ndns::ManagementTool::Error);
-  BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, "/test", label::CERT_RR_TYPE, NDNS_RAW),
-                    ndns::ManagementTool::Error);
-  BOOST_CHECK_THROW(m_tool.addRrSet(ROOT_ZONE, "/test", label::NS_RR_TYPE, NDNS_RAW),
-                    ndns::ManagementTool::Error);
-  BOOST_CHECK_THROW(m_tool.addRrSet(ROOT_ZONE, "/test", label::TXT_RR_TYPE, NDNS_RAW),
-                    ndns::ManagementTool::Error);
-
-  m_dbMgr.remove(zone);
-}
-
-BOOST_FIXTURE_TEST_CASE(AddRrSet2, ManagementToolFixture)
-{
-  Name zoneName("/ndns-test");
-  Zone zone(zoneName);
-
-  uint64_t version = 1234;
-  time::seconds ttl1(4200);
-  time::seconds ttl2(4500);
-  m_tool.createZone(zoneName, ROOT_ZONE, ttl1);
-
-  //add NS NDNS_AUTH and check user-defined ttl
-  BOOST_CHECK_NO_THROW(m_tool.addRrSet(zoneName, "/l1", label::NS_RR_TYPE, NDNS_AUTH, 7654,
-                                       {}, DEFAULT_CERT, ttl2));
-  Response response;
-  BOOST_CHECK_NO_THROW(response = findResponse(zone, "/l1", label::NS_RR_TYPE));
-  BOOST_CHECK_EQUAL(response.getNdnsType(), NDNS_AUTH);
-  BOOST_CHECK_EQUAL(response.getVersion(), name::Component::fromVersion(7654));
-  BOOST_CHECK_EQUAL(response.getFreshnessPeriod(), ttl2);
-
-  // add NS NDNS_RESP and check default ttl
-  BOOST_CHECK_NO_THROW(m_tool.addRrSet(zoneName, "/l2", label::NS_RR_TYPE, NDNS_RESP, 15));
-  BOOST_CHECK_NO_THROW(response = findResponse(zone, "/l2", label::NS_RR_TYPE));
-  BOOST_CHECK_EQUAL(response.getNdnsType(), NDNS_RESP);
-  BOOST_CHECK_EQUAL(response.getVersion(), name::Component::fromVersion(15));
-  BOOST_CHECK_EQUAL(response.getFreshnessPeriod(), ttl1);
-
-  //add TXT NDNS_RESP and check rr
-  std::string test = "oops";
-  BOOST_CHECK_NO_THROW(m_tool.addRrSet(zoneName, "/l2", label::TXT_RR_TYPE, NDNS_RESP, version,
-                                       {"oops", "again"}));
-  BOOST_CHECK_NO_THROW(response = findResponse(zone, "/l2", label::TXT_RR_TYPE));
-
-  BOOST_REQUIRE_EQUAL(response.getRrs().size(), 2);
-  {
-    const Block& block = response.getRrs()[0];
-    std::string someString(reinterpret_cast<const char*>(block.value()), block.value_size());
-    BOOST_CHECK_EQUAL("oops", someString);
-  }
-
-  {
-    const Block& block = response.getRrs()[1];
-    std::string someString(reinterpret_cast<const char*>(block.value()), block.value_size());
-    BOOST_CHECK_EQUAL("again", someString);
-  }
-
-  //add user defined type
-  BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, "/l2", name::Component("USER-DEFINED"), NDNS_RAW,
-                                    1112223, {"10.10.0.1", "SECOND_INVALID_DATA"}),
-                    ndns::ManagementTool::Error);
-
-  m_tool.addRrSet(zoneName, "/l2", name::Component("USER-DEFINED"), NDNS_RAW, 1112223,
-                  {"10.10.0.1"});
-  BOOST_CHECK_NO_THROW(response = findResponse(zone, "/l2", name::Component("USER-DEFINED")));
-  BOOST_CHECK_EQUAL(response.getVersion(), name::Component::fromVersion(1112223));
-
-  std::string actualValue(reinterpret_cast<const char*>(response.getAppContent().value()),
-                          response.getAppContent().value_size());
-  BOOST_CHECK_EQUAL(actualValue, "10.10.0.1");
-}
-
-BOOST_FIXTURE_TEST_CASE(AddRrSet3, ManagementToolFixture)
-{
-  // check pre-condition
-  Name zoneName("/ndns-test");
-
-  std::string certPath = TEST_CERTDIR.string();
-  BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, certPath), ndns::ManagementTool::Error);
-
-  m_tool.createZone(zoneName, ROOT_ZONE);
-  BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, certPath), ndns::ManagementTool::Error);
-}
-
-BOOST_FIXTURE_TEST_CASE(AddRrSet4, ManagementToolFixture)
-{
-  Name parentZoneName("/ndns-test");
-  Name zoneName = Name(parentZoneName).append("/child-zone");
-
-  Zone parentZone(parentZoneName);
-
-  m_tool.createZone(parentZoneName, ROOT_ZONE, time::seconds(1), time::days(1), otherKsk, otherDsk);
-  m_tool.createZone(zoneName, parentZoneName);
-
-  std::vector<Name>&& certs = getCerts(zoneName);
-  BOOST_REQUIRE_EQUAL(certs.size(), 2);
-  std::sort(certs.begin(), certs.end());
-
-  Name& ksk = certs[0];
-  // Name& dsk = certs[1];
-
-  std::string output = TEST_CERTDIR.string() + "/ss.cert";
-  m_tool.exportCertificate(ksk, output);
-
-  BOOST_CHECK_NO_THROW(m_tool.addRrSet(parentZoneName, output));
-  BOOST_CHECK_NO_THROW(findIdCert(parentZone, ksk));
-
-  BOOST_CHECK_NO_THROW(m_tool.addRrSet(parentZoneName, "/child-zone",
-                                       label::NS_RR_TYPE, NDNS_RESP));
-  BOOST_CHECK_NO_THROW(findRrSet(parentZone, "/child-zone", label::NS_RR_TYPE));
-
-  //add KSK ID-CERT with illegal name and convert it
-  Name iZoneName = Name(parentZoneName).append("illegal");
-  Name illegalCertName = m_keyChain.createIdentity(iZoneName);
-  m_tool.exportCertificate(illegalCertName, output);
-  BOOST_CHECK_NO_THROW(m_tool.addRrSet(parentZoneName, output));
-
-  Name legalCertName =
-    Name(parentZoneName)
-    .append("KEY")
-    .append("illegal")
-    .append(illegalCertName.getSubName(3));
-  BOOST_CHECK_NO_THROW(findIdCert(parentZone, legalCertName));
-}
-
-BOOST_FIXTURE_TEST_CASE(AddRrSet5, ManagementToolFixture)
-{
-  //check using user provided certificate
-  Name parentZoneName("/ndns-test");
-  Name zoneName = Name(parentZoneName).append("child-zone");
-
-  Name dskName = m_keyChain.generateRsaKeyPair(parentZoneName, false);
-  shared_ptr<IdentityCertificate> dskCert = m_keyChain.selfSign(dskName);
-  m_keyChain.addCertificateAsKeyDefault(*dskCert);
-
-  // check addRrSet1
-  m_tool.createZone(parentZoneName, ROOT_ZONE, time::seconds(1), time::days(1), otherKsk, otherDsk);
-  m_tool.createZone(zoneName, parentZoneName);
-
-  std::vector<Name>&& certs = getCerts(zoneName);
-  BOOST_REQUIRE_EQUAL(certs.size(), 2);
-  std::sort(certs.begin(), certs.end());
-
-  Name& ksk = certs[0];
-  // Name& dsk = certs[1];
-
-  std::string output = TEST_CERTDIR.string() + "/ss.cert";
-  m_tool.exportCertificate(ksk, output);
-
-  BOOST_CHECK_NO_THROW(m_tool.addRrSet(parentZoneName, output, time::seconds(4600),
-                                       dskCert->getName()));
-
-  // check addRrSet2
-  Name label1("/net/ndnsim1");
-  BOOST_CHECK_NO_THROW(m_tool.addRrSet(parentZoneName, "/l1", label::NS_RR_TYPE, NDNS_AUTH, -1, {},
-                                       dskCert->getName()));
-}
-
-BOOST_FIXTURE_TEST_CASE(AddRrSet6, ManagementToolFixture)
-{
-  //check invalid output
-  Name parentZoneName("/ndns-test");
-  Name zoneName = Name(parentZoneName).append("child-zone");
-  m_tool.createZone(zoneName, parentZoneName);
-
-  Name content = "invalid data packet";
-  std::string output = TEST_CERTDIR.string() + "/ss.cert";
-  ndn::io::save(content, output);
-
-  BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, output), ndns::ManagementTool::Error);
-}
-
-BOOST_FIXTURE_TEST_CASE(AddRrSet7, ManagementToolFixture)
-{
-  //check version control
-  Name parentZoneName("/ndns-test");
-  Name zoneName = Name(parentZoneName).append("child-zone");
-  m_tool.createZone(zoneName, parentZoneName);
-
-  Name label("/label");
-  uint64_t version = 110;
-
-  m_tool.addRrSet(zoneName, label, label::NS_RR_TYPE, NDNS_RESP, version);
-  // throw error when adding duplicated rrset with the same version
-  BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, label, label::NS_RR_TYPE, NDNS_RESP, version),
-                    ndns::ManagementTool::Error);
-  version--;
-  // throw error when adding duplicated rrset with older version
-  BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, label, label::NS_RR_TYPE, NDNS_RESP, version),
-                    ndns::ManagementTool::Error);
-
-  version++;
-  version++;
-  BOOST_CHECK_NO_THROW(m_tool.addRrSet(zoneName, label, label::NS_RR_TYPE, NDNS_RESP, version));
-
-  Zone zone(zoneName);
-  m_dbMgr.find(zone);
-  Rrset rrset;
-  rrset.setZone(&zone);
-  rrset.setLabel(label);
-  rrset.setType(label::NS_RR_TYPE);
-  m_dbMgr.find(rrset);
-
-  BOOST_CHECK_EQUAL(rrset.getVersion(), name::Component::fromVersion(version));
-}
-
-BOOST_FIXTURE_TEST_CASE(AddRrSet8, ManagementToolFixture)
-{
-  //check input with different formats
-  Name parentZoneName("/ndns-test");
-  Name zoneName = Name(parentZoneName).append("child-zone");
-  m_tool.createZone(zoneName, parentZoneName);
-
-  std::string output = TEST_CERTDIR.string() + "/a.cert";
-
-  // base64
-  Name dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
-  shared_ptr<IdentityCertificate> dskCert = m_keyChain.selfSign(dskName);
-
-  ndn::io::save(*dskCert, output, ndn::io::BASE64);
-  BOOST_CHECK_NO_THROW(
-    m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::BASE64));
-
-  // raw
-  dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
-  dskCert = m_keyChain.selfSign(dskName);
-
-  ndn::io::save(*dskCert, output, ndn::io::NO_ENCODING);
-  BOOST_CHECK_NO_THROW(
-    m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::NO_ENCODING));
-
-  // hex
-  dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
-  dskCert = m_keyChain.selfSign(dskName);
-
-  ndn::io::save(*dskCert, output, ndn::io::HEX);
-  BOOST_CHECK_NO_THROW(
-    m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::HEX));
-
-  // incorrect encoding input
-  dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
-  dskCert = m_keyChain.selfSign(dskName);
-
-  ndn::io::save(*dskCert, output, ndn::io::HEX);
-  BOOST_CHECK_THROW(
-    m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT,
-                    static_cast<ndn::io::IoEncoding>(127)),
-    ndns::ManagementTool::Error);
-}
-
-BOOST_FIXTURE_TEST_CASE(ListAllZones, ManagementToolFixture)
-{
-  m_tool.createZone(ROOT_ZONE, ROOT_ZONE, time::seconds(1), time::days(1), rootKsk, rootDsk);
-  m_tool.createZone("/ndns-test", ROOT_ZONE, time::seconds(10), time::days(1), otherKsk, otherDsk);
-
-  std::string expectedValue =
-    "/           ; default-ttl=1 default-key=/dsk-1416974006466 "
-      "default-certificate=/KEY/dsk-1416974006466/ID-CERT/%FD%00%00%01I%EA%3By%28\n"
-    "/ndns-test  ; default-ttl=10 default-key=/ndns-test/dsk-1416974006659 "
-      "default-certificate=/ndns-test/KEY/dsk-1416974006659/ID-CERT/%FD%00%00%01I%EA%3Bz%0E\n";
-
-  output_test_stream testOutput;
-  m_tool.listAllZones(testOutput);
-  BOOST_CHECK(testOutput.is_equal(expectedValue));
-}
-
-BOOST_FIXTURE_TEST_CASE(ListZone, ManagementToolFixture)
-{
-  m_tool.createZone("/ndns-test", ROOT_ZONE, time::seconds(10), time::days(1), otherKsk, otherDsk);
-
-  // Add NS with NDNS_RESP
-  m_tool.addRrSet("/ndns-test", "/label1", label::NS_RR_TYPE, NDNS_RESP, 100);
-
-  // Add NS with NDNS_AUTH
-  m_tool.addRrSet("/ndns-test", "/label2", label::NS_RR_TYPE, NDNS_AUTH, 100000);
-
-  // Add TXT from file
-  std::string output = TEST_CERTDIR.string() + "/a.rrset";
-  Response re1;
-  re1.setZone("/ndns-test");
-  re1.setQueryType(label::NDNS_ITERATIVE_QUERY);
-  re1.setRrLabel("/label2");
-  re1.setRrType(label::TXT_RR_TYPE);
-  re1.setNdnsType(NDNS_RESP);
-  re1.setVersion(name::Component::fromVersion(654321));
-  re1.addRr("First RR");
-  re1.addRr("Second RR");
-  re1.addRr("Last RR");
-  shared_ptr<Data> data1 = re1.toData();
-  m_keyChain.sign(*data1, otherDsk);
-  ndn::io::save(*data1, output);
-  m_tool.addRrSet("/ndns-test", output);
-
-  // Add TXT in normal way
-  m_tool.addRrSet("/ndns-test", "/label3", label::TXT_RR_TYPE, NDNS_RESP, 3333,
-                  {"Hello", "World"}, otherDsk);
-
-  // Add User-Defined
-  Response re2;
-  re2.setZone("/ndns-test");
-  re2.setQueryType(label::NDNS_ITERATIVE_QUERY);
-  re2.setRrLabel("/label4");
-  re2.setRrType(name::Component("USER-DEFINED"));
-  re2.setNdnsType(NDNS_RAW);
-  re2.setVersion(name::Component::fromVersion(1234567));
-  re2.setAppContent(makeBinaryBlock(ndn::tlv::Content, "Hello", sizeof("Hello")));
-  shared_ptr<Data> data2 = re2.toData();
-  m_keyChain.sign(*data2, otherDsk);
-  ndn::io::save(*data2, output);
-  m_tool.addRrSet("/ndns-test", output);
-
-  output_test_stream testOutput;
-  m_tool.listZone("/ndns-test", testOutput, true);
-
-  std::string expectedValue =
-    "; Zone /ndns-test\n"
-    "\n"
-    "; rrset=/label1 type=NS version=%FDd signed-by=/ndns-test/KEY/dsk-1416974006659/ID-CERT\n"
-    "/label1             10  NS            \n"
-    "\n"
-    "/label2             10  NS            ; content-type=NDNS-Auth version=%FD%00%01%86%A0 "
-      "signed-by=/ndns-test/KEY/dsk-1416974006659/ID-CERT\n"
-    "\n"
-    "; rrset=/label2 type=TXT version=%FD%00%09%FB%F1 "
-      "signed-by=/ndns-test/KEY/dsk-1416974006659/ID-CERT\n"
-    "/label2             10  TXT           First RR\n"
-    "/label2             10  TXT           Second RR\n"
-    "/label2             10  TXT           Last RR\n"
-    "\n"
-    "; rrset=/label3 type=TXT version=%FD%0D%05 "
-      "signed-by=/ndns-test/KEY/dsk-1416974006659/ID-CERT\n"
-    "/label3             10  TXT           Hello\n"
-    "/label3             10  TXT           World\n"
-    "\n"
-    "/label4             10  USER-DEFINED  ; content-type=NDNS-Raw version=%FD%00%12%D6%87 "
-      "signed-by=/ndns-test/KEY/dsk-1416974006659/ID-CERT\n"
-    "; FQZIZWxsbwA=\n"
-    "\n"
-    "/dsk-1416974006659  10  ID-CERT       ; content-type=NDNS-Raw version=%FD%00%00%01I%EA%3Bz%0E "
-      "signed-by=/ndns-test/KEY/ksk-1416974006577/ID-CERT\n"
-    "; Certificate name:\n"
-    ";   /ndns-test/KEY/dsk-1416974006659/ID-CERT/%FD%00%00%01I%EA%3Bz%0E\n"
-    "; Validity:\n"
-    ";   NotBefore: 19700101T000000\n"
-    ";   NotAfter: 20380119T031408\n"
-    "; Subject Description:\n"
-    ";   2.5.4.41: /ndns-test\n"
-    "; Public key bits: (RSA)\n"
-    ";   MIIBIDANBgkqhkiG9w0BAQEFAAOCAQ0AMIIBCAKCAQEAyBVC+xc/JpscSE/JdxbV\n"
-    ";   pvgrh/fokNFI/2t9D5inuIFr7cc4W+LyJ4GG1xr9olMx7MHamJU1Xg3VunjhSjL8\n"
-    ";   mOaeXlbS6gxWexBCtNK6U4euPB4wks/gMIKdp24mAAFb4T+mBfjcRgR+NdrjyO5C\n"
-    ";   2OqM8qbDZmD/iuEmE6GPXnuMS0o6s13yzMj9YfDh3Df2jZnHESZcmG5Qpgg22T58\n"
-    ";   7t7bRx8Ha2EC3hb29AeYKwgEKDx8JH8ZBJ80AQP321HbyjXWshJLomzy5SJZo9nA\n"
-    ";   bZOYlZPCQkomz92Zc9+kpLNQwDvtRLwkZ46B+b2JpKTFARbnvugONCEBuG6zNgoi\n"
-    ";   EQIB\n"
-    "; Signature Information:\n"
-    ";   Signature Type: Unknown Signature Type\n"
-    "\n";
-
-  BOOST_CHECK(testOutput.is_equal(expectedValue));
-}
-
-BOOST_FIXTURE_TEST_CASE(GetRrSet, ManagementToolFixture)
-{
-  Name zoneName("/ndns-test");
-  m_tool.createZone(zoneName, ROOT_ZONE, time::seconds(1), time::days(1), otherKsk, otherDsk);
-
-  m_tool.addRrSet(zoneName, "/label", name::Component("TXT"), NDNS_RESP, 100,
-                  {"Value1", "Value2"});
-
-  std::string expectedValue =
-    "Bv0BdwchCAluZG5zLXRlc3QIBE5ETlMIBWxhYmVsCANUWFQIAv1kFAcZAgPotAEB\n"
-    "FRC/BlZhbHVlMb8GVmFsdWUyFjMbAQEcLgcsCAluZG5zLXRlc3QIA0tFWQgRZHNr\n"
-    "LTE0MTY5NzQwMDY2NTkIB0lELUNFUlQX/QEAqhzoQmGGeFcUlZ9pEp0ohVoTEw18\n"
-    "qfB1DN6sssOpjCu3V41SHmoybPPkdW84i/h5n6TmuuePWva+fk6l9Xppd3F4lCX0\n"
-    "Tb1lyxjnLaQjBKTYxNReM3h55XY7sCvb2RpFCSDZ/PFfzuCwdWAIqcau10H9IjNm\n"
-    "2NO+m+jW43tnou9TLrNzN80bYFQc4FEwUCJUA4jPf+1NwDUMp9LWN5IILwU+Ttx6\n"
-    "45u2rK6KXfgcHR3zifwi2IZ9mEjr5bhXxvL8zP+tgaPb0t6O9gujry0an2h+hUH5\n"
-    "Aldt49RIyipHXO7R2736ZqkUZ553DSIUhaYPuXRlByNbiW6Za+LMPgJaPg==\n";
-
-  output_test_stream testOutput;
-  m_tool.getRrSet(zoneName, "/label", name::Component("TXT"), testOutput);
-  BOOST_CHECK(testOutput.is_equal(expectedValue));
-}
-
-BOOST_FIXTURE_TEST_CASE(RemoveRrSet, ManagementToolFixture)
-{
-  Name zoneName("/ndns-test");
-
-  m_tool.createZone(zoneName, ROOT_ZONE);
-
-  BOOST_CHECK_NO_THROW(m_tool.addRrSet(zoneName, "/label", label::NS_RR_TYPE, NDNS_RESP));
-
-  Zone zone(zoneName);
-  BOOST_CHECK_NO_THROW(findRrSet(zone, "/label", label::NS_RR_TYPE));
-
-  BOOST_CHECK_NO_THROW(m_tool.removeRrSet(zoneName, "/label", label::NS_RR_TYPE));
-
-  BOOST_CHECK_THROW(findRrSet(zone, "/label", label::NS_RR_TYPE), Error);
-}
+// BOOST_FIXTURE_TEST_CASE(AddRrSet1, ManagementToolFixture)
+// {
+//   // check pre-condition
+//   BOOST_CHECK_THROW(m_tool.addRrSet(ROOT_ZONE, "/test", label::NS_RR_TYPE, NDNS_RESP),
+//                     ndns::ManagementTool::Error);
+
+//   Name zoneName("/ndns-test");
+//   Zone zone(zoneName);
+//   m_dbMgr.insert(zone);
+
+//   BOOST_CHECK_THROW(m_tool.addRrSet(ROOT_ZONE, "/test", label::NS_RR_TYPE, NDNS_UNKNOWN),
+//                     ndns::ManagementTool::Error);
+//   BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, "/test", label::CERT_RR_TYPE, NDNS_RAW),
+//                     ndns::ManagementTool::Error);
+//   BOOST_CHECK_THROW(m_tool.addRrSet(ROOT_ZONE, "/test", label::NS_RR_TYPE, NDNS_RAW),
+//                     ndns::ManagementTool::Error);
+//   BOOST_CHECK_THROW(m_tool.addRrSet(ROOT_ZONE, "/test", label::TXT_RR_TYPE, NDNS_RAW),
+//                     ndns::ManagementTool::Error);
+
+//   m_dbMgr.remove(zone);
+// }
+
+// BOOST_FIXTURE_TEST_CASE(AddRrSet2, ManagementToolFixture)
+// {
+//   Name zoneName("/ndns-test");
+//   Zone zone(zoneName);
+
+//   uint64_t version = 1234;
+//   time::seconds ttl1(4200);
+//   time::seconds ttl2(4500);
+//   m_tool.createZone(zoneName, ROOT_ZONE, ttl1);
+
+//   //add NS NDNS_AUTH and check user-defined ttl
+//   BOOST_CHECK_NO_THROW(m_tool.addRrSet(zoneName, "/l1", label::NS_RR_TYPE, NDNS_AUTH, 7654,
+//                                        {}, DEFAULT_CERT, ttl2));
+//   Response response;
+//   BOOST_CHECK_NO_THROW(response = findResponse(zone, "/l1", label::NS_RR_TYPE));
+//   BOOST_CHECK_EQUAL(response.getNdnsType(), NDNS_AUTH);
+//   BOOST_CHECK_EQUAL(response.getVersion(), name::Component::fromVersion(7654));
+//   BOOST_CHECK_EQUAL(response.getFreshnessPeriod(), ttl2);
+
+//   // add NS NDNS_RESP and check default ttl
+//   BOOST_CHECK_NO_THROW(m_tool.addRrSet(zoneName, "/l2", label::NS_RR_TYPE, NDNS_RESP, 15));
+//   BOOST_CHECK_NO_THROW(response = findResponse(zone, "/l2", label::NS_RR_TYPE));
+//   BOOST_CHECK_EQUAL(response.getNdnsType(), NDNS_RESP);
+//   BOOST_CHECK_EQUAL(response.getVersion(), name::Component::fromVersion(15));
+//   BOOST_CHECK_EQUAL(response.getFreshnessPeriod(), ttl1);
+
+//   //add TXT NDNS_RESP and check rr
+//   std::string test = "oops";
+//   BOOST_CHECK_NO_THROW(m_tool.addRrSet(zoneName, "/l2", label::TXT_RR_TYPE, NDNS_RESP, version,
+//                                        {"oops", "again"}));
+//   BOOST_CHECK_NO_THROW(response = findResponse(zone, "/l2", label::TXT_RR_TYPE));
+
+//   BOOST_REQUIRE_EQUAL(response.getRrs().size(), 2);
+//   {
+//     const Block& block = response.getRrs()[0];
+//     std::string someString(reinterpret_cast<const char*>(block.value()), block.value_size());
+//     BOOST_CHECK_EQUAL("oops", someString);
+//   }
+
+//   {
+//     const Block& block = response.getRrs()[1];
+//     std::string someString(reinterpret_cast<const char*>(block.value()), block.value_size());
+//     BOOST_CHECK_EQUAL("again", someString);
+//   }
+
+//   //add user defined type
+//   BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, "/l2", name::Component("USER-DEFINED"), NDNS_RAW,
+//                                     1112223, {"10.10.0.1", "SECOND_INVALID_DATA"}),
+//                     ndns::ManagementTool::Error);
+
+//   m_tool.addRrSet(zoneName, "/l2", name::Component("USER-DEFINED"), NDNS_RAW, 1112223,
+//                   {"10.10.0.1"});
+//   BOOST_CHECK_NO_THROW(response = findResponse(zone, "/l2", name::Component("USER-DEFINED")));
+//   BOOST_CHECK_EQUAL(response.getVersion(), name::Component::fromVersion(1112223));
+
+//   std::string actualValue(reinterpret_cast<const char*>(response.getAppContent().value()),
+//                           response.getAppContent().value_size());
+//   BOOST_CHECK_EQUAL(actualValue, "10.10.0.1");
+// }
+
+// BOOST_FIXTURE_TEST_CASE(AddRrSet3, ManagementToolFixture)
+// {
+//   // check pre-condition
+//   Name zoneName("/ndns-test");
+
+//   std::string certPath = TEST_CERTDIR.string();
+//   BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, certPath), ndns::ManagementTool::Error);
+
+//   m_tool.createZone(zoneName, ROOT_ZONE);
+//   BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, certPath), ndns::ManagementTool::Error);
+// }
+
+// BOOST_FIXTURE_TEST_CASE(AddRrSet4, ManagementToolFixture)
+// {
+//   Name parentZoneName("/ndns-test");
+//   Name zoneName = Name(parentZoneName).append("/child-zone");
+
+//   Zone parentZone(parentZoneName);
+
+//   m_tool.createZone(parentZoneName, ROOT_ZONE, time::seconds(1), time::days(1), otherKsk, otherDsk);
+//   m_tool.createZone(zoneName, parentZoneName);
+
+//   std::vector<Name>&& certs = getCerts(zoneName);
+//   BOOST_REQUIRE_EQUAL(certs.size(), 2);
+//   std::sort(certs.begin(), certs.end());
+
+//   Name& ksk = certs[0];
+//   // Name& dsk = certs[1];
+
+//   std::string output = TEST_CERTDIR.string() + "/ss.cert";
+//   m_tool.exportCertificate(ksk, output);
+
+//   BOOST_CHECK_NO_THROW(m_tool.addRrSet(parentZoneName, output));
+//   BOOST_CHECK_NO_THROW(findIdCert(parentZone, ksk));
+
+//   BOOST_CHECK_NO_THROW(m_tool.addRrSet(parentZoneName, "/child-zone",
+//                                        label::NS_RR_TYPE, NDNS_RESP));
+//   BOOST_CHECK_NO_THROW(findRrSet(parentZone, "/child-zone", label::NS_RR_TYPE));
+
+//   //add KSK ID-CERT with illegal name and convert it
+//   Name iZoneName = Name(parentZoneName).append("illegal");
+//   Name illegalCertName = m_keyChain.createIdentity(iZoneName);
+//   m_tool.exportCertificate(illegalCertName, output);
+//   BOOST_CHECK_NO_THROW(m_tool.addRrSet(parentZoneName, output));
+
+//   Name legalCertName =
+//     Name(parentZoneName)
+//     .append("KEY")
+//     .append("illegal")
+//     .append(illegalCertName.getSubName(3));
+//   BOOST_CHECK_NO_THROW(findIdCert(parentZone, legalCertName));
+// }
+
+// BOOST_FIXTURE_TEST_CASE(AddRrSet5, ManagementToolFixture)
+// {
+//   //check using user provided certificate
+//   Name parentZoneName("/ndns-test");
+//   Name zoneName = Name(parentZoneName).append("child-zone");
+
+//   Name dskName = m_keyChain.generateRsaKeyPair(parentZoneName, false);
+//   shared_ptr<IdentityCertificate> dskCert = m_keyChain.selfSign(dskName);
+//   m_keyChain.addCertificateAsKeyDefault(*dskCert);
+
+//   // check addRrSet1
+//   m_tool.createZone(parentZoneName, ROOT_ZONE, time::seconds(1), time::days(1), otherKsk, otherDsk);
+//   m_tool.createZone(zoneName, parentZoneName);
+
+//   std::vector<Name>&& certs = getCerts(zoneName);
+//   BOOST_REQUIRE_EQUAL(certs.size(), 2);
+//   std::sort(certs.begin(), certs.end());
+
+//   Name& ksk = certs[0];
+//   // Name& dsk = certs[1];
+
+//   std::string output = TEST_CERTDIR.string() + "/ss.cert";
+//   m_tool.exportCertificate(ksk, output);
+
+//   BOOST_CHECK_NO_THROW(m_tool.addRrSet(parentZoneName, output, time::seconds(4600),
+//                                        dskCert->getName()));
+
+//   // check addRrSet2
+//   Name label1("/net/ndnsim1");
+//   BOOST_CHECK_NO_THROW(m_tool.addRrSet(parentZoneName, "/l1", label::NS_RR_TYPE, NDNS_AUTH, -1, {},
+//                                        dskCert->getName()));
+// }
+
+// BOOST_FIXTURE_TEST_CASE(AddRrSet6, ManagementToolFixture)
+// {
+//   //check invalid output
+//   Name parentZoneName("/ndns-test");
+//   Name zoneName = Name(parentZoneName).append("child-zone");
+//   m_tool.createZone(zoneName, parentZoneName);
+
+//   Name content = "invalid data packet";
+//   std::string output = TEST_CERTDIR.string() + "/ss.cert";
+//   ndn::io::save(content, output);
+
+//   BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, output), ndns::ManagementTool::Error);
+// }
+
+// BOOST_FIXTURE_TEST_CASE(AddRrSet7, ManagementToolFixture)
+// {
+//   //check version control
+//   Name parentZoneName("/ndns-test");
+//   Name zoneName = Name(parentZoneName).append("child-zone");
+//   m_tool.createZone(zoneName, parentZoneName);
+
+//   Name label("/label");
+//   uint64_t version = 110;
+
+//   m_tool.addRrSet(zoneName, label, label::NS_RR_TYPE, NDNS_RESP, version);
+//   // throw error when adding duplicated rrset with the same version
+//   BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, label, label::NS_RR_TYPE, NDNS_RESP, version),
+//                     ndns::ManagementTool::Error);
+//   version--;
+//   // throw error when adding duplicated rrset with older version
+//   BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, label, label::NS_RR_TYPE, NDNS_RESP, version),
+//                     ndns::ManagementTool::Error);
+
+//   version++;
+//   version++;
+//   BOOST_CHECK_NO_THROW(m_tool.addRrSet(zoneName, label, label::NS_RR_TYPE, NDNS_RESP, version));
+
+//   Zone zone(zoneName);
+//   m_dbMgr.find(zone);
+//   Rrset rrset;
+//   rrset.setZone(&zone);
+//   rrset.setLabel(label);
+//   rrset.setType(label::NS_RR_TYPE);
+//   m_dbMgr.find(rrset);
+
+//   BOOST_CHECK_EQUAL(rrset.getVersion(), name::Component::fromVersion(version));
+// }
+
+// BOOST_FIXTURE_TEST_CASE(AddRrSet8, ManagementToolFixture)
+// {
+//   //check input with different formats
+//   Name parentZoneName("/ndns-test");
+//   Name zoneName = Name(parentZoneName).append("child-zone");
+//   m_tool.createZone(zoneName, parentZoneName);
+
+//   std::string output = TEST_CERTDIR.string() + "/a.cert";
+
+//   // base64
+//   Name dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
+//   shared_ptr<IdentityCertificate> dskCert = m_keyChain.selfSign(dskName);
+
+//   ndn::io::save(*dskCert, output, ndn::io::BASE64);
+//   BOOST_CHECK_NO_THROW(
+//     m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::BASE64));
+
+//   // raw
+//   dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
+//   dskCert = m_keyChain.selfSign(dskName);
+
+//   ndn::io::save(*dskCert, output, ndn::io::NO_ENCODING);
+//   BOOST_CHECK_NO_THROW(
+//     m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::NO_ENCODING));
+
+//   // hex
+//   dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
+//   dskCert = m_keyChain.selfSign(dskName);
+
+//   ndn::io::save(*dskCert, output, ndn::io::HEX);
+//   BOOST_CHECK_NO_THROW(
+//     m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::HEX));
+
+//   // incorrect encoding input
+//   dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
+//   dskCert = m_keyChain.selfSign(dskName);
+
+//   ndn::io::save(*dskCert, output, ndn::io::HEX);
+//   BOOST_CHECK_THROW(
+//     m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT,
+//                     static_cast<ndn::io::IoEncoding>(127)),
+//     ndns::ManagementTool::Error);
+// }
+
+// BOOST_FIXTURE_TEST_CASE(ListAllZones, ManagementToolFixture)
+// {
+//   m_tool.createZone(ROOT_ZONE, ROOT_ZONE, time::seconds(1), time::days(1), rootKsk, rootDsk);
+//   m_tool.createZone("/ndns-test", ROOT_ZONE, time::seconds(10), time::days(1), otherKsk, otherDsk);
+
+//   std::string expectedValue =
+//     "/           ; default-ttl=1 default-key=/dsk-1416974006466 "
+//       "default-certificate=/KEY/dsk-1416974006466/ID-CERT/%FD%00%00%01I%EA%3By%28\n"
+//     "/ndns-test  ; default-ttl=10 default-key=/ndns-test/dsk-1416974006659 "
+//       "default-certificate=/ndns-test/KEY/dsk-1416974006659/ID-CERT/%FD%00%00%01I%EA%3Bz%0E\n";
+
+//   output_test_stream testOutput;
+//   m_tool.listAllZones(testOutput);
+//   BOOST_CHECK(testOutput.is_equal(expectedValue));
+// }
+
+// BOOST_FIXTURE_TEST_CASE(ListZone, ManagementToolFixture)
+// {
+//   m_tool.createZone("/ndns-test", ROOT_ZONE, time::seconds(10), time::days(1), otherKsk, otherDsk);
+
+//   // Add NS with NDNS_RESP
+//   m_tool.addRrSet("/ndns-test", "/label1", label::NS_RR_TYPE, NDNS_RESP, 100);
+
+//   // Add NS with NDNS_AUTH
+//   m_tool.addRrSet("/ndns-test", "/label2", label::NS_RR_TYPE, NDNS_AUTH, 100000);
+
+//   // Add TXT from file
+//   std::string output = TEST_CERTDIR.string() + "/a.rrset";
+//   Response re1;
+//   re1.setZone("/ndns-test");
+//   re1.setQueryType(label::NDNS_ITERATIVE_QUERY);
+//   re1.setRrLabel("/label2");
+//   re1.setRrType(label::TXT_RR_TYPE);
+//   re1.setNdnsType(NDNS_RESP);
+//   re1.setVersion(name::Component::fromVersion(654321));
+//   re1.addRr("First RR");
+//   re1.addRr("Second RR");
+//   re1.addRr("Last RR");
+//   shared_ptr<Data> data1 = re1.toData();
+//   m_keyChain.sign(*data1, otherDsk);
+//   ndn::io::save(*data1, output);
+//   m_tool.addRrSet("/ndns-test", output);
+
+//   // Add TXT in normal way
+//   m_tool.addRrSet("/ndns-test", "/label3", label::TXT_RR_TYPE, NDNS_RESP, 3333,
+//                   {"Hello", "World"}, otherDsk);
+
+//   // Add User-Defined
+//   Response re2;
+//   re2.setZone("/ndns-test");
+//   re2.setQueryType(label::NDNS_ITERATIVE_QUERY);
+//   re2.setRrLabel("/label4");
+//   re2.setRrType(name::Component("USER-DEFINED"));
+//   re2.setNdnsType(NDNS_RAW);
+//   re2.setVersion(name::Component::fromVersion(1234567));
+//   re2.setAppContent(makeBinaryBlock(ndn::tlv::Content, "Hello", sizeof("Hello")));
+//   shared_ptr<Data> data2 = re2.toData();
+//   m_keyChain.sign(*data2, otherDsk);
+//   ndn::io::save(*data2, output);
+//   m_tool.addRrSet("/ndns-test", output);
+
+//   output_test_stream testOutput;
+//   m_tool.listZone("/ndns-test", testOutput, true);
+
+//   std::string expectedValue =
+//     "; Zone /ndns-test\n"
+//     "\n"
+//     "; rrset=/label1 type=NS version=%FDd signed-by=/ndns-test/KEY/dsk-1416974006659/ID-CERT\n"
+//     "/label1             10  NS            \n"
+//     "\n"
+//     "/label2             10  NS            ; content-type=NDNS-Auth version=%FD%00%01%86%A0 "
+//       "signed-by=/ndns-test/KEY/dsk-1416974006659/ID-CERT\n"
+//     "\n"
+//     "; rrset=/label2 type=TXT version=%FD%00%09%FB%F1 "
+//       "signed-by=/ndns-test/KEY/dsk-1416974006659/ID-CERT\n"
+//     "/label2             10  TXT           First RR\n"
+//     "/label2             10  TXT           Second RR\n"
+//     "/label2             10  TXT           Last RR\n"
+//     "\n"
+//     "; rrset=/label3 type=TXT version=%FD%0D%05 "
+//       "signed-by=/ndns-test/KEY/dsk-1416974006659/ID-CERT\n"
+//     "/label3             10  TXT           Hello\n"
+//     "/label3             10  TXT           World\n"
+//     "\n"
+//     "/label4             10  USER-DEFINED  ; content-type=NDNS-Raw version=%FD%00%12%D6%87 "
+//       "signed-by=/ndns-test/KEY/dsk-1416974006659/ID-CERT\n"
+//     "; FQZIZWxsbwA=\n"
+//     "\n"
+//     "/dsk-1416974006659  10  ID-CERT       ; content-type=NDNS-Raw version=%FD%00%00%01I%EA%3Bz%0E "
+//       "signed-by=/ndns-test/KEY/ksk-1416974006577/ID-CERT\n"
+//     "; Certificate name:\n"
+//     ";   /ndns-test/KEY/dsk-1416974006659/ID-CERT/%FD%00%00%01I%EA%3Bz%0E\n"
+//     "; Validity:\n"
+//     ";   NotBefore: 19700101T000000\n"
+//     ";   NotAfter: 20380119T031408\n"
+//     "; Subject Description:\n"
+//     ";   2.5.4.41: /ndns-test\n"
+//     "; Public key bits: (RSA)\n"
+//     ";   MIIBIDANBgkqhkiG9w0BAQEFAAOCAQ0AMIIBCAKCAQEAyBVC+xc/JpscSE/JdxbV\n"
+//     ";   pvgrh/fokNFI/2t9D5inuIFr7cc4W+LyJ4GG1xr9olMx7MHamJU1Xg3VunjhSjL8\n"
+//     ";   mOaeXlbS6gxWexBCtNK6U4euPB4wks/gMIKdp24mAAFb4T+mBfjcRgR+NdrjyO5C\n"
+//     ";   2OqM8qbDZmD/iuEmE6GPXnuMS0o6s13yzMj9YfDh3Df2jZnHESZcmG5Qpgg22T58\n"
+//     ";   7t7bRx8Ha2EC3hb29AeYKwgEKDx8JH8ZBJ80AQP321HbyjXWshJLomzy5SJZo9nA\n"
+//     ";   bZOYlZPCQkomz92Zc9+kpLNQwDvtRLwkZ46B+b2JpKTFARbnvugONCEBuG6zNgoi\n"
+//     ";   EQIB\n"
+//     "; Signature Information:\n"
+//     ";   Signature Type: Unknown Signature Type\n"
+//     "\n";
+
+//   BOOST_CHECK(testOutput.is_equal(expectedValue));
+// }
+
+// BOOST_FIXTURE_TEST_CASE(GetRrSet, ManagementToolFixture)
+// {
+//   Name zoneName("/ndns-test");
+//   m_tool.createZone(zoneName, ROOT_ZONE, time::seconds(1), time::days(1), otherKsk, otherDsk);
+
+//   m_tool.addRrSet(zoneName, "/label", name::Component("TXT"), NDNS_RESP, 100,
+//                   {"Value1", "Value2"});
+
+//   std::string expectedValue =
+//     "Bv0BdwchCAluZG5zLXRlc3QIBE5ETlMIBWxhYmVsCANUWFQIAv1kFAcZAgPotAEB\n"
+//     "FRC/BlZhbHVlMb8GVmFsdWUyFjMbAQEcLgcsCAluZG5zLXRlc3QIA0tFWQgRZHNr\n"
+//     "LTE0MTY5NzQwMDY2NTkIB0lELUNFUlQX/QEAqhzoQmGGeFcUlZ9pEp0ohVoTEw18\n"
+//     "qfB1DN6sssOpjCu3V41SHmoybPPkdW84i/h5n6TmuuePWva+fk6l9Xppd3F4lCX0\n"
+//     "Tb1lyxjnLaQjBKTYxNReM3h55XY7sCvb2RpFCSDZ/PFfzuCwdWAIqcau10H9IjNm\n"
+//     "2NO+m+jW43tnou9TLrNzN80bYFQc4FEwUCJUA4jPf+1NwDUMp9LWN5IILwU+Ttx6\n"
+//     "45u2rK6KXfgcHR3zifwi2IZ9mEjr5bhXxvL8zP+tgaPb0t6O9gujry0an2h+hUH5\n"
+//     "Aldt49RIyipHXO7R2736ZqkUZ553DSIUhaYPuXRlByNbiW6Za+LMPgJaPg==\n";
+
+//   output_test_stream testOutput;
+//   m_tool.getRrSet(zoneName, "/label", name::Component("TXT"), testOutput);
+//   BOOST_CHECK(testOutput.is_equal(expectedValue));
+// }
+
+// BOOST_FIXTURE_TEST_CASE(RemoveRrSet, ManagementToolFixture)
+// {
+//   Name zoneName("/ndns-test");
+
+//   m_tool.createZone(zoneName, ROOT_ZONE);
+
+//   BOOST_CHECK_NO_THROW(m_tool.addRrSet(zoneName, "/label", label::NS_RR_TYPE, NDNS_RESP));
+
+//   Zone zone(zoneName);
+//   BOOST_CHECK_NO_THROW(findRrSet(zone, "/label", label::NS_RR_TYPE));
+
+//   BOOST_CHECK_NO_THROW(m_tool.removeRrSet(zoneName, "/label", label::NS_RR_TYPE));
+
+//   BOOST_CHECK_THROW(findRrSet(zone, "/label", label::NS_RR_TYPE), Error);
+// }
 
 BOOST_AUTO_TEST_SUITE_END()
 

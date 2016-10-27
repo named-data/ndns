@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -126,31 +126,6 @@ public:
 
   /** @brief add rrset to the NDNS local database
    *
-   *  This one is only capable of adding NS type including NDNS_RESP and NDNS_AUTH and user defined
-   *  type with string content.
-   *  Other complicated situations can be handled by the other addRrSet() overload function.
-   *
-   *  @param zoneName the name of the zone to hold the rrset
-   *  @param label the rrset label
-   *  @param type the rrset type
-   *  @param ndnsType the ndnsType of the response, for user-defined type, just set it NDNS_RAW
-   *  @param version the version of the response and rrset, default is Unix Timestamp
-   *  @param contents the content of the response
-   *  @param dskCertName the DSK to signed the response, default is the zone's DSK
-   *  @param ttl the ttl of the rrset
-   */
-  void
-  addRrSet(const Name& zoneName,
-           const Name& label,
-           const name::Component& type,
-           NdnsType ndnsType,
-           const uint64_t version = VERSION_USE_UNIX_TIMESTAMP,
-           const std::vector<std::string>& contents = DEFAULT_CONTENTS,
-           const Name& dskCertName = DEFAULT_CERT,
-           const time::seconds& ttl = DEFAULT_RR_TTL);
-
-  /** @brief add rrset to the NDNS local database
-   *
    *  This overload is capable of adding any data to the rrset as long as the supplied data is
    *  valid.
    *  A special case is to add the ID-CERT of KSK to the parent zone. At this case, the SS cert
@@ -169,6 +144,13 @@ public:
            const time::seconds& ttl = DEFAULT_RR_TTL,
            const Name& dskCertName = DEFAULT_CERT,
            const ndn::io::IoEncoding encoding = ndn::io::BASE64);
+
+  /** @brief add rrset to the NDNS local database
+   *
+   *  @param rrset rrset
+   */
+  void
+  addRrset(Rrset& rrset);
 
   /** @brief remove rrset from the NDNS local database
    *

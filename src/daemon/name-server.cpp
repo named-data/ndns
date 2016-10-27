@@ -19,7 +19,6 @@
 
 #include "name-server.hpp"
 #include "logger.hpp"
-#include "clients/response.hpp"
 #include <ndn-cxx/encoding/encoding-buffer.hpp>
 
 namespace ndn {

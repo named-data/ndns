@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -21,9 +21,12 @@
 #include "ndns-label.hpp"
 #include "logger.hpp"
 #include "util/util.hpp"
+#include "daemon/rrset-factory.hpp"
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/lexical_cast.hpp>
 
 #include <string>
 
@@ -42,7 +45,6 @@ main(int argc, char* argv[])
   string db;
   string rrLabelStr;
   string rrTypeStr;
-  string ndnsTypeStr;
   std::vector<std::string> content;
   try {
     namespace po = boost::program_options;
@@ -57,10 +59,8 @@ main(int argc, char* argv[])
 
     po::options_description config("Record Options");
     config.add_options()
-      ("content-type,t", po::value<string>(&ndnsTypeStr), "Set the ndnsType of the resource record."
-        "Options: resp|nack|auth|raw (will try guess type by default)")
       ("dsk,d", po::value<Name>(&dsk), "Set the name of DSK's certificate. "
-        "Default: use default DSK and its default certificate")
+         "Default: use default DSK and its default certificate")
       ("content,c", po::value<std::vector<std::string>>(&content),
        "Set the content of resource record. Default: empty string")
       ("ttl,a", po::value<int>(&ttlInt), "Set ttl of the rrset. Default: 3600 seconds")
@@ -127,20 +127,8 @@ main(int argc, char* argv[])
     Name zoneName(zoneStr);
     Name label(rrLabelStr);
     name::Component type(rrTypeStr);
+    ndn::KeyChain keyChain;
 
-    if (ndnsTypeStr.empty()) {
-      if (rrTypeStr == "NS" || rrTypeStr == "TXT")
-        ndnsTypeStr = "resp";
-      else if (rrTypeStr == "ID-CERT") {
-        ndnsTypeStr = "raw";
-      }
-      else {
-        std::cerr << "Error: content type needs to be explicitly set using --content-type option"
-                  << std::endl;
-        return 1;
-      }
-    }
-    NdnsType ndnsType = ndns::toNdnsType(ndnsTypeStr);
     time::seconds ttl;
     if (ttlInt == -1)
       ttl = ndns::DEFAULT_CACHE_TTL;
@@ -148,9 +136,30 @@ main(int argc, char* argv[])
       ttl = time::seconds(ttlInt);
     uint64_t version = static_cast<uint64_t>(versionInt);
 
-    ndn::KeyChain keyChain;
+    // todo: reduce copy
+    RrsetFactory rrsetFactory(db, zoneName, keyChain, dsk);
+    rrsetFactory.checkZoneKey();
+    Rrset rrset;
+
+    if (type == label::NS_RR_TYPE) {
+      ndn::Link::DelegationSet delegations;
+      for (const auto& i : content) {
+        std::vector<string> data;
+        boost::split(data, i, boost::is_any_of(","));
+        uint32_t priority = boost::lexical_cast<uint32_t>(data[0]);
+        // assert that data has two number.
+        delegations.insert(std::make_pair(priority, data[1]));
+      }
+
+      rrset = rrsetFactory.generateNsRrset(label, type,
+                                           version, ttl, delegations);
+    } else if (type == label::TXT_RR_TYPE) {
+      rrset = rrsetFactory.generateTxtRrset(label, type,
+                                            version, ttl, content);
+    }
+
     ndn::ndns::ManagementTool tool(db, keyChain);
-    tool.addRrSet(zoneName, label, type, ndnsType, version, content, dsk, ttl);
+    tool.addRrset(rrset);
 
     /// @todo Report success or failure
     //        May be also show the inserted record in ndns-list-zone format
