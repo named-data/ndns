@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE(NdnsQuery)
 
     Response resp;
     BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
-    BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RESP);
+    BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_LINK);
   });
 
   face.receive(q.toInterest());
@@ -103,13 +103,13 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
 
     Response resp;
     BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
-    BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_NACK);
+    BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_NACK);
   });
 
   face.receive(q.toInterest());
   run();
 
-  // will ask for the existing record (will have type NDNS_RAW, as it is certificate)
+  // will ask for the existing record (will have type NDNS_BLOB, as it is certificate)
   face.onSendData.connectSingleShot([&] (const Data& data) {
     ++nDataBack;
     NDNS_LOG_TRACE("get Data back");
@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
 
     Response resp;
     BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
-    BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RAW);
+    BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_BLOB);
   });
 
   q.setRrLabel("dsk-1");
@@ -135,7 +135,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
 
     Response resp;
     BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
-    BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RAW);
+    BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_BLOB);
   });
 
   run();
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
 
     Response resp;
     BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
-    BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_NACK);
+    BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_NACK);
   });
 
   run();
@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(UpdateReplaceRr)
   re.setQueryType(label::NDNS_ITERATIVE_QUERY);
   re.setRrLabel(Name("net"));
   re.setRrType(label::NS_RR_TYPE);
-  re.setNdnsType(NDNS_RESP);
+  re.setContentType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
   re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
@@ -190,7 +190,7 @@ BOOST_AUTO_TEST_CASE(UpdateReplaceRr)
     Response resp;
 
     BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
-    BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RESP); // by default NDNS_RAW is enough
+    BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_RESP); // by default NDNS_BLOB is enough
     BOOST_CHECK_GT(resp.getRrs().size(), 0);
     Block block = resp.getRrs()[0];
     block.parse();
@@ -215,7 +215,7 @@ BOOST_AUTO_TEST_CASE(UpdateInsertNewRr)
   re.setQueryType(label::NDNS_ITERATIVE_QUERY);
   re.setRrLabel(Name("net-XYZ")); // insert new records
   re.setRrType(label::NS_RR_TYPE);
-  re.setNdnsType(NDNS_RESP);
+  re.setContentType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
   re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
@@ -242,7 +242,7 @@ BOOST_AUTO_TEST_CASE(UpdateInsertNewRr)
     Response resp;
 
     BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
-    BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RESP); // by default NDNS_RAW is enough
+    BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_RESP); // by default NDNS_BLOB is enough
     BOOST_CHECK_GT(resp.getRrs().size(), 0);
     Block block = resp.getRrs()[0];
     block.parse();
@@ -291,7 +291,7 @@ BOOST_AUTO_TEST_CASE(UpdateValidatorCannotFetchCert)
   re.setQueryType(label::NDNS_ITERATIVE_QUERY);
   re.setRrLabel(Name("ndnsim-XYZ")); // insert new records
   re.setRrType(label::NS_RR_TYPE);
-  re.setNdnsType(NDNS_RESP);
+  re.setContentType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
   re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
@@ -393,7 +393,7 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
   re.setQueryType(label::NDNS_ITERATIVE_QUERY);
   re.setRrLabel(Name("ndnsim-XYZ")); // insert new records
   re.setRrType(label::NS_RR_TYPE);
-  re.setNdnsType(NDNS_RESP);
+  re.setContentType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
   re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
@@ -429,7 +429,7 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
       Response resp;
 
       BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
-      BOOST_CHECK_EQUAL(resp.getNdnsType(), NDNS_RESP); // by default NDNS_RAW is enough
+      BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_RESP); // by default NDNS_BLOB is enough
       BOOST_CHECK_GT(resp.getRrs().size(), 0);
       Block block = resp.getRrs()[0];
       block.parse();

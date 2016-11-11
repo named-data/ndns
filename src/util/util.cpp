@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -23,8 +23,8 @@
 namespace ndn {
 namespace ndns {
 
-NdnsType
-toNdnsType(const std::string& str)
+NdnsContentType
+toNdnsContentType(const std::string& str)
 {
   if (str == "resp")
     return NDNS_RESP;
@@ -32,8 +32,10 @@ toNdnsType(const std::string& str)
     return NDNS_NACK;
   else if (str == "auth")
     return NDNS_AUTH;
-  else if (str == "raw")
-    return NDNS_RAW;
+  else if (str == "blob")
+    return NDNS_BLOB;
+  else if (str == "link")
+    return NDNS_LINK;
   else
     return NDNS_UNKNOWN;
 }

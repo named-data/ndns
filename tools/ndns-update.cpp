@@ -209,7 +209,7 @@ main(int argc, char* argv[])
   int ttl = 4;
   Name rrLabel;
   string rrType = "TXT";
-  string ndnsTypeStr = "resp";
+  string contentTypeStr = "resp";
   Name certName;
   std::vector<string> contents;
   string contentFile;
@@ -226,8 +226,8 @@ main(int argc, char* argv[])
     config.add_options()
       ("ttl,T", po::value<int>(&ttl), "TTL of query. default: 4 sec")
       ("rrtype,t", po::value<string>(&rrType), "set request RR Type. default: TXT")
-      ("ndnsType,n", po::value<string>(&ndnsTypeStr), "Set the ndnsType of the resource record. "
-       "Potential values are [resp|nack|auth|raw]. Default: resp")
+      ("contentType,n", po::value<string>(&contentTypeStr), "Set the contentType of the resource record. "
+       "Potential values are [blob|link|nack|auth|resp]. Default: resp")
       ("cert,c", po::value<Name>(&certName), "set the name of certificate to sign the update")
       ("content,o", po::value<std::vector<string>>(&contents)->multitoken(),
        "set the content of the RR")
@@ -251,7 +251,7 @@ main(int argc, char* argv[])
     config_file_options.add(config).add(hidden);
 
     po::options_description visible("Usage: ndns-update zone rrLabel [-t rrType] [-T TTL] "
-                                    "[-n NdnsType] [-c cert] "
+                                    "[-n NdnsContentType] [-c cert] "
                                     "[-f contentFile]|[-o content]\n"
                                     "Allowed options");
 
@@ -313,10 +313,10 @@ main(int argc, char* argv[])
         }
       }
 
-      NdnsType ndnsType = toNdnsType(ndnsTypeStr);
+      NdnsContentType contentType = toNdnsContentType(contentTypeStr);
 
-      if (ndnsType == ndns::NDNS_UNKNOWN) {
-        std::cerr << "unknown NdnsType: " << ndnsTypeStr << std::endl;
+      if (contentType == ndns::NDNS_UNKNOWN) {
+        std::cerr << "unknown NdnsContentType: " << contentTypeStr << std::endl;
         return 1;
       }
 
@@ -328,7 +328,7 @@ main(int argc, char* argv[])
 
       re.setQueryType(qType);
       re.setRrType(name::Component(rrType));
-      re.setNdnsType(ndnsType);
+      re.setContentType(contentType);
 
       for (const auto& content : contents) {
         re.addRr(makeBinaryBlock(ndns::tlv::RrData, content.c_str(), content.size()));

@@ -177,15 +177,15 @@ public:
   }
 
   void
-  setNdnsType(NdnsType ndnsType)
+  setContentType(NdnsContentType contentType)
   {
-    m_ndnsType = ndnsType;
+    m_contentType = contentType;
   }
 
-  NdnsType
-  getNdnsType() const
+  NdnsContentType
+  getContentType() const
   {
-    return m_ndnsType;
+    return m_contentType;
   }
 
   const Block&
@@ -228,7 +228,7 @@ private:
   name::Component m_rrType;
   name::Component m_version;
 
-  NdnsType m_ndnsType;
+  NdnsContentType m_contentType;
   time::seconds m_freshnessPeriod;
 
   /**

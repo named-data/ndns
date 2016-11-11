@@ -24,7 +24,7 @@ namespace ndn {
 namespace ndns {
 
 Response::Response()
-  : m_ndnsType(NDNS_RAW)
+  : m_contentType(NDNS_BLOB)
   , m_freshnessPeriod(DEFAULT_RR_FRESHNESS_PERIOD)
   , m_appContent(makeBinaryBlock(ndn::tlv::Content, reinterpret_cast<const uint8_t*>(0), 0))
 {
@@ -33,7 +33,7 @@ Response::Response()
 Response::Response(const Name& zone, const name::Component& queryType)
   : m_zone(zone)
   , m_queryType(queryType)
-  , m_ndnsType(NDNS_RAW)
+  , m_contentType(NDNS_BLOB)
   , m_freshnessPeriod(DEFAULT_RR_FRESHNESS_PERIOD)
   , m_appContent(makeBinaryBlock(ndn::tlv::Content, reinterpret_cast<const uint8_t*>(0), 0))
 {
@@ -43,7 +43,7 @@ template<bool T>
 inline size_t
 Response::wireEncode(EncodingImpl<T>& block) const
 {
-  if (m_ndnsType == NDNS_RAW) {
+  if (m_contentType == NDNS_BLOB) {
     // Raw application content
     return block.prependBlock(m_appContent);
   }
@@ -66,7 +66,7 @@ Response::wireEncode(EncodingImpl<T>& block) const
 const Block
 Response::wireEncode() const
 {
-  if (m_ndnsType == NDNS_RAW) {
+  if (m_contentType == NDNS_BLOB) {
     return m_appContent;
   }
 
@@ -80,7 +80,7 @@ Response::wireEncode() const
 void
 Response::wireDecode(const Block& wire)
 {
-  if (m_ndnsType == NDNS_RAW) {
+  if (m_contentType == NDNS_BLOB) {
     m_appContent = wire;
     return;
   }
@@ -111,9 +111,7 @@ Response::fromData(const Name& zone, const Data& data)
   MetaInfo info = data.getMetaInfo();
 
   m_freshnessPeriod = time::duration_cast<time::seconds>(info.getFreshnessPeriod());
-  const Block* block = info.findAppMetaInfo(tlv::NdnsType);
-  if (block != 0)
-    m_ndnsType = static_cast<NdnsType>(readNonNegativeInteger(*block));
+  m_contentType = NdnsContentType(data.getContentType());
 
   wireDecode(data.getContent());
   return true;
@@ -139,17 +137,14 @@ Response::toData()
 
   shared_ptr<Data> data = make_shared<Data>(name);
 
-  MetaInfo info;
-  info.setFreshnessPeriod(m_freshnessPeriod);
-
-  if (m_ndnsType != NDNS_RAW) {
-    info.addAppMetaInfo(makeNonNegativeIntegerBlock(ndns::tlv::NdnsType, m_ndnsType));
+  if (m_contentType != NDNS_BLOB) {
     data->setContent(this->wireEncode());
   }
   else {
     data->setContent(m_appContent);
   }
-  data->setMetaInfo(info);
+  data->setFreshnessPeriod(m_freshnessPeriod);
+  data->setContentType(m_contentType);
 
   return data;
 }
@@ -198,12 +193,12 @@ Response::operator==(const Response& other) const
   bool tmp = (getZone() == other.getZone() &&
               getQueryType() == other.getQueryType() && getRrLabel() == other.getRrLabel() &&
               getRrType() == other.getRrType() && getVersion() == other.getVersion() &&
-              getNdnsType() == other.getNdnsType());
+              getContentType() == other.getContentType());
 
   if (tmp == false)
     return tmp;
 
-  if (m_ndnsType == NDNS_RAW) {
+  if (m_contentType == NDNS_BLOB) {
     return tmp && (getAppContent() == other.getAppContent());
   }
   else
@@ -219,8 +214,8 @@ operator<<(std::ostream& os, const Response& response)
      << " rrType=" << response.getRrType()
      << " version=" << response.getVersion()
      << " freshnessPeriod=" << response.getFreshnessPeriod()
-     << " ndnsType=" << response.getNdnsType();
-  if (response.getNdnsType() == NDNS_RAW) {
+     << " NdnsContentType=" << response.getContentType();
+  if (response.getContentType() == NDNS_BLOB) {
     if (response.getAppContent().empty())
       os << " appContent=NULL";
     else

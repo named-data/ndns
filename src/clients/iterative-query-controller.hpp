@@ -78,7 +78,7 @@ NDNS_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   onData(const ndn::Interest& interest, const Data& data);
 
   void
-  onDataValidated(const shared_ptr<const Data>& data, NdnsType ndnsType);
+  onDataValidated(const shared_ptr<const Data>& data, NdnsContentType contentType);
 
   /**
    * @brief change the Controller state according to timeout. For current,

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -21,24 +21,26 @@
 #define NDNS_NDNS_ENUM_HPP
 
 #include <ostream>
+#include <ndn-cxx/encoding/tlv.hpp>
 
 namespace ndn {
 namespace ndns {
 
 /**
- * @brief NdnsType defined in Response.NdnsMetaInfo.NdnsType
+ * @brief contentType of response
  */
-enum NdnsType {
-  NDNS_RAW = 0, ///< this is not a real type, just mean that MetaInfo does not contain NdnsType
-  NDNS_RESP = 1, ///< response type means there are requested RR
-  NDNS_NACK = 2, ///< no requested RR
-  NDNS_AUTH = 3, ///< only has RR for detailed (longer) label
-
-  NDNS_UNKNOWN = 255
+enum NdnsContentType {
+  NDNS_BLOB = ndn::tlv::ContentType_Blob,
+  NDNS_LINK = ndn::tlv::ContentType_Link,
+  NDNS_KEY  = ndn::tlv::ContentType_Key,
+  NDNS_NACK = ndn::tlv::ContentType_Nack,
+  NDNS_AUTH = 1086, ///< only has RR for detailed (longer) label
+  NDNS_RESP = 1087, ///< response type means there are requested RR
+  NDNS_UNKNOWN = 1088,  ///< this is not a real type, just mean that contentType is unknown
 };
 
 std::ostream&
-operator<<(std::ostream& os, const NdnsType ndnsType);
+operator<<(std::ostream& os, const NdnsContentType contentType);
 
 /**
  * @brief define Return code of Update's Response

@@ -63,20 +63,16 @@ IterativeQueryController::abort()
 void
 IterativeQueryController::onData(const ndn::Interest& interest, const Data& data)
 {
-  NdnsType ndnsType = NDNS_RAW;
-  const Block* block = data.getMetaInfo().findAppMetaInfo(ndns::tlv::NdnsType);
-  if (block != nullptr) {
-    ndnsType = static_cast<NdnsType>(readNonNegativeInteger(*block));
-  }
+  NdnsContentType contentType = NdnsContentType(data.getContentType());
 
-  NDNS_LOG_TRACE("[* -> *] get a " << ndnsType
+  NDNS_LOG_TRACE("[* -> *] get a " << contentType
                  << " Response: " << data.getName());
   if (m_validator == nullptr) {
-    this->onDataValidated(make_shared<Data>(data), ndnsType);
+    this->onDataValidated(make_shared<Data>(data), contentType);
   }
   else {
     m_validator->validate(data,
-                          bind(&IterativeQueryController::onDataValidated, this, _1, ndnsType),
+                          bind(&IterativeQueryController::onDataValidated, this, _1, contentType),
                           [this] (const shared_ptr<const Data>& data, const std::string& str) {
                             NDNS_LOG_WARN("data: " << data->getName() << " fails verification");
                             this->abort();
@@ -85,22 +81,22 @@ IterativeQueryController::onData(const ndn::Interest& interest, const Data& data
   }
 }
 void
-IterativeQueryController::onDataValidated(const shared_ptr<const Data>& data, NdnsType ndnsType)
+IterativeQueryController::onDataValidated(const shared_ptr<const Data>& data, NdnsContentType contentType)
 {
   switch (m_step) {
   case QUERY_STEP_QUERY_NS:
-    if (ndnsType == NDNS_NACK) {
+    if (contentType == NDNS_NACK) {
       m_step = QUERY_STEP_QUERY_RR;
     }
-    else if (ndnsType == NDNS_RESP) {
-      if (m_rrType == label::NS_RR_TYPE) {
-        Link link(data->wireEncode());
-        if (link.getDelegations().empty()) {
-          m_lastLink = Block();
-        } else {
-          m_lastLink = data->wireEncode();
-        }
+    else if (contentType == NDNS_LINK) {
+      Link link(data->wireEncode());
+      if (link.getDelegations().empty()) {
+        m_lastLink = Block();
+      } else {
+        m_lastLink = data->wireEncode();
       }
+
+      // for NS query, if already received, just return, instead of more queries until NACK
       if (m_nFinishedComps + m_nTryComps == m_dstLabel.size() && m_rrType == label::NS_RR_TYPE) {
         // NS_RR_TYPE is different, since its record is stored at higher level
         m_step = QUERY_STEP_ANSWER_STUB;
@@ -110,13 +106,17 @@ IterativeQueryController::onDataValidated(const shared_ptr<const Data>& data, Nd
         m_nTryComps = 1;
       }
     }
-    else if (ndnsType == NDNS_AUTH) {
+    else if (contentType == NDNS_AUTH) {
       m_nTryComps += 1;
     }
-    else if (ndnsType == NDNS_RAW) {
+    else if (contentType == NDNS_BLOB) {
       std::ostringstream oss;
       oss << *this;
-      NDNS_LOG_WARN("get unexpected Response: NDNS_RAW for QUERY_NS: " << oss.str());
+      NDNS_LOG_WARN("get unexpected Response: NDNS_BLOB for QUERY_NS: " << oss.str());
+    } else {
+      std::ostringstream oss;
+      oss << *this;
+      NDNS_LOG_WARN("get unexpected Response for QUERY_NS: " << oss.str());
     }
     //
     if (m_nFinishedComps + m_nTryComps > m_dstLabel.size()) {

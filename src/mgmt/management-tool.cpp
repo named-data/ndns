@@ -345,11 +345,11 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
     Data data(rrset.getData());
     Response re;
     re.fromData(zoneName, data);
-    int iteration = re.getNdnsType() == NDNS_RAW || re.getNdnsType() == NDNS_AUTH ?
+    int iteration = re.getContentType() == NDNS_BLOB || re.getContentType() == NDNS_AUTH ?
                       1 : re.getRrs().size();
     const std::vector<Block> &rrs = re.getRrs();
 
-    if (re.getNdnsType() != NDNS_RAW) {
+    if (re.getContentType() != NDNS_BLOB) {
       os << "; rrset=" << rrset.getLabel().toUri()
          << " type=" << rrset.getType().toUri()
          << " version=" << rrset.getVersion().toUri()
@@ -368,7 +368,7 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
       os.width(typeWidth + 2);
       os << rrset.getType().toUri();
 
-      if (re.getNdnsType() != NDNS_RAW) {
+      if (re.getContentType() != NDNS_BLOB) {
         using namespace CryptoPP;
         if (rrset.getType() == label::TXT_RR_TYPE) {
           os.write(reinterpret_cast<const char*>(rrs[i].value()), rrs[i].value_size());
@@ -376,7 +376,7 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
         }
         else if (rrset.getType() == label::NS_RR_TYPE) {
           BOOST_ASSERT(iteration == 1);
-          if (re.getNdnsType() == NDNS_AUTH) {
+          if (re.getContentType() == NDNS_AUTH) {
             const std::string authStr = "NDNS-Auth";
             os << authStr;
           } else {
@@ -397,14 +397,14 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
       }
     }
 
-    if (re.getNdnsType() == NDNS_RAW) {
+    if (re.getContentType() == NDNS_BLOB) {
       os.width();
-      os << "; content-type=" << re.getNdnsType()
+      os << "; content-type=" << re.getContentType()
          << " version=" << rrset.getVersion().toUri()
          << " signed-by=" << data.getSignature().getKeyLocator().getName().toUri();
       os << std::endl;
 
-      if (printRaw && re.getNdnsType() == NDNS_RAW) {
+      if (printRaw && re.getContentType() == NDNS_BLOB) {
         util::IndentedStream istream(os, "; ");
 
         if (re.getRrType() == label::CERT_RR_TYPE) {

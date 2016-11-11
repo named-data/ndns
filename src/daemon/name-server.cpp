@@ -103,14 +103,11 @@ NameServer::handleQuery(const Name& prefix, const Interest& interest, const labe
   }
   else {
     // no record, construct NACK
-    Block block = makeNonNegativeIntegerBlock(tlv::NdnsType, NDNS_NACK);
-    MetaInfo info;
-    info.addAppMetaInfo(block);
-    info.setFreshnessPeriod(this->getContentFreshness());
     Name name = interest.getName();
     name.appendVersion();
     shared_ptr<Data> answer = make_shared<Data>(name);
-    answer->setMetaInfo(info);
+    answer->setFreshnessPeriod(this->getContentFreshness());
+    answer->setContentType(NDNS_NACK);
 
     m_keyChain.sign(*answer, m_certName);
     NDNS_LOG_TRACE("answer query with NDNS-NACK: " << answer->getName());
@@ -168,14 +165,11 @@ NameServer::doUpdate(const shared_ptr<const Interest>& interest,
   rrset.setLabel(re.rrLabel);
   rrset.setType(re.rrType);
 
-  Block ndnsType = makeNonNegativeIntegerBlock(::ndn::ndns::tlv::NdnsType, NDNS_RESP);
-  MetaInfo info;
-  info.addAppMetaInfo(ndnsType);
-  info.setFreshnessPeriod(this->getContentFreshness());
   Name name = interest->getName();
   name.appendVersion();
   shared_ptr<Data> answer = make_shared<Data>(name);
-  answer->setMetaInfo(info);
+  answer->setFreshnessPeriod(this->getContentFreshness());
+  answer->setContentType(NDNS_RESP);
 
   Block blk(ndn::ndns::tlv::RrData);
   try {

@@ -78,17 +78,20 @@ DbTestData::DbTestData()
     const time::seconds ttl(3000 + 100 * certificateIndex);
     const name::Component version = name::Component::fromVersion(100 + 1000 * certificateIndex);
     name::Component qType(label::NDNS_ITERATIVE_QUERY);
-    NdnsType ndnsType = NDNS_RESP;
+    NdnsContentType contentType = NDNS_RESP;
     if (type == label::CERT_RR_TYPE) {
-      ndnsType = NDNS_RAW;
+      contentType = NDNS_BLOB;
       qType = label::NDNS_CERT_QUERY;
+    } else if (type == label::NS_RR_TYPE) {
+      contentType = NDNS_LINK;
+    } else if (type == label::TXT_RR_TYPE) {
+      contentType = NDNS_RESP;
     }
     std::ostringstream os;
     os << "a fake content: " << (++certificateIndex) << "th";
 
-    addRrset(zone, label, type, ttl, version, qType, ndnsType, os.str());
+    addRrset(zone, label, type, ttl, version, qType, contentType, os.str());
   };
-
   addQueryRrset("/dsk-1", m_root, label::CERT_RR_TYPE);
   addQueryRrset("/net/ksk-2", m_root, label::CERT_RR_TYPE);
   addQueryRrset("/dsk-3", m_net, label::CERT_RR_TYPE);
@@ -114,7 +117,7 @@ DbTestData::DbTestData()
 void
 DbTestData::addRrset(Zone& zone, const Name& label, const name::Component& type,
                      const time::seconds& ttl, const name::Component& version,
-                     const name::Component& qType, NdnsType ndnsType, const std::string& msg)
+                     const name::Component& qType, NdnsContentType contentType, const std::string& msg)
 {
   Rrset rrset;
   RrsetFactory rf(TEST_DATABASE.string(), zone.getName(),
@@ -123,7 +126,7 @@ DbTestData::addRrset(Zone& zone, const Name& label, const name::Component& type,
   if (type == label::NS_RR_TYPE) {
     ndn::Link::DelegationSet ds = {std::pair<uint32_t, Name>(1,"/xx")};
     rrset = rf.generateNsRrset(label, type, version.toVersion(), ttl, ds);
-    if (ndnsType != NDNS_AUTH) {
+    if (contentType != NDNS_AUTH) {
       // do not add AUTH packet to link
       m_links.push_back(Link(rrset.getData()));
     }

@@ -153,7 +153,7 @@ RrsetFactory::generateNsRrset(const Name& label,
     link.addDelegation(i.first, i.second);
   }
 
-  setMetaInfo(link);
+  setContentType(link, NDNS_LINK, ttl);
   sign(link);
   rrset.setData(link.wireEncode());
 
@@ -188,7 +188,7 @@ RrsetFactory::generateTxtRrset(const Name& label,
   Data data(name);
   data.setContent(wireEncode(rrs));
 
-  setMetaInfo(data);
+  setContentType(data, NDNS_RESP, ttl);
   sign(data);
   rrset.setData(data.wireEncode());
 
@@ -216,7 +216,7 @@ RrsetFactory::generateCertRrset(const Name& label,
   Data data(name);
   data.setContent(cert.wireEncode());
 
-  setMetaInfo(data);
+  setContentType(data, NDNS_BLOB, ttl);
   sign(data);
   rrset.setData(data.wireEncode());
 
@@ -231,12 +231,11 @@ RrsetFactory::sign(Data& data)
 }
 
 void
-RrsetFactory::setMetaInfo(Data& data)
+RrsetFactory::setContentType(Data& data, NdnsContentType contentType,
+                             const time::seconds& ttl)
 {
-  MetaInfo metaInfo = data.getMetaInfo();
-  metaInfo.addAppMetaInfo(makeNonNegativeIntegerBlock(ndns::tlv::NdnsType,
-                                                      NDNS_RESP));
-  data.setMetaInfo(metaInfo);
+  data.setContentType(contentType);
+  data.setFreshnessPeriod(ttl);
 }
 
 template<encoding::Tag TAG>
@@ -273,7 +272,7 @@ RrsetFactory::wireDecodeTxt(const Block& wire)
   std::vector<std::string> txts;
   wire.parse();
 
-  for (const auto& e: wire.elements()) {
+  for (const auto& e : wire.elements()) {
     txts.push_back(std::string(reinterpret_cast<const char*>(e.value()),
                                e.value_size()));
   }

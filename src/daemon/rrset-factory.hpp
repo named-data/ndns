@@ -24,6 +24,7 @@
 #include "rrset.hpp"
 #include "logger.hpp"
 #include "daemon/db-mgr.hpp"
+#include "ndns-enum.hpp"
 
 #include <ndn-cxx/link.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
@@ -106,8 +107,8 @@ private:
   void
   sign(Data& data);
 
-  void
-  setMetaInfo(Data& data);
+  void setContentType(Data& data, NdnsContentType contentType,
+                      const time::seconds& ttl);
 
 private:
   KeyChain& m_keyChain;

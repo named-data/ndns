@@ -76,8 +76,6 @@ public:
 
 BOOST_AUTO_TEST_SUITE(IterativeQueryController)
 
-BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES(Basic, 3)
-
 BOOST_FIXTURE_TEST_CASE(Basic, QueryControllerFixture)
 {
   using std::string;

@@ -46,7 +46,7 @@ private:
   void
   addRrset(Zone& zone, const Name& label, const name::Component& type,
            const time::seconds& ttl, const name::Component& version,
-           const name::Component& qType, NdnsType ndnsType, const std::string& msg);
+           const name::Component& qType, NdnsContentType contentType, const std::string& msg);
 public:
   class PreviousStateCleaner
   {

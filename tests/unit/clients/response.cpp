@@ -36,12 +36,12 @@ BOOST_AUTO_TEST_CASE(Basic)
   ndns::Response r(zone, qType);
   r.setRrLabel(Name("/ndnsim/www"));
   r.setRrType(label::CERT_RR_TYPE);
-  r.setNdnsType(NDNS_RAW);
+  r.setContentType(NDNS_BLOB);
   r.setFreshnessPeriod(time::seconds(4000));
 
   BOOST_CHECK_EQUAL(r.getFreshnessPeriod(), time::seconds(4000));
   BOOST_CHECK_EQUAL(r.getRrType(), label::CERT_RR_TYPE);
-  BOOST_CHECK_EQUAL(r.getNdnsType(), NDNS_RAW);
+  BOOST_CHECK_EQUAL(r.getContentType(), NDNS_BLOB);
   BOOST_CHECK_EQUAL(r.getZone(), zone);
   BOOST_CHECK_EQUAL(r.getQueryType(), qType);
 
@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(Basic)
   ndns::Response r4(zone, qType);
   r4.setRrLabel(Name("/ndnsim/www"));
   r4.setRrType(label::TXT_RR_TYPE);
-  r4.setNdnsType(NDNS_RESP);
+  r4.setContentType(NDNS_RESP);
 
   std::string str = "Just try it";
   Block s = makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size());

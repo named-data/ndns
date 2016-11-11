@@ -105,7 +105,7 @@ private:
     Name name = Name().append(response.getZone()).append(response.getRrLabel());
     if (name == m_dstLabel && m_rrType == response.getRrType()) {
       NDNS_LOG_INFO("This is the final response returned by zone=" << response.getZone()
-                    << " and NdnsType=" << response.getNdnsType()
+                    << " and NdnsType=" << response.getContentType()
                     << ". It contains " << response.getRrs().size() << " RR(s)");
 
       std::string msg;
