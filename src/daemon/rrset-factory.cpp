@@ -27,12 +27,12 @@ namespace ndns {
 
 NDNS_LOG_INIT("RrsetFactory")
 
-RrsetFactory::RrsetFactory(const std::string& dbFile,
+RrsetFactory::RrsetFactory(const boost::filesystem::path& dbFile,
                            const Name& zoneName,
                            KeyChain& keyChain,
                            const Name& inputDskCertName)
   : m_keyChain(keyChain)
-  , m_dbFile(dbFile)
+  , m_dbFile(dbFile.string())
   , m_zone(zoneName)
   , m_dskCertName(inputDskCertName)
   , m_checked(false)

@@ -31,6 +31,7 @@
 
 #include <vector>
 #include <string>
+#include <boost/filesystem.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -50,7 +51,7 @@ public:
   };
 
 public:
-  RrsetFactory(const std::string& dbFile,
+  RrsetFactory(const boost::filesystem::path& dbFile,
                const Name& zoneName,
                KeyChain& keyChain,
                const Name& inputDskCertName);
