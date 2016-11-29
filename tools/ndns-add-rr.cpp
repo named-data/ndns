@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014-2016, Regents of the University of California.
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -29,6 +29,8 @@
 #include <boost/lexical_cast.hpp>
 
 #include <string>
+
+NDNS_LOG_INIT("AddRrTool")
 
 int
 main(int argc, char* argv[])
@@ -159,7 +161,13 @@ main(int argc, char* argv[])
     }
 
     ndn::ndns::ManagementTool tool(db, keyChain);
-    tool.addRrset(rrset);
+
+    if (label.size() > 1) {
+      NDNS_LOG_TRACE("add multi-level label Rrset, using the same TTL as the Rrset");
+      tool.addMultiLevelLabelRrset(rrset, rrsetFactory, ttl);
+    } else {
+      tool.addRrset(rrset);
+    }
 
     /// @todo Report success or failure
     //        May be also show the inserted record in ndns-list-zone format

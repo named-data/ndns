@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014-2016, Regents of the University of California.
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -71,6 +71,12 @@ public:
                    const uint64_t version,
                    time::seconds ttl,
                    const std::vector<std::string>& contents);
+
+  Rrset
+  generateAuthRrset(const Name& label,
+                    const name::Component& type,
+                    const uint64_t version,
+                    time::seconds ttl);
 
   Rrset
   generateCertRrset(const Name& label,

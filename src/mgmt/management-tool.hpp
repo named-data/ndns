@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014-2016, Regents of the University of California.
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -25,6 +25,7 @@
 #include "./daemon/zone.hpp"
 #include "./daemon/db-mgr.hpp"
 #include "./daemon/rrset.hpp"
+#include "./daemon/rrset-factory.hpp"
 #include "./clients/response.hpp"
 
 #include <stdexcept>
@@ -75,19 +76,18 @@ public:
    *
    *  Specifically, It will generate a KSK and a DSK (and their certificates) to the following
    *  places:
-   *  1) Local NDNS database: a new zone is added.
-   *  2) Local NDNS database: an ID-CERT of the DSK is added.
-   *  3) KeyChain: an identity named with zone name is added.
-   *  4) KeyChain: a KSK and its self-signed certificate is added. The ownership of the KSK is the
+   *  1. Local NDNS database: a new zone is added.
+   *  2. Local NDNS database: an ID-CERT of the DSK is added.
+   *  3. KeyChain: an identity named with zone name is added.
+   *  4. KeyChain: a KSK and its self-signed certificate is added. The ownership of the KSK is the
    *  parent zone.
-   *  5) KeyChain: a DSK and its KSK signed certificate is added.
+   *  5. KeyChain: a DSK and its KSK signed certificate is added.
    *
-   *  -SS.cert (self-signed)
-   *  -SKS.cert (self's Key signed)
-   *  -PKS.cert (parent's Key Signed)
+   *  - SS.cert (self-signed)
+   *  - SKS.cert (self's Key signed)
+   *  - PKS.cert (parent's Key Signed)
    *
-   *  @attention
-   *  1) to create root zone, supply zoneName and parentZoneName both with ROOT_ZONE
+   *  @note To create root zone, supply zoneName and parentZoneName both with ROOT_ZONE
    *
    *  @param zoneName zone's name
    *  @param parentZoneName parent zone's name
@@ -96,7 +96,7 @@ public:
    *                      should not be empty)
    *  @param kskCertName if given, a zone will be created with this ksk certificate
    *  @param dskCertName if given, a zone will be created with this dsk certificate and provided
-   *  ksk certificate will be ignored
+   *                     ksk certificate will be ignored
    */
   void
   createZone(const Name& zoneName,
@@ -124,7 +124,7 @@ public:
   void
   exportCertificate(const Name& certName, const std::string& outFile = DEFAULT_IO);
 
-  /** @brief add rrset to the NDNS local database
+  /** @brief Add rrset to the NDNS local database
    *
    *  This overload is capable of adding any data to the rrset as long as the supplied data is
    *  valid.
@@ -145,12 +145,43 @@ public:
            const Name& dskCertName = DEFAULT_CERT,
            const ndn::io::IoEncoding encoding = ndn::io::BASE64);
 
-  /** @brief add rrset to the NDNS local database
+  /** @brief Add rrset to the NDNS local database
+   *
+   *  @throw Error if the @p rrset label size is larger than 1 or @p rrset will override an
+   *               existing AUTH record
    *
    *  @param rrset rrset
    */
   void
   addRrset(Rrset& rrset);
+
+  /** @brief Add rrset with multi-level label to the NDNS local database
+   *
+   *  The appropriate AUTH records will be created automatically if they do not yet exist. The
+   *  existing records are kept intact.
+   *
+   *  @throw Error If one of the levels has been delegated to another zone. For example, if
+   *               there is an NS record with label `/foo`, then inserting @p rrset having a
+   *               multi-level label that use `/foo` as prefix will cause an error.
+   *
+   *  @throw Error If @p rrset will override an AUTH record.  For example, if there is already
+   *               an AUTH record with label `/foo/bar`, then inserting NS-type @p rrset that
+   *               has the the same label will cause an error.
+   *
+   *  For example, inserting a rrset with `/foo/bar/test` label and TXT type into zone `/zone/NDNS`
+   *  will create:
+   *  - `/zone/NDNS/foo/NS` (.ContentType AUTH)
+   *  - `/zone/NDNS/foo/bar/NS` (.ContentType AUTH)
+   *  - `/zone/NDNS/foo/bar/test/TXT` (.ContentType NDNS-Resp)
+   *
+   *  @param rrset rrset
+   *  @param zoneRrFactory that is used for generate AUTH packet
+   *  @param authTtl
+   */
+  void
+  addMultiLevelLabelRrset(Rrset& rrset,
+                          RrsetFactory& zoneRrFactory,
+                          const time::seconds& authTtl);
 
   /** @brief remove rrset from the NDNS local database
    *

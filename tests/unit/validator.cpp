@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014-2016, Regents of the University of California.
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -122,7 +122,7 @@ public:
     BOOST_CHECK_EQUAL(m_keyChain.doesCertificateExist(certName), true);
     auto cert = m_keyChain.getCertificate(certName);
     m_face.getIoService().post([this, cert] {
-        m_face.receive<Data>(*cert);
+        m_face.receive(*cert);
       });
   }
 
