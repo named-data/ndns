@@ -36,6 +36,8 @@ toNdnsContentType(const std::string& str)
     return NDNS_BLOB;
   else if (str == "link")
     return NDNS_LINK;
+  else if (str == "key")
+    return NDNS_LINK;
   else
     return NDNS_UNKNOWN;
 }

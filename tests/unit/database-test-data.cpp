@@ -80,7 +80,7 @@ DbTestData::DbTestData()
     name::Component qType(label::NDNS_ITERATIVE_QUERY);
     NdnsContentType contentType = NDNS_RESP;
     if (type == label::CERT_RR_TYPE) {
-      contentType = NDNS_BLOB;
+      contentType = NDNS_KEY;
       qType = label::NDNS_CERT_QUERY;
     } else if (type == label::NS_RR_TYPE) {
       contentType = NDNS_LINK;

@@ -216,7 +216,7 @@ RrsetFactory::generateCertRrset(const Name& label,
   Data data(name);
   data.setContent(cert.wireEncode());
 
-  setContentType(data, NDNS_BLOB, ttl);
+  setContentType(data, NDNS_KEY, ttl);
   sign(data);
   rrset.setData(data.wireEncode());
 

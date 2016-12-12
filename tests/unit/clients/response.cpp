@@ -36,12 +36,12 @@ BOOST_AUTO_TEST_CASE(Basic)
   ndns::Response r(zone, qType);
   r.setRrLabel(Name("/ndnsim/www"));
   r.setRrType(label::CERT_RR_TYPE);
-  r.setContentType(NDNS_BLOB);
+  r.setContentType(NDNS_KEY);
   r.setFreshnessPeriod(time::seconds(4000));
 
   BOOST_CHECK_EQUAL(r.getFreshnessPeriod(), time::seconds(4000));
   BOOST_CHECK_EQUAL(r.getRrType(), label::CERT_RR_TYPE);
-  BOOST_CHECK_EQUAL(r.getContentType(), NDNS_BLOB);
+  BOOST_CHECK_EQUAL(r.getContentType(), NDNS_KEY);
   BOOST_CHECK_EQUAL(r.getZone(), zone);
   BOOST_CHECK_EQUAL(r.getQueryType(), qType);
 

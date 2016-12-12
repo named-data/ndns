@@ -107,8 +107,9 @@ private:
   void
   sign(Data& data);
 
-  void setContentType(Data& data, NdnsContentType contentType,
-                      const time::seconds& ttl);
+  void
+  setContentType(Data& data, NdnsContentType contentType,
+                 const time::seconds& ttl);
 
 private:
   KeyChain& m_keyChain;

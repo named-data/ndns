@@ -43,7 +43,7 @@ template<bool T>
 inline size_t
 Response::wireEncode(EncodingImpl<T>& block) const
 {
-  if (m_contentType == NDNS_BLOB) {
+  if (m_contentType == NDNS_BLOB || m_contentType == NDNS_KEY) {
     // Raw application content
     return block.prependBlock(m_appContent);
   }
@@ -66,7 +66,7 @@ Response::wireEncode(EncodingImpl<T>& block) const
 const Block
 Response::wireEncode() const
 {
-  if (m_contentType == NDNS_BLOB) {
+  if (m_contentType == NDNS_BLOB || m_contentType == NDNS_KEY) {
     return m_appContent;
   }
 
@@ -80,7 +80,7 @@ Response::wireEncode() const
 void
 Response::wireDecode(const Block& wire)
 {
-  if (m_contentType == NDNS_BLOB) {
+  if (m_contentType == NDNS_BLOB || m_contentType == NDNS_KEY) {
     m_appContent = wire;
     return;
   }
@@ -137,7 +137,7 @@ Response::toData()
 
   shared_ptr<Data> data = make_shared<Data>(name);
 
-  if (m_contentType != NDNS_BLOB) {
+  if (m_contentType != NDNS_BLOB && m_contentType != NDNS_KEY) {
     data->setContent(this->wireEncode());
   }
   else {
@@ -198,7 +198,7 @@ Response::operator==(const Response& other) const
   if (tmp == false)
     return tmp;
 
-  if (m_contentType == NDNS_BLOB) {
+  if (m_contentType == NDNS_BLOB || m_contentType == NDNS_KEY) {
     return tmp && (getAppContent() == other.getAppContent());
   }
   else
@@ -215,7 +215,8 @@ operator<<(std::ostream& os, const Response& response)
      << " version=" << response.getVersion()
      << " freshnessPeriod=" << response.getFreshnessPeriod()
      << " NdnsContentType=" << response.getContentType();
-  if (response.getContentType() == NDNS_BLOB) {
+  if (response.getContentType() == NDNS_BLOB
+      || response.getContentType() == NDNS_KEY) {
     if (response.getAppContent().empty())
       os << " appContent=NULL";
     else

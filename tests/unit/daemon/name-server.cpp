@@ -85,8 +85,6 @@ BOOST_AUTO_TEST_CASE(NdnsQuery)
   BOOST_CHECK_EQUAL(hasDataBack, true);
 }
 
-BOOST_AUTO_TEST_CASE_EXPECTED_FAILURES(KeyQuery, 2)
-
 BOOST_AUTO_TEST_CASE(KeyQuery)
 {
   Query q(zone, ndns::label::NDNS_ITERATIVE_QUERY);
@@ -109,7 +107,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
   face.receive(q.toInterest());
   run();
 
-  // will ask for the existing record (will have type NDNS_BLOB, as it is certificate)
+  // will ask for the existing record (will have type NDNS_KEY, as it is certificate)
   face.onSendData.connectSingleShot([&] (const Data& data) {
     ++nDataBack;
     NDNS_LOG_TRACE("get Data back");
@@ -117,7 +115,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
 
     Response resp;
     BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
-    BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_BLOB);
+    BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_KEY);
   });
 
   q.setRrLabel("dsk-1");
@@ -135,7 +133,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
 
     Response resp;
     BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
-    BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_BLOB);
+    BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_KEY);
   });
 
   run();
