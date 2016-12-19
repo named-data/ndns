@@ -12,7 +12,7 @@ import os
 def options(opt):
     opt.load(['compiler_cxx', 'gnu_dirs'])
     opt.load(['boost', 'default-compiler-flags', 'doxygen', 'sphinx_build',
-              'sqlite3', 'pch', 'coverage'], tooldir=['.waf-tools'])
+              'sqlite3', 'pch', 'sanitizers', 'coverage'], tooldir=['.waf-tools'])
 
     ropt = opt.add_option_group('NDNS Options')
 
@@ -22,7 +22,7 @@ def options(opt):
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
                'boost', 'default-compiler-flags', 'doxygen', 'sphinx_build',
-               'sqlite3', 'pch', 'coverage'])
+               'sqlite3', 'pch', 'sanitizers', 'coverage'])
 
     if 'PKG_CONFIG_PATH' not in os.environ:
         os.environ['PKG_CONFIG_PATH'] = Utils.subst_vars('${LIBDIR}/pkgconfig', conf.env)

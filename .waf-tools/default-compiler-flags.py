@@ -40,7 +40,7 @@ def configure(conf):
 
     if not areCustomCxxflagsPresent:
         conf.add_supported_cxxflags(extraFlags['CXXFLAGS'])
-        conf.add_supported_cxxflags(extraFlags['LINKFLAGS'])
+        conf.add_supported_linkflags(extraFlags['LINKFLAGS'])
 
     conf.env.DEFINES += extraFlags['DEFINES']
 
@@ -60,7 +60,7 @@ def add_supported_cxxflags(self, cxxflags):
             supportedFlags += [flag]
 
     self.end_msg(' '.join(supportedFlags))
-    self.env.CXXFLAGS = supportedFlags + self.env.CXXFLAGS
+    self.env.prepend_value('CXXFLAGS', supportedFlags)
 
 @Configure.conf
 def add_supported_linkflags(self, linkflags):
@@ -78,20 +78,20 @@ def add_supported_linkflags(self, linkflags):
             supportedFlags += [flag]
 
     self.end_msg(' '.join(supportedFlags))
-    self.env.LINKFLAGS = supportedFlags + self.env.LINKFLAGS
+    self.env.prepend_value('LINKFLAGS', supportedFlags)
 
 
 class CompilerFlags(object):
     def getGeneralFlags(self, conf):
-        """Get dict {'CXXFLAGS':[...], LINKFLAGS:[...], DEFINES:[...]} that are always needed"""
+        """Get dict of CXXFLAGS, LINKFLAGS, and DEFINES that are always needed"""
         return {'CXXFLAGS': [], 'LINKFLAGS': [], 'DEFINES': []}
 
     def getDebugFlags(self, conf):
-        """Get tuple {CXXFLAGS, LINKFLAGS, DEFINES} that are needed in debug mode"""
+        """Get dict of CXXFLAGS, LINKFLAGS, and DEFINES that are needed only in debug mode"""
         return {'CXXFLAGS': [], 'LINKFLAGS': [], 'DEFINES': ['_DEBUG']}
 
     def getOptimizedFlags(self, conf):
-        """Get tuple {CXXFLAGS, LINKFLAGS, DEFINES} that are needed in optimized mode"""
+        """Get dict of CXXFLAGS, LINKFLAGS, and DEFINES that are needed only in optimized mode"""
         return {'CXXFLAGS': [], 'LINKFLAGS': [], 'DEFINES': ['NDEBUG']}
 
 class GccBasicFlags(CompilerFlags):
@@ -100,21 +100,26 @@ class GccBasicFlags(CompilerFlags):
     """
     def getDebugFlags(self, conf):
         flags = super(GccBasicFlags, self).getDebugFlags(conf)
-        flags['CXXFLAGS'] += ['-pedantic',
-                              '-Wall',
-                              '-O0',
+        flags['CXXFLAGS'] += ['-O0',
                               '-g3',
+                              '-pedantic',
+                              '-Wall',
+                              '-Wextra',
                               '-Werror',
+                              '-Wno-unused-parameter',
                               '-Wno-error=maybe-uninitialized', # Bug #1615
+                              '-Wno-error=deprecated-declarations', # Bug #3795
                               ]
         return flags
 
     def getOptimizedFlags(self, conf):
         flags = super(GccBasicFlags, self).getOptimizedFlags(conf)
-        flags['CXXFLAGS'] += ['-pedantic',
-                              '-Wall',
-                              '-O2',
+        flags['CXXFLAGS'] += ['-O2',
                               '-g',
+                              '-pedantic',
+                              '-Wall',
+                              '-Wextra',
+                              '-Wno-unused-parameter',
                               ]
         return flags
 
@@ -122,20 +127,19 @@ class GccFlags(GccBasicFlags):
     def getGeneralFlags(self, conf):
         flags = super(GccFlags, self).getGeneralFlags(conf)
         version = tuple(int(i) for i in conf.env['CC_VERSION'])
-        if version < (4, 6, 0):
+        if version < (4, 8, 2):
             conf.fatal('The version of gcc you are using (%s) is too old.\n' %
                        '.'.join(conf.env['CC_VERSION']) +
-                       'The minimum supported gcc version is 4.6.0.')
-        elif version < (4, 7, 0):
-            flags['CXXFLAGS'] += ['-std=c++0x']
+                       'The minimum supported gcc version is 4.8.2.')
         else:
             flags['CXXFLAGS'] += ['-std=c++11']
-        if version < (4, 8, 0):
-            flags['DEFINES'] += ['_GLIBCXX_USE_NANOSLEEP'] # Bug #2499
         return flags
 
     def getDebugFlags(self, conf):
         flags = super(GccFlags, self).getDebugFlags(conf)
+        version = tuple(int(i) for i in conf.env['CC_VERSION'])
+        if version < (5, 1, 0):
+            flags['CXXFLAGS'] += ['-Wno-missing-field-initializers']
         flags['CXXFLAGS'] += ['-Og', # gcc >= 4.8
                               '-fdiagnostics-color', # gcc >= 4.9
                               ]
@@ -143,6 +147,9 @@ class GccFlags(GccBasicFlags):
 
     def getOptimizedFlags(self, conf):
         flags = super(GccFlags, self).getOptimizedFlags(conf)
+        version = tuple(int(i) for i in conf.env['CC_VERSION'])
+        if version < (5, 1, 0):
+            flags['CXXFLAGS'] += ['-Wno-missing-field-initializers']
         flags['CXXFLAGS'] += ['-fdiagnostics-color'] # gcc >= 4.9
         return flags
 
@@ -162,6 +169,7 @@ class ClangFlags(GccBasicFlags):
                               '-Wno-error=unneeded-internal-declaration', # Bug #1588
                               '-Wno-error=deprecated-register',
                               '-Wno-error=keyword-macro', # Bug #3235
+                              '-Wno-error=infinite-recursion', # Bug #3358
                               ]
         return flags
 

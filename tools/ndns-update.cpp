@@ -176,7 +176,7 @@ public:
     m_interestLifetime = interestLifetime;
   }
 
-  const bool
+  bool
   hasError() const
   {
     return m_hasError;
