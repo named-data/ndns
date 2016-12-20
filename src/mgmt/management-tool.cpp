@@ -337,36 +337,40 @@ ManagementTool::addRrSet(const Name& zoneName,
     throw Error("input does not contain a valid Data packet");
   }
 
-  //determine whether the data is a self-signed certificate
+  // determine whether the data is a self-signed certificate
   shared_ptr<Regex> regex1 = make_shared<Regex>("(<>*)<KEY>(<>+)<ID-CERT><>");
   if (regex1->match(data->getName())) {
     IdentityCertificate scert(*data);
     Name keyName = scert.getPublicKeyName();
+    if (keyName.getPrefix(zoneName.size()) != zoneName) {
+      throw Error("the input key does not belong to the zone");
+    }
+
     Name keyLocator = scert.getSignature().getKeyLocator().getName();
 
-    //if it is, extract the content and name from the data, and resign it using the dsk.
+    // if it is, extract the content and name from the data, and resign it using the dsk.
     shared_ptr<Regex> regex2 = make_shared<Regex>("(<>*)<KEY>(<>+)<ID-CERT>");
     BOOST_VERIFY(regex2->match(keyLocator) == true);
     if (keyName == regex2->expand("\\1\\2")) {
-      shared_ptr<Data> pre = data;
-      Name name = pre->getName();
-      //check whether the name is legal or not. if not converting it to a legal name
-      if (zoneName != regex1->expand("\\1")) {
-        Name comp1 = regex1->expand("\\1").getSubName(zoneName.size());
-        Name comp2 = regex1->expand("\\2");
-        name = zoneName;
-        name.append("KEY");
-        name.append(comp1);
-        name.append(comp2);
-        name.append("ID-CERT");
-        name.append(pre->getName().get(-1));
+
+      Name canonicalName;
+      canonicalName
+        .append(zoneName)
+        .append("KEY")
+        .append(keyName.getSubName(zoneName.size(), keyName.size() - zoneName.size()))
+        .append("ID-CERT")
+        .append(data->getName().get(-1));
+
+      if (data->getName() != canonicalName) {
+        // name need to be adjusted
+        auto newData = make_shared<Data>();
+        newData->setName(canonicalName);
+        newData->setMetaInfo(data->getMetaInfo());
+        newData->setContent(data->getContent());
+        m_keyChain.sign(*newData);
+
+        data = newData;
       }
-
-      data = make_shared<Data>();
-      data->setName(name);
-      data->setContent(pre->getContent());
-
-      m_keyChain.sign(*data, dskCertName);
     }
   }
 

@@ -24,16 +24,60 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NDNS_TESTS_BOOST_TEST_HPP
-#define NDNS_TESTS_BOOST_TEST_HPP
+#include "test-common.hpp"
 
-// suppress warnings from Boost.Test
-#pragma GCC system_header
-#pragma clang system_header
+#include <ndn-cxx/security/signature-sha256-with-rsa.hpp>
 
-#include <boost/test/test_tools.hpp>
-#include <boost/test/unit_test.hpp>
-#include <boost/concept_check.hpp>
-#include <boost/test/output_test_stream.hpp>
+namespace ndn {
+namespace ndns {
+namespace tests {
 
-#endif // NDN_TESTS_BOOST_TEST_HPP
+shared_ptr<Interest>
+makeInterest(const Name& name, uint32_t nonce)
+{
+  auto interest = make_shared<Interest>(name);
+  if (nonce != 0) {
+    interest->setNonce(nonce);
+  }
+  return interest;
+}
+
+shared_ptr<Data>
+makeData(const Name& name)
+{
+  auto data = make_shared<Data>(name);
+  return signData(data);
+}
+
+Data&
+signData(Data& data)
+{
+  ndn::SignatureSha256WithRsa fakeSignature;
+  fakeSignature.setValue(ndn::encoding::makeEmptyBlock(tlv::SignatureValue));
+  data.setSignature(fakeSignature);
+  data.wireEncode();
+
+  return data;
+}
+
+shared_ptr<Link>
+makeLink(const Name& name, std::initializer_list<std::pair<uint32_t, Name>> delegations)
+{
+  auto link = make_shared<Link>(name, delegations);
+  signData(link);
+  return link;
+}
+
+lp::Nack
+makeNack(const Name& name, uint32_t nonce, lp::NackReason reason)
+{
+  Interest interest(name);
+  interest.setNonce(nonce);
+  lp::Nack nack(std::move(interest));
+  nack.setReason(reason);
+  return nack;
+}
+
+} // namespace tests
+} // namespace ndns
+} // namespace ndn

@@ -17,28 +17,20 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../../src/mgmt/management-tool.hpp"
-
-#include "../../boost-test.hpp"
-#include <boost/test/output_test_stream.hpp>
-using boost::test_tools::output_test_stream;
+#include "mgmt/management-tool.hpp"
 
 #include "ndns-enum.hpp"
 #include "ndns-label.hpp"
 #include "ndns-tlv.hpp"
 
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <string>
-
-#include <boost/filesystem.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
-#include <ndn-cxx/security/key-chain.hpp>
-#include <ndn-cxx/security/validator.hpp>
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/util/regex.hpp>
+
+#include "test-common.hpp"
+
+using boost::test_tools::output_test_stream;
 
 namespace ndn {
 namespace ndns {
@@ -49,7 +41,6 @@ BOOST_AUTO_TEST_SUITE(ManagementTool)
 static const boost::filesystem::path TEST_DATABASE = TEST_CONFIG_PATH "/management_tool.db";
 static const boost::filesystem::path TEST_CERTDIR = TEST_CONFIG_PATH "/management_tool_certs";
 static const Name FAKE_ROOT("/fake-root/123456789");
-
 
 /**
  * @brief Recursive copy a directory using Boost Filesystem
@@ -102,7 +93,7 @@ protected:
 };
 
 
-class ManagementToolFixture : public TestHome
+class ManagementToolFixture : public TestHome, public IdentityManagementFixture
 {
 public:
   class Error : public std::runtime_error
@@ -126,8 +117,7 @@ public:
   };
 
   ManagementToolFixture()
-    : m_keyChain("sqlite3", "file")
-    , m_tool(TEST_DATABASE.string().c_str(), m_keyChain)
+    : m_tool(TEST_DATABASE.string().c_str(), m_keyChain)
     , m_dbMgr(TEST_DATABASE.string().c_str())
 
     , rootKsk("/KEY/ksk-1416974006376/ID-CERT/%FD%00%00%01I%EA%3Bx%BD")
@@ -204,7 +194,6 @@ public:
 
 public:
   PreviousStateCleaner cleaner; // must be first variable
-  ndn::KeyChain m_keyChain;
   ndns::ManagementTool m_tool;
   ndns::DbMgr m_dbMgr;
 

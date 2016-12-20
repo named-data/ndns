@@ -18,10 +18,8 @@
  */
 
 #include "validator.hpp"
-#include "../boost-test.hpp"
-#include <ndn-cxx/util/dummy-client-face.hpp>
-#include <ndn-cxx/security/key-chain.hpp>
-#include <boost/asio.hpp>
+
+#include "test-common.hpp"
 
 namespace ndn {
 namespace ndns {
@@ -31,7 +29,7 @@ NDNS_LOG_INIT("ValidatorTest")
 
 BOOST_AUTO_TEST_SUITE(Validator)
 
-class Fixture
+class Fixture : public IdentityManagementFixture
 {
 public:
   Fixture()
@@ -39,15 +37,9 @@ public:
     , m_testId2("/test02/ndn")
     , m_testId3("/test02/ndn/edu")
     , m_randomId("/test03")
-    , m_keyChain("sqlite3", "file")
     , m_version(name::Component::fromVersion(0))
     , m_face(m_keyChain, {false, true})
   {
-    m_keyChain.deleteIdentity(m_testId1);
-    m_keyChain.deleteIdentity(m_testId2);
-    m_keyChain.deleteIdentity(m_testId3);
-    m_keyChain.deleteIdentity(m_randomId);
-
     m_randomDsk = createRoot(m_randomId); // generate a root cert
 
     m_dsk1 = createRoot(m_testId1); // replace to root cert
@@ -67,10 +59,6 @@ public:
   {
     m_face.getIoService().stop();
     m_face.shutdown();
-    m_keyChain.deleteIdentity(m_testId1);
-    m_keyChain.deleteIdentity(m_testId2);
-    m_keyChain.deleteIdentity(m_testId3);
-    m_keyChain.deleteIdentity(m_randomId);
   }
 
   const Name
@@ -146,8 +134,6 @@ public:
 
   Name m_rootCert;
 
-  KeyChain m_keyChain;
-
   Name m_dsk1;
   Name m_dsk2;
   Name m_dsk3;
@@ -167,8 +153,10 @@ BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
   // validator must be created after root key is saved to the target
   ndns::Validator validator(m_face, TEST_CONFIG_PATH "/" "validator.conf");
 
-  Name dataName(m_testId3);
-  dataName.append("NDNS")
+  Name dataName;
+  dataName
+    .append(m_testId3)
+    .append("NDNS")
     .append("rrLabel")
     .append("rrType")
     .appendVersion();
@@ -190,9 +178,10 @@ BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
 
   BOOST_CHECK_EQUAL(hasValidated, true);
 
-
-  dataName = m_testId2;
-  dataName.append("KEY")
+  dataName = Name();
+  dataName
+    .append(m_testId2)
+    .append("KEY")
     .append("rrLabel")
     .append("ID-CERT")
     .appendVersion();
@@ -214,9 +203,10 @@ BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
   // cannot pass verification due to key's owner's name is longer than data owner's
   BOOST_CHECK_EQUAL(hasValidated, true);
 
-
-  dataName = m_testId3;
-  dataName.append("KEY")
+  dataName = Name();
+  dataName
+    .append(m_testId3)
+    .append("KEY")
     .append("rrLabel")
     .append("ID-CERT")
     .appendVersion();
@@ -238,8 +228,10 @@ BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
   // cannot pass due to self-sign cert is used
   BOOST_CHECK_EQUAL(hasValidated, true);
 
-  dataName = m_testId2;
-  dataName.append("KEY")
+  dataName = Name();
+  dataName
+    .append(m_testId2)
+    .append("KEY")
     .append("rrLabel")
     .append("ID-CERT")
     .appendVersion();

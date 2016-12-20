@@ -24,16 +24,59 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NDNS_TESTS_BOOST_TEST_HPP
-#define NDNS_TESTS_BOOST_TEST_HPP
+#include "test-common.hpp"
 
-// suppress warnings from Boost.Test
-#pragma GCC system_header
-#pragma clang system_header
+namespace ndn {
+namespace ndns {
+namespace tests {
 
-#include <boost/test/test_tools.hpp>
-#include <boost/test/unit_test.hpp>
-#include <boost/concept_check.hpp>
-#include <boost/test/output_test_stream.hpp>
+BaseFixture::BaseFixture()
+{
+}
 
-#endif // NDN_TESTS_BOOST_TEST_HPP
+UnitTestTimeFixture::UnitTestTimeFixture()
+  : steadyClock(make_shared<time::UnitTestSteadyClock>())
+  , systemClock(make_shared<time::UnitTestSystemClock>())
+{
+  time::setCustomClocks(steadyClock, systemClock);
+}
+
+UnitTestTimeFixture::~UnitTestTimeFixture()
+{
+  time::setCustomClocks(nullptr, nullptr);
+}
+
+void
+UnitTestTimeFixture::advanceClocks(const time::nanoseconds& tick, size_t nTicks)
+{
+  this->advanceClocks(tick, tick * nTicks);
+}
+
+void
+UnitTestTimeFixture::advanceClocks(const time::nanoseconds& tick, const time::nanoseconds& total)
+{
+  BOOST_ASSERT(tick > time::nanoseconds::zero());
+  BOOST_ASSERT(total >= time::nanoseconds::zero());
+
+  time::nanoseconds remaining = total;
+  while (remaining > time::nanoseconds::zero()) {
+    if (remaining >= tick) {
+      steadyClock->advance(tick);
+      systemClock->advance(tick);
+      remaining -= tick;
+    }
+    else {
+      steadyClock->advance(remaining);
+      systemClock->advance(remaining);
+      remaining = time::nanoseconds::zero();
+    }
+
+    if (m_io.stopped())
+      m_io.reset();
+    m_io.poll();
+  }
+}
+
+} // namespace tests
+} // namespace ndns
+} // namespace ndn

@@ -18,20 +18,17 @@
  */
 
 #include "clients/response.hpp"
-#include <ndn-cxx/security/key-chain.hpp>
-#include "../../boost-test.hpp"
+
+#include "test-common.hpp"
 
 namespace ndn {
 namespace ndns {
 namespace tests {
 
-
-
-BOOST_AUTO_TEST_SUITE(Response)
+BOOST_FIXTURE_TEST_SUITE(Response, IdentityManagementFixture)
 
 BOOST_AUTO_TEST_CASE(Basic)
 {
-  KeyChain keyChain("sqlite3", "file");
   Name hint;
   Name zone("/net");
   name::Component qType = ndns::label::NDNS_ITERATIVE_QUERY;
@@ -54,7 +51,7 @@ BOOST_AUTO_TEST_CASE(Basic)
 
   //const Block& block = r.wireEncode();
   shared_ptr<Data> data = r.toData();
-  // keyChain.sign(*data);
+  // m_keyChain.sign(*data);
 
   ndns::Response r2;
   BOOST_CHECK_EQUAL(r2.fromData(hint, zone, *data), true);
@@ -75,7 +72,7 @@ BOOST_AUTO_TEST_CASE(Basic)
   BOOST_CHECK_NE(r2, r4);
 
   data = r4.toData();
-  // keyChain.sign(*data);
+  // m_keyChain.sign(*data);
 
   ndns::Response r5(zone, qType);
 

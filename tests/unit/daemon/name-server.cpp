@@ -17,18 +17,13 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "daemon/db-mgr.hpp"
 #include "daemon/name-server.hpp"
+#include "daemon/db-mgr.hpp"
 #include "clients/response.hpp"
 #include "clients/query.hpp"
-#include "logger.hpp"
 
-#include "../database-test-data.hpp"
-#include "../../boost-test.hpp"
-
-#include <boost/filesystem.hpp>
-#include <ndn-cxx/face.hpp>
-#include <ndn-cxx/util/dummy-client-face.hpp>
+#include "test-common.hpp"
+#include "unit/database-test-data.hpp"
 
 namespace ndn {
 namespace ndns {

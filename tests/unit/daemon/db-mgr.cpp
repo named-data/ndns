@@ -17,14 +17,11 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config.hpp"
 #include "daemon/db-mgr.hpp"
-#include "logger.hpp"
 
-#include "../../boost-test.hpp"
-#include <boost/filesystem.hpp>
+#include <algorithm>
 
-#include <algorithm>    // std::sort
+#include "test-common.hpp"
 
 namespace ndn {
 namespace ndns {

@@ -18,13 +18,11 @@
  */
 
 #include "database-test-data.hpp"
-#include "logger.hpp"
-
-#include <boost/filesystem.hpp>
 
 namespace ndn {
 namespace ndns {
 namespace tests {
+
 NDNS_LOG_INIT("TestFakeData")
 
 const boost::filesystem::path DbTestData::TEST_DATABASE = TEST_CONFIG_PATH "/" "test-ndns.db";
@@ -40,7 +38,6 @@ DbTestData::PreviousStateCleaner::PreviousStateCleaner()
 
 DbTestData::DbTestData()
   : m_session(TEST_DATABASE.string())
-  , m_keyChain("sqlite3", "file")
 {
   NDNS_LOG_TRACE("start creating test data");
 

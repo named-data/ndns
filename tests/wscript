@@ -41,6 +41,7 @@ def build(bld):
         features='cxx cxxprogram',
         source=bld.path.ant_glob(['**/*.cpp'], excl=['main.cpp']),
         use='ndns-objects unit-tests-main BOOST',
+        includes='../src .',
         install_path=None,
         defines='TEST_CONFIG_PATH=\"%s/conf-test\"' %(bld.bldnode)
     )

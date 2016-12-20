@@ -1,8 +1,15 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016,  Regents of the University of California,
+ *                           Arizona Board of Regents,
+ *                           Colorado State University,
+ *                           University Pierre & Marie Curie, Sorbonne University,
+ *                           Washington University in St. Louis,
+ *                           Beijing Institute of Technology,
+ *                           The University of Memphis.
  *
- * This file is part of NDNS (Named Data Networking Domain Name Service).
+ * This file is part of NDNS (Named Data Networking Domain Name Service) and is
+ * based on the code written as part of NFD (Named Data Networking Daemon).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
  *
  * NDNS is free software: you can redistribute it and/or modify it under the terms
@@ -17,59 +24,93 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define BOOST_TEST_MAIN 1
-#define BOOST_TEST_DYN_LINK 1
-
-#include "config.hpp"
-#include "logger.hpp"
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_ALTERNATIVE_INIT_API
 
 #include <boost/version.hpp>
-#include <boost/test/unit_test.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/filesystem.hpp>
+
+#if BOOST_VERSION >= 106200
+// Boost.Test v3.3 (Boost 1.62) natively supports multi-logger output
+#include "boost-test.hpp"
+#else
+#define BOOST_TEST_NO_MAIN
+#include "boost-test.hpp"
+
+#include "boost-multi-log-formatter.hpp"
+
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/variables_map.hpp>
+#include <boost/program_options/parsers.hpp>
 
 #include <fstream>
 #include <iostream>
 
-namespace ndn {
-namespace ndns {
-namespace tests {
-
-class GlobalConfigurationFixture : boost::noncopyable
+static bool
+init_tests()
 {
-public:
-  GlobalConfigurationFixture()
-  {
-    log::init("unit-tests.log4cxx");
+  init_unit_test();
 
-    if (std::getenv("HOME"))
-      m_home = std::getenv("HOME");
+  namespace po = boost::program_options;
+  namespace ut = boost::unit_test;
 
-    boost::filesystem::path dir(TEST_CONFIG_PATH);
-    dir /= "test-home";
-    setenv("HOME", dir.generic_string().c_str(), 1);
-    boost::filesystem::create_directories(dir);
-    std::ofstream clientConf((dir / ".ndn" / "client.conf").generic_string().c_str());
-    clientConf << "pib=pib-sqlite3\n"
-               << "tpm=tpm-file" << std::endl;
+  po::options_description extraOptions;
+  std::string logger;
+  std::string outputFile = "-";
+  extraOptions.add_options()
+    ("log_format2", po::value<std::string>(&logger), "Type of second log formatter: HRF or XML")
+    ("log_sink2", po::value<std::string>(&outputFile)->default_value(outputFile), "Second log sink, - for stdout")
+    ;
+  po::variables_map vm;
+  try {
+    po::store(po::command_line_parser(ut::framework::master_test_suite().argc,
+                                      ut::framework::master_test_suite().argv)
+                .options(extraOptions)
+                .run(),
+              vm);
+    po::notify(vm);
+  }
+  catch (const std::exception& e) {
+    std::cerr << "ERROR: " << e.what() << "\n"
+              << extraOptions << std::endl;
+    return false;
   }
 
-  ~GlobalConfigurationFixture()
-  {
-    if (!m_home.empty()) {
-      setenv("HOME", m_home.c_str(), 1);
-    }
+  if (vm.count("log_format2") == 0) {
+    // second logger is not configured
+    return true;
   }
 
-private:
-  std::string m_home;
-};
+  std::shared_ptr<ut::unit_test_log_formatter> formatter;
+  if (logger == "XML") {
+    formatter = std::make_shared<ut::output::xml_log_formatter>();
+  }
+  else if (logger == "HRF") {
+    formatter = std::make_shared<ut::output::compiler_log_formatter>();
+  }
+  else {
+    std::cerr << "ERROR: only HRF or XML log formatter can be specified" << std::endl;
+    return false;
+  }
 
-BOOST_GLOBAL_FIXTURE(GlobalConfigurationFixture)
-#if (BOOST_VERSION >= 105900)
-;
-#endif // BOOST_VERSION >= 105900
+  std::shared_ptr<std::ostream> output;
+  if (outputFile == "-") {
+    output = std::shared_ptr<std::ostream>(&std::cout, std::bind([]{}));
+  }
+  else {
+    output = std::make_shared<std::ofstream>(outputFile.c_str());
+  }
 
-} // namespace tests
-} // namespace ndns
-} // namespace ndn
+  auto multiFormatter = new ut::output::multi_log_formatter;
+  multiFormatter->add(formatter, output);
+  ut::unit_test_log.set_formatter(multiFormatter);
+
+  return true;
+}
+
+int
+main(int argc, char* argv[])
+{
+  return ::boost::unit_test::unit_test_main(&init_tests, argc, argv);
+}
+
+#endif // BOOST_VERSION >= 106200

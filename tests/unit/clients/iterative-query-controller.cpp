@@ -19,13 +19,9 @@
 
 #include "clients/iterative-query-controller.hpp"
 #include "daemon/name-server.hpp"
-#include "logger.hpp"
-#include "../database-test-data.hpp"
-#include "../../boost-test.hpp"
 
-#include <ndn-cxx/util/dummy-client-face.hpp>
-
-#include <boost/asio.hpp>
+#include "test-common.hpp"
+#include "unit/database-test-data.hpp"
 
 namespace ndn {
 namespace ndns {

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /**
- * Copyright (c) 2014, Regents of the University of California.
+ * Copyright (c) 2014-2016, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -19,7 +19,7 @@
 
 #include "clients/query.hpp"
 
-#include "../../boost-test.hpp"
+#include "test-common.hpp"
 
 namespace ndn {
 namespace ndns {
@@ -69,6 +69,6 @@ BOOST_AUTO_TEST_CASE(TestCase)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-}// namespace tests
-}// namespace ndns
+} // namespace tests
+} // namespace ndns
 } // namespace ndn
