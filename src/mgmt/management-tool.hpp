@@ -124,26 +124,26 @@ public:
   void
   exportCertificate(const Name& certName, const std::string& outFile = DEFAULT_IO);
 
-  /** @brief Add rrset to the NDNS local database
+  /** @brief Add rrset to the NDNS local database from a file
    *
-   *  This overload is capable of adding any data to the rrset as long as the supplied data is
-   *  valid.
-   *  A special case is to add the ID-CERT of KSK to the parent zone. At this case, the SS cert
-   *  should be supplied, and therefore it will use the parent zone's DSK to resign the certificate.
-   *  For other cases, the data will be added directly without any modification.
+   *  The function Loads data from file and then adds it to the rrset without modification
+   *  Loaded data is assummed to be valid
+   *  Data will be resigned by zone's DSK, if needResign is true.
    *
    *  @param zoneName the name of the zone to hold the rrset
    *  @param inFile the path to the supplied data
    *  @param ttl the ttl of the rrset
    *  @param dskCertName the DSK to signed the special case, default is the zone's DSK
    *  @param encoding the encoding of the input file
+   *  @param needResign whether data should be resigned by DSK
    */
   void
-  addRrSet(const Name& zoneName,
-           const std::string& inFile = DEFAULT_IO,
-           const time::seconds& ttl = DEFAULT_RR_TTL,
-           const Name& dskCertName = DEFAULT_CERT,
-           const ndn::io::IoEncoding encoding = ndn::io::BASE64);
+  addRrsetFromFile(const Name& zoneName,
+                   const std::string& inFile = DEFAULT_IO,
+                   const time::seconds& ttl = DEFAULT_RR_TTL,
+                   const Name& dskCertName = DEFAULT_CERT,
+                   const ndn::io::IoEncoding encoding = ndn::io::BASE64,
+                   bool needResign = false);
 
   /** @brief Add rrset to the NDNS local database
    *

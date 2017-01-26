@@ -575,17 +575,17 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCertPreConditon)
 
   // Check: throw if zone not exist
   std::string certPath = TEST_CERTDIR.string();
-  BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, certPath), ndns::ManagementTool::Error);
+  BOOST_CHECK_THROW(m_tool.addRrsetFromFile(zoneName, certPath), ndns::ManagementTool::Error);
 
   m_tool.createZone(zoneName, ROOT_ZONE);
 
   // Check: throw if certificate does not match
-  BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, certPath), ndns::ManagementTool::Error);
+  BOOST_CHECK_THROW(m_tool.addRrsetFromFile(zoneName, certPath), ndns::ManagementTool::Error);
 
   std::string rightCertPath = TEST_CERTDIR.string() + "/ss.cert";
   m_tool.exportCertificate(otherKsk, rightCertPath);
 
-  BOOST_CHECK_NO_THROW(m_tool.addRrSet(zoneName, rightCertPath));
+  BOOST_CHECK_NO_THROW(m_tool.addRrsetFromFile(zoneName, rightCertPath));
 }
 
 BOOST_AUTO_TEST_CASE(AddRrSetDskCert)
@@ -607,19 +607,8 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCert)
   std::string output = TEST_CERTDIR.string() + "/ss.cert";
   m_tool.exportCertificate(ksk, output);
 
-  BOOST_CHECK_NO_THROW(m_tool.addRrSet(parentZoneName, output));
+  BOOST_CHECK_NO_THROW(m_tool.addRrsetFromFile(parentZoneName, output));
   BOOST_CHECK_NO_THROW(findIdCert(parentZone, ksk));
-
-  // Add KSK ID-CERT with illegal name and convert it
-  Name iZoneName = Name(parentZoneName).append("illegal");
-  Name illegalCertName = m_keyChain.createIdentity(iZoneName);
-  m_tool.exportCertificate(illegalCertName, output);
-  BOOST_CHECK_NO_THROW(m_tool.addRrSet(parentZoneName, output));
-
-  Name legalCertName = Name(parentZoneName).append("KEY")
-                         .append("illegal")
-                         .append(illegalCertName.getSubName(3));
-  BOOST_CHECK_NO_THROW(findIdCert(parentZone, legalCertName));
 }
 
 BOOST_AUTO_TEST_CASE(AddRrSetDskCertUserProvidedCert)
@@ -632,7 +621,7 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCertUserProvidedCert)
   shared_ptr<IdentityCertificate> dskCert = m_keyChain.selfSign(dskName);
   m_keyChain.addCertificateAsKeyDefault(*dskCert);
 
-  // check addRrSet1
+  // check addRrsetFromFile1
   m_tool.createZone(parentZoneName, ROOT_ZONE, time::seconds(1), time::days(1), otherKsk, otherDsk);
   m_tool.createZone(zoneName, parentZoneName);
 
@@ -646,7 +635,7 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCertUserProvidedCert)
   std::string output = TEST_CERTDIR.string() + "/ss.cert";
   m_tool.exportCertificate(ksk, output);
 
-  BOOST_CHECK_NO_THROW(m_tool.addRrSet(parentZoneName, output, time::seconds(4600),
+  BOOST_CHECK_NO_THROW(m_tool.addRrsetFromFile(parentZoneName, output, time::seconds(4600),
                                        dskCert->getName()));
 }
 
@@ -661,7 +650,7 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCertInvalidOutput)
   std::string output = TEST_CERTDIR.string() + "/ss.cert";
   ndn::io::save(content, output);
 
-  BOOST_CHECK_THROW(m_tool.addRrSet(zoneName, output), ndns::ManagementTool::Error);
+  BOOST_CHECK_THROW(m_tool.addRrsetFromFile(zoneName, output), ndns::ManagementTool::Error);
 }
 
 BOOST_AUTO_TEST_CASE(AddRrSetVersionControl)
@@ -721,7 +710,7 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCertFormat)
 
   ndn::io::save(*dskCert, output, ndn::io::BASE64);
   BOOST_CHECK_NO_THROW(
-    m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::BASE64));
+    m_tool.addRrsetFromFile(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::BASE64));
 
   // raw
   dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
@@ -729,7 +718,7 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCertFormat)
 
   ndn::io::save(*dskCert, output, ndn::io::NO_ENCODING);
   BOOST_CHECK_NO_THROW(
-    m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::NO_ENCODING));
+    m_tool.addRrsetFromFile(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::NO_ENCODING));
 
   // hex
   dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
@@ -737,7 +726,7 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCertFormat)
 
   ndn::io::save(*dskCert, output, ndn::io::HEX);
   BOOST_CHECK_NO_THROW(
-    m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::HEX));
+    m_tool.addRrsetFromFile(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT, ndn::io::HEX));
 
   // incorrect encoding input
   dskName = m_keyChain.generateRsaKeyPair(zoneName, false);
@@ -745,7 +734,7 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCertFormat)
 
   ndn::io::save(*dskCert, output, ndn::io::HEX);
   BOOST_CHECK_THROW(
-    m_tool.addRrSet(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT,
+    m_tool.addRrsetFromFile(zoneName, output, DEFAULT_CACHE_TTL, DEFAULT_CERT,
                     static_cast<ndn::io::IoEncoding>(127)),
     ndns::ManagementTool::Error);
 }
@@ -798,7 +787,7 @@ BOOST_AUTO_TEST_CASE(ListZone)
   shared_ptr<Data> data1 = re1.toData();
   m_keyChain.sign(*data1, otherDsk);
   ndn::io::save(*data1, output);
-  m_tool.addRrSet("/ndns-test", output);
+  m_tool.addRrsetFromFile("/ndns-test", output);
 
   // Add TXT in normal way
   Rrset rrset3 = rf.generateTxtRrset("/label3", label::TXT_RR_TYPE, 3333, DEFAULT_RR_TTL, {"Hello", "World"});

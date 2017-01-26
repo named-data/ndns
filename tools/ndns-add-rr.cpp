@@ -48,6 +48,10 @@ main(int argc, char* argv[])
   string rrLabelStr;
   string rrTypeStr;
   std::vector<std::string> content;
+  string file = "-";
+  string encoding = "base64";
+  bool setFile = false;
+  bool needResign = false;
   try {
     namespace po = boost::program_options;
     po::variables_map vm;
@@ -56,17 +60,22 @@ main(int argc, char* argv[])
     options.add_options()
       ("help,h", "print help message")
       ("db,b", po::value<std::string>(&db), "Set the path of NDNS server database. "
-        "Default: " DEFAULT_DATABASE_PATH "/ndns.db")
+       "Default: " DEFAULT_DATABASE_PATH "/ndns.db")
       ;
 
     po::options_description config("Record Options");
     config.add_options()
       ("dsk,d", po::value<Name>(&dsk), "Set the name of DSK's certificate. "
-         "Default: use default DSK and its default certificate")
+       "Default: use default DSK and its default certificate")
       ("content,c", po::value<std::vector<std::string>>(&content),
        "Set the content of resource record. Default: empty string")
       ("ttl,a", po::value<int>(&ttlInt), "Set ttl of the rrset. Default: 3600 seconds")
       ("version,v", po::value<int>(&ttlInt), "Set version of the rrset. Default: Unix Timestamp")
+      ("file,f", po::value<string>(&file), "Set path to file containing a rrset. If set, label, "
+       "type, content-type, content, and version parameters will be ignored. Default is stdin(-)")
+      ("encoding,e", po::value<string>(&encoding),
+       "Set encoding format of input file. Default: base64")
+      ("resign,r", po::value<bool>(&needResign), "Resign the input with DSK")
       ;
 
     // add "Record Options" as a separate section
@@ -97,9 +106,9 @@ main(int argc, char* argv[])
     po::store(parsed, vm);
     po::notify(vm);
 
-
     if (vm.count("help")) {
-      std::cout << "Usage: ndns-add-rr [options] zone label type [content ...]" << std::endl
+      std::cout << "Usage: ndns-add-rr [options] zone label type [content ...]" << std::endl;
+      std::cout << "       ndns-add-rr [options] zone [-f file] [-e raw|base64|hex]" << std::endl
                 << std::endl;
       std::cout << options << std::endl;
       return 0;
@@ -110,14 +119,21 @@ main(int argc, char* argv[])
       return 1;
     }
 
-    if (vm.count("label") == 0) {
-      std::cerr << "Error: label and type must be specified" << std::endl;
-      return 1;
-    }
+    if (vm.count("file") == 0) {
+      if (vm.count("label") == 0) {
+        std::cerr << "Error: label and type must be specified" << std::endl;
+        return 1;
+      }
 
-    if (vm.count("type") == 0) {
-      std::cerr << "Error: type must be specified" << std::endl;
-      return 1;
+      if (vm.count("type") == 0) {
+        std::cerr << "Error: type must be specified" << std::endl;
+        return 1;
+      }
+    } else {
+      if (vm.count("resign"))  {
+        needResign = true;
+      }
+      setFile = true;
     }
   }
   catch (const std::exception& ex) {
@@ -138,35 +154,54 @@ main(int argc, char* argv[])
       ttl = time::seconds(ttlInt);
     uint64_t version = static_cast<uint64_t>(versionInt);
 
-    // todo: reduce copy
-    RrsetFactory rrsetFactory(db, zoneName, keyChain, dsk);
-    rrsetFactory.checkZoneKey();
-    Rrset rrset;
+    if (setFile) {
+      ndn::io::IoEncoding ioEncoding;
+      if (encoding == "raw") {
+        ioEncoding = ndn::io::NO_ENCODING;
+      }
+      else if (encoding == "hex") {
+        ioEncoding = ndn::io::HEX;
+      }
+      else if (encoding == "base64") {
+        ioEncoding = ndn::io::BASE64;
+      }
+      else {
+        std::cerr << "Error: not supported encoding format '" << encoding
+                  << "' (valid options are: raw, hex, and base64)" << std::endl;
+        return 1;
+      }
+      ndn::ndns::ManagementTool tool(db, keyChain);
+      tool.addRrsetFromFile(zoneName, file, ttl, dsk, ioEncoding, needResign);
+    }
+    else {
+      RrsetFactory rrsetFactory(db, zoneName, keyChain, dsk);
+      rrsetFactory.checkZoneKey();
+      Rrset rrset;
 
-    if (type == label::NS_RR_TYPE) {
-      ndn::Link::DelegationSet delegations;
-      for (const auto& i : content) {
-        std::vector<string> data;
-        boost::split(data, i, boost::is_any_of(","));
-        uint32_t priority = boost::lexical_cast<uint32_t>(data[0]);
-        // assert that data has two number.
-        delegations.insert(std::make_pair(priority, data[1]));
+      if (type == label::NS_RR_TYPE) {
+        ndn::Link::DelegationSet delegations;
+        for (const auto& i : content) {
+          std::vector<string> data;
+          boost::split(data, i, boost::is_any_of(","));
+          uint32_t priority = boost::lexical_cast<uint32_t>(data[0]);
+          delegations.insert(std::make_pair(priority, data[1]));
+        }
+
+        rrset = rrsetFactory.generateNsRrset(label, type,
+                                             version, ttl, delegations);
+      } else if (type == label::TXT_RR_TYPE) {
+        rrset = rrsetFactory.generateTxtRrset(label, type,
+                                              version, ttl, content);
       }
 
-      rrset = rrsetFactory.generateNsRrset(label, type,
-                                           version, ttl, delegations);
-    } else if (type == label::TXT_RR_TYPE) {
-      rrset = rrsetFactory.generateTxtRrset(label, type,
-                                            version, ttl, content);
-    }
+      ndn::ndns::ManagementTool tool(db, keyChain);
 
-    ndn::ndns::ManagementTool tool(db, keyChain);
-
-    if (label.size() > 1) {
-      NDNS_LOG_TRACE("add multi-level label Rrset, using the same TTL as the Rrset");
-      tool.addMultiLevelLabelRrset(rrset, rrsetFactory, ttl);
-    } else {
-      tool.addRrset(rrset);
+      if (label.size() > 1) {
+        NDNS_LOG_TRACE("add multi-level label Rrset, using the same TTL as the Rrset");
+        tool.addMultiLevelLabelRrset(rrset, rrsetFactory, ttl);
+      } else {
+        tool.addRrset(rrset);
+      }
     }
 
     /// @todo Report success or failure
