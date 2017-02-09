@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
@@ -19,6 +19,9 @@
 
 #include "rrset-factory.hpp"
 #include "mgmt/management-tool.hpp"
+#include "util/cert-helper.hpp"
+
+#include <ndn-cxx/security/signing-helpers.hpp>
 
 #include <boost/algorithm/string/join.hpp>
 
@@ -37,9 +40,10 @@ RrsetFactory::RrsetFactory(const boost::filesystem::path& dbFile,
   , m_dskCertName(inputDskCertName)
   , m_checked(false)
 {
+  Name identityName = Name(zoneName).append(label::NDNS_CERT_QUERY);
   if (m_dskCertName == DEFAULT_CERT) {
-    m_dskName = m_keyChain.getDefaultKeyNameForIdentity(zoneName);
-    m_dskCertName = m_keyChain.getDefaultCertificateNameForKey(m_dskName);
+    m_dskName = CertHelper::getDefaultKeyNameOfIdentity(m_keyChain, identityName);
+    m_dskCertName = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain, identityName);
   }
 }
 
@@ -47,8 +51,9 @@ void
 RrsetFactory::checkZoneKey()
 {
   onlyCheckZone();
+  Name zoneIdentityName = Name(m_zone.getName()).append(label::NDNS_CERT_QUERY);
   if (m_dskCertName != DEFAULT_CERT &&
-      !matchCertificate(m_dskCertName, m_zone.getName())) {
+      !matchCertificate(m_dskCertName, zoneIdentityName)) {
     BOOST_THROW_EXCEPTION(Error("Cannot verify certificate"));
   }
 }
@@ -84,7 +89,8 @@ RrsetFactory::generateBaseRrset(const Name& label,
   name::Component qType;
   if (type == label::CERT_RR_TYPE) {
     qType = label::NDNS_CERT_QUERY;
-  } else {
+  }
+  else {
     qType = label::NDNS_ITERATIVE_QUERY;
   }
 
@@ -96,7 +102,8 @@ RrsetFactory::generateBaseRrset(const Name& label,
 
   if (version != VERSION_USE_UNIX_TIMESTAMP) {
     name.append(name::Component::fromVersion(version));
-  } else {
+  }
+  else {
     name.appendVersion();
   }
 
@@ -108,26 +115,12 @@ RrsetFactory::generateBaseRrset(const Name& label,
 bool
 RrsetFactory::matchCertificate(const Name& certName, const Name& identity)
 {
-  if (!m_keyChain.doesCertificateExist(certName)) {
-    NDNS_LOG_WARN(certName.toUri() << " is not presented in KeyChain");
+  try {
+    CertHelper::getCertificate(m_keyChain, identity, certName);
+    return true;
+  } catch (ndn::security::Pib::Error) {
     return false;
   }
-
-  // Check its public key information
-  shared_ptr<IdentityCertificate> cert = m_keyChain.getCertificate(certName);
-  Name keyName = cert->getPublicKeyName();
-
-  if (!identity.isPrefixOf(keyName) || identity.size() != keyName.size() - 1) {
-    NDNS_LOG_WARN(keyName.toUri() << " is not a key of " << identity.toUri());
-    return false;
-  }
-
-  if (!m_keyChain.doesKeyExistInTpm(keyName, KeyClass::PRIVATE)) {
-    NDNS_LOG_WARN("Private key: " << keyName.toUri() << " is not present in KeyChain");
-    return false;
-  }
-
-  return true;
 }
 
 Rrset
@@ -135,7 +128,7 @@ RrsetFactory::generateNsRrset(const Name& label,
                               const name::Component& type,
                               const uint64_t version,
                               time::seconds ttl,
-                              const ndn::Link::DelegationSet& delegations)
+                              const ndn::DelegationList& delegations)
 {
   if (!m_checked) {
     BOOST_THROW_EXCEPTION(Error("You have to call checkZoneKey before call generate functions"));
@@ -149,9 +142,7 @@ RrsetFactory::generateNsRrset(const Name& label,
   Rrset& rrset = rrsetAndName.first;
 
   Link link(name);
-  for (const auto& i : delegations) {
-    link.addDelegation(i.first, i.second);
-  }
+  link.setDelegationList(delegations);
 
   setContentType(link, NDNS_LINK, ttl);
   sign(link);
@@ -200,7 +191,7 @@ RrsetFactory::generateCertRrset(const Name& label,
                                 const name::Component& type,
                                 const uint64_t version,
                                 time::seconds ttl,
-                                const IdentityCertificate& cert)
+                                const ndn::security::v2::Certificate& cert)
 {
   if (!m_checked) {
     BOOST_THROW_EXCEPTION(Error("You have to call checkZoneKey before call generate functions"));
@@ -252,7 +243,7 @@ RrsetFactory::generateAuthRrset(const Name& label,
 void
 RrsetFactory::sign(Data& data)
 {
-  m_keyChain.sign(data, m_dskCertName);
+  m_keyChain.sign(data, signingByCertificate(m_dskCertName));
 }
 
 void

@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
@@ -129,7 +129,8 @@ main(int argc, char* argv[])
         std::cerr << "Error: type must be specified" << std::endl;
         return 1;
       }
-    } else {
+    }
+    else {
       if (vm.count("resign"))  {
         needResign = true;
       }
@@ -145,7 +146,7 @@ main(int argc, char* argv[])
     Name zoneName(zoneStr);
     Name label(rrLabelStr);
     name::Component type(rrTypeStr);
-    ndn::KeyChain keyChain;
+    KeyChain keyChain;
 
     time::seconds ttl;
     if (ttlInt == -1)
@@ -179,17 +180,18 @@ main(int argc, char* argv[])
       Rrset rrset;
 
       if (type == label::NS_RR_TYPE) {
-        ndn::Link::DelegationSet delegations;
+        ndn::DelegationList delegations;
         for (const auto& i : content) {
           std::vector<string> data;
           boost::split(data, i, boost::is_any_of(","));
-          uint32_t priority = boost::lexical_cast<uint32_t>(data[0]);
-          delegations.insert(std::make_pair(priority, data[1]));
+          uint64_t priority = boost::lexical_cast<uint64_t>(data[0]);
+          delegations.insert(priority, Name(data[1]));
         }
 
         rrset = rrsetFactory.generateNsRrset(label, type,
                                              version, ttl, delegations);
-      } else if (type == label::TXT_RR_TYPE) {
+      }
+      else if (type == label::TXT_RR_TYPE) {
         rrset = rrsetFactory.generateTxtRrset(label, type,
                                               version, ttl, content);
       }
@@ -199,7 +201,8 @@ main(int argc, char* argv[])
       if (label.size() > 1) {
         NDNS_LOG_TRACE("add multi-level label Rrset, using the same TTL as the Rrset");
         tool.addMultiLevelLabelRrset(rrset, rrsetFactory, ttl);
-      } else {
+      }
+      else {
         tool.addRrset(rrset);
       }
     }

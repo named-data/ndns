@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -53,11 +53,11 @@ class NameServer : noncopyable
 public:
   explicit
   NameServer(const Name& zoneName, const Name& certName, Face& face, DbMgr& dbMgr,
-             KeyChain& keyChain, Validator& validator);
+             KeyChain& keyChain, security::v2::Validator& validator);
 
 NDNS_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
-  onInterest(const Name& prefix, const Interest &interest);
+  onInterest(const Name& prefix, const Interest& interest);
 
   /**
    * @brief handle NDNS query message
@@ -82,18 +82,6 @@ public:
   getNdnsPrefix()
   {
     return m_ndnsPrefix;
-  }
-
-  const Name&
-  getKeyPrefix() const
-  {
-    return m_keyPrefix;
-  }
-
-  void
-  setKeyPrefix(const Name& keyPrefix)
-  {
-    m_keyPrefix = keyPrefix;
   }
 
   const Zone&
@@ -123,14 +111,13 @@ private:
   DbMgr& m_dbMgr;
 
   Name m_ndnsPrefix;
-  Name m_keyPrefix;
   Name m_certName;
 
   time::milliseconds m_contentFreshness;
 
   Face& m_face;
   KeyChain& m_keyChain;
-  Validator& m_validator;
+  security::v2::Validator& m_validator;
 };
 
 } // namespace ndns

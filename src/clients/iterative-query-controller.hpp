@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -61,7 +61,7 @@ public:
   IterativeQueryController(const Name& dstLabel, const name::Component& rrType,
                            const time::milliseconds& interestLifetime,
                            const QuerySucceedCallback& onSucceed, const QueryFailCallback& onFail,
-                           Face& face, Validator* validator = nullptr);
+                           Face& face, security::v2::Validator* validator = nullptr);
 
   virtual void
   start();
@@ -78,7 +78,7 @@ NDNS_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   onData(const ndn::Interest& interest, const Data& data);
 
   void
-  onDataValidated(const shared_ptr<const Data>& data, NdnsContentType contentType);
+  onDataValidated(const Data& data, NdnsContentType contentType);
 
   /**
    * @brief change the Controller state according to timeout. For current,
@@ -92,7 +92,7 @@ NDNS_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
   /**
    * @brief get the Interest according to current Controller state.
-   * Only be valid on State QueryNS & QueryRR, or throw exception
+   * Only be valid on State QueryNS and QueryRR, or throw exception
    */
   const Interest
   makeLatestInterest();
@@ -129,7 +129,7 @@ public:
   }
 
 protected:
-  Validator* m_validator;
+  security::v2::Validator* m_validator;
   /**
    * @brief current query step
    */
@@ -160,4 +160,4 @@ operator<<(std::ostream& os, const IterativeQueryController::QueryStep step);
 } // namespace ndns
 } // namespace ndn
 
-#endif // NDNS_CLIENTS_ITERATIVE_QUERY_HPP
+#endif // NDNS_CLIENTS_ITERATIVE_QUERY_CONTROLLER_HPP

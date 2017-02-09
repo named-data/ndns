@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -47,10 +47,11 @@ Query::fromInterest(const Name& zone, const Interest& interest)
 
   m_zone = zone;
 
-  if (interest.hasLink()) {
-    m_link = interest.getLink().wireEncode();
-  } else {
-    m_link = Block();
+  if (!interest.getForwardingHint().empty()) {
+    m_delegationList = interest.getForwardingHint();
+  }
+  else {
+    m_delegationList = DelegationList();
   }
 
 
@@ -74,11 +75,17 @@ Query::toInterest() const
   Interest interest;
   interest.setName(name);
   interest.setInterestLifetime(m_interestLifetime);
-  if (m_link.hasWire()) {
-    interest.setLink(m_link);
+  if (!m_delegationList.empty()) {
+    interest.setForwardingHint(m_delegationList);
   }
 
   return interest;
+}
+
+void
+Query::setDelegationListFromLink(const Link& link)
+{
+  m_delegationList = link.getDelegationList();
 }
 
 std::ostream&

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -58,6 +58,9 @@ public:
    */
   bool
   fromInterest(const Name& zone, const Interest& interest);
+
+  void
+  setDelegationListFromLink(const Link& link);
 
   bool
   operator==(const Query& other) const
@@ -170,18 +173,18 @@ public:
    * @brief set link object
    */
   void
-  setLink(const Block& link)
+  setDelegationList(const DelegationList& delegations)
   {
-    m_link = link;
+    m_delegationList = delegations;
   }
 
   /**
    * @brief get Link object
    */
-  const Block&
-  getLink() const
+  const DelegationList&
+  getDelegationList() const
   {
-    return m_link;
+    return m_delegationList;
   }
 
 private:
@@ -190,7 +193,7 @@ private:
   Name m_rrLabel;
   name::Component m_rrType;
   time::milliseconds m_interestLifetime;
-  Block m_link;
+  DelegationList m_delegationList;
 };
 
 std::ostream&

@@ -1,15 +1,8 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016,  Regents of the University of California,
- *                           Arizona Board of Regents,
- *                           Colorado State University,
- *                           University Pierre & Marie Curie, Sorbonne University,
- *                           Washington University in St. Louis,
- *                           Beijing Institute of Technology,
- *                           The University of Memphis.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
- * This file is part of NDNS (Named Data Networking Domain Name Service) and is
- * based on the code written as part of NFD (Named Data Networking Daemon).
+ * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
  *
  * NDNS is free software: you can redistribute it and/or modify it under the terms
@@ -58,14 +51,6 @@ signData(Data& data)
   data.wireEncode();
 
   return data;
-}
-
-shared_ptr<Link>
-makeLink(const Name& name, std::initializer_list<std::pair<uint32_t, Name>> delegations)
-{
-  auto link = make_shared<Link>(name, delegations);
-  signData(link);
-  return link;
 }
 
 lp::Nack

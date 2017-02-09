@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
@@ -21,6 +21,7 @@
 #include "logger.hpp"
 #include "ndns-label.hpp"
 #include "ndns-tlv.hpp"
+#include "util/cert-helper.hpp"
 
 #include <string>
 #include <iomanip>
@@ -32,15 +33,23 @@
 
 #include <ndn-cxx/util/regex.hpp>
 #include <ndn-cxx/util/indented-stream.hpp>
-#include <ndn-cxx/encoding/oid.hpp>
-#include <ndn-cxx/security/v1/cryptopp.hpp>
+#include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/link.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
+#include <ndn-cxx/security/transform.hpp>
+
 
 namespace ndn {
 namespace ndns {
 
 NDNS_LOG_INIT("ManagementTool")
+
+using security::transform::base64Encode;
+using security::transform::streamSink;
+using security::transform::bufferSource;
+using security::v2::Certificate;
+using security::Identity;
+using security::Key;
 
 ManagementTool::ManagementTool(const std::string& dbFile, KeyChain& keyChain)
   : m_keyChain(keyChain)
@@ -48,87 +57,117 @@ ManagementTool::ManagementTool(const std::string& dbFile, KeyChain& keyChain)
 {
 }
 
-void
-ManagementTool::createZone(const Name &zoneName,
+Zone
+ManagementTool::createZone(const Name& zoneName,
                            const Name& parentZoneName,
                            const time::seconds& cacheTtl,
                            const time::seconds& certValidity,
                            const Name& kskCertName,
-                           const Name& dskCertName)
+                           const Name& dskCertName,
+                           const Name& dkeyCertName)
 {
   bool isRoot = zoneName == ROOT_ZONE;
+  Name zoneIdentityName = Name(zoneName).append(label::NDNS_CERT_QUERY);
 
   //check preconditions
   Zone zone(zoneName, cacheTtl);
   if (m_dbMgr.find(zone)) {
-    throw Error(zoneName.toUri() + " is already presented in the NDNS db");
+    BOOST_THROW_EXCEPTION(Error(zoneName.toUri() + " is already presented in the NDNS db"));
   }
 
   if (!isRoot && parentZoneName.equals(zoneName)) {
-    throw Error("Parent zone name can not be the zone itself");
+    BOOST_THROW_EXCEPTION(Error("Parent zone name can not be the zone itself"));
   }
 
   if (!isRoot && !parentZoneName.isPrefixOf(zoneName)) {
-    throw Error(parentZoneName.toUri() + " is not a prefix of " + zoneName.toUri());
+    BOOST_THROW_EXCEPTION(Error(parentZoneName.toUri() + " is not a prefix of " + zoneName.toUri()));
   }
 
   // if dsk is provided, there is no need to check ksk
   if (dskCertName != DEFAULT_CERT) {
-    if (!matchCertificate(dskCertName, zoneName)) {
-      throw Error("Cannot verify DSK certificate");
+    if (!matchCertificate(dskCertName, zoneIdentityName)) {
+      BOOST_THROW_EXCEPTION(Error("Cannot verify DSK certificate"));
     }
   }
   else if (kskCertName != DEFAULT_CERT) {
-    if (!matchCertificate(kskCertName, zoneName)) {
-      throw Error("Cannot verify KSK certificate");
+    if (!matchCertificate(kskCertName, zoneIdentityName)) {
+      BOOST_THROW_EXCEPTION(Error("Cannot verify KSK certificate"));
     }
   }
 
-  if (kskCertName == DEFAULT_CERT && isRoot) {
-    throw Error("Cannot generate KSK for root zone");
+  if (dkeyCertName == DEFAULT_CERT && isRoot) {
+    BOOST_THROW_EXCEPTION(Error("Cannot generate dkey for root zone"));
   }
 
-  //first generate KSK and DSK to the keyChain system, and add DSK as default
-  NDNS_LOG_INFO("Start generating KSK and DSK and their corresponding certificates");
-  Name dskName;
-  shared_ptr<IdentityCertificate> dskCert;
-  if (dskCertName == DEFAULT_CERT) {
-    // if no dsk provided, then generate a dsk either signed by ksk auto generated or user provided
-    time::system_clock::TimePoint notBefore = time::system_clock::now();
-    time::system_clock::TimePoint notAfter = notBefore + certValidity;
-    shared_ptr<IdentityCertificate> kskCert;
-
-    if (kskCertName == DEFAULT_CERT) {
-      //create KSK's certificate
-      Name kskName = m_keyChain.generateRsaKeyPair(zoneName, true);
-      std::vector<CertificateSubjectDescription> kskDesc;
-      kskCert = m_keyChain.prepareUnsignedIdentityCertificate(kskName, zoneName, notBefore,
-                                                              notAfter, kskDesc, parentZoneName);
-      kskCert->setFreshnessPeriod(cacheTtl);
-
-      m_keyChain.selfSign(*kskCert);
-      m_keyChain.addCertificate(*kskCert);
-      NDNS_LOG_INFO("Generated KSK: " << kskCert->getName());
-    }
-    else {
-      kskCert = m_keyChain.getCertificate(kskCertName);
-    }
-
-    dskName = m_keyChain.generateRsaKeyPairAsDefault(zoneName, false);
-    //create DSK's certificate
-    std::vector<CertificateSubjectDescription> dskDesc;
-    dskCert = m_keyChain.prepareUnsignedIdentityCertificate(dskName, zoneName, notBefore, notAfter,
-                                                            dskDesc, zoneName);
-    dskCert->setFreshnessPeriod(cacheTtl);
-    m_keyChain.sign(*dskCert, kskCert->getName());
-    m_keyChain.addCertificateAsKeyDefault(*dskCert);
-    NDNS_LOG_INFO("Generated DSK: " << dskCert->getName());
+  // Generate a parentZone's identity to generate a D-Key.
+  // This D-key will be passed to parent zone and resigned.
+  Name dkeyIdentityName;
+  if (dkeyCertName == DEFAULT_CERT) {
+    dkeyIdentityName = Name(parentZoneName).append(label::NDNS_CERT_QUERY)
+      .append(zoneName.getSubName(parentZoneName.size()));
   }
   else {
-    dskCert = m_keyChain.getCertificate(dskCertName);
-    dskName = dskCert->getPublicKeyName();
-    m_keyChain.setDefaultKeyNameForIdentity(dskName);
-    m_keyChain.setDefaultCertificateNameForKey(dskCert->getName());
+    dkeyIdentityName = CertHelper::getIdentityNameFromCert(dkeyCertName);
+  }
+  NDNS_LOG_INFO("Generated D-Key's identityName: " + dkeyIdentityName.toUri());
+
+  Name dskName;
+  Key ksk;
+  Key dsk;
+  Key dkey;
+  Certificate dskCert;
+  Certificate kskCert;
+  Certificate dkeyCert;
+  Identity zoneIdentity = m_keyChain.createIdentity(zoneIdentityName);
+  Identity dkeyIdentity = m_keyChain.createIdentity(dkeyIdentityName);
+
+  if (dkeyCertName == DEFAULT_CERT) {
+    dkey = m_keyChain.createKey(dkeyIdentity);
+    m_keyChain.deleteCertificate(dkey, dkey.getDefaultCertificate().getName());
+
+    dkeyCert = CertHelper::createCertificate(m_keyChain, dkey, dkey, label::CERT_RR_TYPE.toUri(), time::days(90));
+    dkeyCert.setFreshnessPeriod(cacheTtl);
+    m_keyChain.addCertificate(dkey, dkeyCert);
+    NDNS_LOG_INFO("Generated DKEY: " << dkeyCert.getName());
+
+  }
+  else {
+    dkeyCert = CertHelper::getCertificate(m_keyChain, dkeyIdentityName, dkeyCertName);
+    dkey = dkeyIdentity.getKey(dkeyCert.getKeyName());
+  }
+
+  if (kskCertName == DEFAULT_CERT) {
+    ksk = m_keyChain.createKey(zoneIdentity);
+    // delete automatically generated certificates,
+    // because its issue is 'self' instead of CERT_RR_TYPE
+    m_keyChain.deleteCertificate(ksk, ksk.getDefaultCertificate().getName());
+    kskCert = CertHelper::createCertificate(m_keyChain, ksk, dkey, label::CERT_RR_TYPE.toUri(), time::days(90));
+    kskCert.setFreshnessPeriod(cacheTtl);
+    m_keyChain.addCertificate(ksk, kskCert);
+    NDNS_LOG_INFO("Generated KSK: " << kskCert.getName());
+  }
+  else {
+    // ksk usually might not be the default key of a zone
+    kskCert = CertHelper::getCertificate(m_keyChain, zoneIdentityName, kskCertName);
+    ksk = zoneIdentity.getKey(kskCert.getKeyName());
+  }
+
+  if (dskCertName == DEFAULT_CERT) {
+    // if no dsk provided, then generate a dsk either signed by ksk auto generated or user provided
+    dsk = m_keyChain.createKey(zoneIdentity);
+    m_keyChain.deleteCertificate(dsk, dsk.getDefaultCertificate().getName());
+    dskCert = CertHelper::createCertificate(m_keyChain, dsk, ksk, label::CERT_RR_TYPE.toUri(), certValidity);
+    dskCert.setFreshnessPeriod(cacheTtl);
+    // dskCert will become the default certificate, since the default cert has been deleted.
+    m_keyChain.addCertificate(dsk, dskCert);
+    m_keyChain.setDefaultKey(zoneIdentity, dsk);
+    NDNS_LOG_INFO("Generated DSK: " << dskCert.getName());
+  }
+  else {
+    dskCert = CertHelper::getCertificate(m_keyChain, zoneIdentityName, dskCertName);
+    dsk = zoneIdentity.getKey(dskCert.getKeyName());
+    m_keyChain.setDefaultKey(zoneIdentity, dsk);
+    m_keyChain.setDefaultCertificate(dsk, dskCert);
   }
 
   //second add zone to the database
@@ -136,8 +175,18 @@ ManagementTool::createZone(const Name &zoneName,
   addZone(zone);
 
   //third create ID-cert
-  NDNS_LOG_INFO("Start creating DSK's ID-CERT");
-  addIdCert(zone, dskCert, cacheTtl);
+  NDNS_LOG_INFO("Start adding Certificates to NDNS database");
+  addIdCert(zone, kskCert, cacheTtl, dskCert);
+  addIdCert(zone, dskCert, cacheTtl, dskCert);
+
+  NDNS_LOG_INFO("Start saving KSK and DSK's id to ZoneInfo");
+  m_dbMgr.setZoneInfo(zone, "ksk", kskCert.wireEncode());
+  m_dbMgr.setZoneInfo(zone, "dsk", dskCert.wireEncode());
+
+  NDNS_LOG_INFO("Start saving DKEY certificate id to ZoneInfo");
+  m_dbMgr.setZoneInfo(zone, "dkey", dkeyCert.wireEncode());
+
+  return zone;
 }
 
 void
@@ -146,7 +195,7 @@ ManagementTool::deleteZone(const Name& zoneName)
   //check pre-conditions
   Zone zone(zoneName);
   if (!m_dbMgr.find(zone)) {
-    throw Error(zoneName.toUri() + " is not presented in the NDNS db");
+    BOOST_THROW_EXCEPTION(Error(zoneName.toUri() + " is not presented in the NDNS db"));
   }
 
   //first remove all rrsets of this zone from local ndns database
@@ -162,37 +211,34 @@ ManagementTool::deleteZone(const Name& zoneName)
 void
 ManagementTool::exportCertificate(const Name& certName, const std::string& outFile)
 {
-  //search for the certificate, start from KeyChain then local NDNS database
-  shared_ptr<IdentityCertificate> cert;
-  if (m_keyChain.doesCertificateExist(certName)) {
-    cert = m_keyChain.getCertificate(certName);
+  // only search in local NDNS database
+  security::v2::Certificate cert;
+  shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<NDNS>(<>+)<CERT><>");
+  if (!regex->match(certName)) {
+    BOOST_THROW_EXCEPTION(Error("Certificate name is illegal"));
+    return;
+  }
+
+  Name zoneName = regex->expand("\\1");
+  Name identityName = Name(zoneName).append(label::NDNS_CERT_QUERY);
+  Name label = regex->expand("\\2");
+
+  Zone zone(zoneName);
+  Rrset rrset(&zone);
+  rrset.setLabel(label);
+  rrset.setType(label::CERT_RR_TYPE);
+  if (m_dbMgr.find(rrset)) {
+    cert = security::v2::Certificate(rrset.getData());
   }
   else {
-    shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<KEY>(<>+)<ID-CERT><>");
-    if (regex->match(certName) != true) {
-      throw Error("Certificate name is illegal");
-    }
-    Name zoneName = regex->expand("\\1");
-    Name label = regex->expand("\\2");
-
-    Zone zone(zoneName);
-    Rrset rrset(&zone);
-    rrset.setLabel(label);
-    rrset.setType(label::CERT_RR_TYPE);
-    if (m_dbMgr.find(rrset)) {
-      Data data(rrset.getData());
-      cert = make_shared<IdentityCertificate>(data);
-    }
-    else {
-      throw Error("Cannot find the cert: " + certName.toUri());
-    }
+    BOOST_THROW_EXCEPTION(Error("Cannot find the cert: " + certName.toUri()));
   }
 
   if (outFile == DEFAULT_IO) {
-    ndn::io::save(*cert, std::cout);
+    ndn::io::save(cert, std::cout);
   }
   else {
-    ndn::io::save(*cert, outFile);
+    ndn::io::save(cert, outFile);
     NDNS_LOG_INFO("save cert to file: " << outFile);
   }
 }
@@ -253,7 +299,7 @@ void
 ManagementTool::addRrset(Rrset& rrset)
 {
   if (rrset.getLabel().size() > 1) {
-    throw Error("Cannot add rrset with label size > 1, should use addMultiLevelLabelRrset instead");
+    BOOST_THROW_EXCEPTION(Error("Cannot add rrset with label size > 1, should use addMultiLevelLabelRrset instead"));
   }
 
   // check that it does not override existing AUTH
@@ -280,26 +326,27 @@ ManagementTool::addRrsetFromFile(const Name& zoneName,
 {
   //check precondition
   Zone zone(zoneName);
+  Name zoneIdentityName = Name(zoneName).append(label::NDNS_CERT_QUERY);
   if (!m_dbMgr.find(zone)) {
-    throw Error(zoneName.toUri() + " is not presented in the NDNS db");
+    BOOST_THROW_EXCEPTION(Error(zoneName.toUri() + " is not presented in the NDNS db"));
   }
 
   Name dskName;
   Name dskCertName = inputDskCertName;
   if (dskCertName == DEFAULT_CERT) {
-    dskName = m_keyChain.getDefaultKeyNameForIdentity(zoneName);
-    dskCertName = m_keyChain.getDefaultCertificateNameForKey(dskName);
+    dskName = CertHelper::getDefaultKeyNameOfIdentity(m_keyChain, zoneIdentityName);
+    dskCertName = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain, zoneIdentityName);
   }
   else {
-    if (!matchCertificate(dskCertName, zoneName)) {
-      throw Error("Cannot verify certificate");
+    if (!matchCertificate(dskCertName, zoneIdentityName)) {
+      BOOST_THROW_EXCEPTION(Error("Cannot verify certificate"));
     }
   }
 
   if (inFile != DEFAULT_IO) {
     boost::filesystem::path dir = boost::filesystem::path(inFile);
     if (!boost::filesystem::exists(dir) || boost::filesystem::is_directory(dir)) {
-      throw Error("Data: " + inFile + " does not exist");
+      BOOST_THROW_EXCEPTION(Error("Data: " + inFile + " does not exist"));
     }
   }
 
@@ -311,7 +358,7 @@ ManagementTool::addRrsetFromFile(const Name& zoneName,
     data = ndn::io::load<ndn::Data>(inFile, encoding);
 
   if (data == nullptr) {
-    throw Error("input does not contain a valid Data packet");
+    BOOST_THROW_EXCEPTION(Error("input does not contain a valid Data packet"));
   }
 
   if (needResign) {
@@ -335,8 +382,15 @@ ManagementTool::addRrsetFromFile(const Name& zoneName,
   rrset.setData(data->wireEncode());
 
   checkRrsetVersion(rrset);
-  NDNS_LOG_INFO("Added " << rrset);
+  NDNS_LOG_INFO("Adding rrset from file " << rrset);
   m_dbMgr.insert(rrset);
+}
+
+security::v2::Certificate
+ManagementTool::getZoneDkey(Zone& zone)
+{
+  std::map<std::string, Block> zoneInfo = m_dbMgr.getZoneInfo(zone);
+  return security::v2::Certificate(zoneInfo["dkey"]);
 }
 
 void
@@ -344,7 +398,7 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
 {
   Zone zone(zoneName);
   if (!m_dbMgr.find(zone)) {
-    throw Error("Zone " + zoneName.toUri() + " is not found in the database");
+    BOOST_THROW_EXCEPTION(Error("Zone " + zoneName.toUri() + " is not found in the database"));
   }
 
   //first output the zone name
@@ -383,7 +437,7 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
                     || re.getContentType() == NDNS_KEY
                     || re.getContentType() == NDNS_AUTH ? 1 : re.getRrs().size();
 
-    const std::vector<Block> &rrs = re.getRrs();
+    const std::vector<Block>& rrs = re.getRrs();
 
     if (re.getContentType() != NDNS_BLOB && re.getContentType() != NDNS_KEY) {
       os << "; rrset=" << rrset.getLabel().toUri()
@@ -405,7 +459,6 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
       os << rrset.getType().toUri();
 
       if (re.getContentType() != NDNS_BLOB && re.getContentType() != NDNS_KEY) {
-        using namespace CryptoPP;
         if (rrset.getType() == label::TXT_RR_TYPE) {
           os.write(reinterpret_cast<const char*>(rrs[i].value()), rrs[i].value_size());
           os << std::endl;
@@ -415,20 +468,20 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
           if (re.getContentType() == NDNS_AUTH) {
             const std::string authStr = "NDNS-Auth";
             os << authStr;
-          } else {
+          }
+          else {
             Link link(rrset.getData());
-            const Link::DelegationSet& ds = link.getDelegations();
+            const DelegationList& ds = link.getDelegationList();
             for (const auto& i: ds) {
-              std::string str = boost::lexical_cast<std::string>(i.first)
-                + "," + i.second.toUri() + ";";
+              std::string str = std::to_string(i.preference);
+                + "," + i.name.toUri() + ";";
               os << str;
             }
           }
           os << std::endl;
         }
         else {
-          StringSource ss(rrs[i].wire(), rrs[i].size(), true,
-                          new Base64Encoder(new FileSink(os), true, 64));
+          bufferSource(rrs[i].wire(), rrs[i].size()) >> base64Encode() >> streamSink(os);
         }
       }
     }
@@ -442,17 +495,15 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
 
       if (printRaw && (re.getContentType() == NDNS_BLOB
                        || re.getContentType() == NDNS_KEY)) {
-        util::IndentedStream istream(os, "; ");
+        ndn::util::IndentedStream istream(os, "; ");
 
         if (re.getRrType() == label::CERT_RR_TYPE) {
-          shared_ptr<Data> data = re.toData();
-          IdentityCertificate cert(*data);
-          cert.printCertificate(istream);
+          security::v2::Certificate cert(rrset.getData());
+          os << cert;
+          // cert.printCertificate(istream);
         }
         else {
-          using namespace CryptoPP;
-          StringSource ss(re.getAppContent().wire(), re.getAppContent().size(), true,
-                          new Base64Encoder(new FileSink(istream), true, 64));
+          bufferSource(re.getAppContent().wire(), re.getAppContent().size()) >> base64Encode() >> streamSink(os);
         }
       }
       os << std::endl;
@@ -477,11 +528,12 @@ ManagementTool::listAllZones(std::ostream& os) {
     os.setf(os.left);
     os.width(nameWidth + 2);
     os << zone.getName().toUri();
+    Name zoneIdentity = Name(zone.getName()).append(label::NDNS_CERT_QUERY);
 
     os << "; default-ttl=" << zone.getTtl().count();
-    os << " default-key=" << m_keyChain.getDefaultKeyNameForIdentity(zone.getName());
+    os << " default-key=" << CertHelper::getDefaultKeyNameOfIdentity(m_keyChain, zoneIdentity);
     os << " default-certificate="
-       << m_keyChain.getDefaultCertificateNameForIdentity(zone.getName());
+       << CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain, zoneIdentity);
     os << std::endl;
   }
 }
@@ -518,39 +570,39 @@ ManagementTool::getRrSet(const Name& zoneName,
     return;
   }
 
-  using namespace CryptoPP;
-  StringSource ss(rrset.getData().wire(), rrset.getData().size(), true,
-                  new Base64Encoder(new FileSink(os), true, 64));
+  bufferSource(rrset.getData().wire(), rrset.getData().size()) >> base64Encode() >> streamSink(os);
 }
 
 void
-ManagementTool::addIdCert(Zone& zone, shared_ptr<IdentityCertificate> cert,
-                          const time::seconds& ttl)
+ManagementTool::addIdCert(Zone& zone, const Certificate& cert,
+                          const time::seconds& ttl,
+                          const Certificate& dskCert)
 {
-  Rrset rrset(&zone);
+  Rrset rrsetKey(&zone);
   size_t size = zone.getName().size();
-  Name label = cert->getName().getSubName(size + 1, cert->getName().size() - size - 3);
-  rrset.setLabel(label);
-  rrset.setType(label::CERT_RR_TYPE);
-  rrset.setTtl(ttl);
-  rrset.setVersion(cert->getName().get(-1));
-  rrset.setData(cert->wireEncode());
+  Name label = cert.getName().getSubName(size + 1, cert.getName().size() - size - 3);
+  rrsetKey.setLabel(label);
+  rrsetKey.setType(label::CERT_RR_TYPE);
+  rrsetKey.setTtl(ttl);
+  rrsetKey.setVersion(cert.getName().get(-1));
+  rrsetKey.setData(cert.wireEncode());
 
-  if (m_dbMgr.find(rrset)) {
-    throw Error("ID-CERT with label=" + label.toUri() +
-                " is already presented in local NDNS databse");
+  if (m_dbMgr.find(rrsetKey)) {
+    BOOST_THROW_EXCEPTION(Error("CERT with label=" + label.toUri() +
+                                " is already presented in local NDNS databse"));
   }
+
+  m_dbMgr.insert(rrsetKey);
   NDNS_LOG_INFO("Add rrset with zone-id: " << zone.getId() << " label: " << label << " type: "
                 << label::CERT_RR_TYPE);
-  m_dbMgr.insert(rrset);
 }
 
 void
 ManagementTool::addZone(Zone& zone)
 {
   if (m_dbMgr.find(zone)) {
-    throw Error("Zone with Name=" + zone.getName().toUri() +
-                " is already presented in local NDNS databse");
+    BOOST_THROW_EXCEPTION(Error("Zone with Name=" + zone.getName().toUri() +
+                                " is already presented in local NDNS databse"));
   }
   NDNS_LOG_INFO("Add zone with Name: " << zone.getName().toUri());
   m_dbMgr.insert(zone);
@@ -569,26 +621,15 @@ ManagementTool::removeZone(Zone& zone)
 bool
 ManagementTool::matchCertificate(const Name& certName, const Name& identity)
 {
-  if (!m_keyChain.doesCertificateExist(certName)) {
-    NDNS_LOG_WARN(certName.toUri() << " is not presented in KeyChain");
-    return false;
+  security::Identity id = m_keyChain.getPib().getIdentity(identity);
+  for (const security::Key& key: id.getKeys()) {
+    try {
+      key.getCertificate(certName);
+      return true;
+    } catch (const std::exception&) {
+    }
   }
-
-  //check its public key information
-  shared_ptr<IdentityCertificate> cert = m_keyChain.getCertificate(certName);
-  Name keyName = cert->getPublicKeyName();
-
-  if (!identity.isPrefixOf(keyName) || identity.size()!=keyName.size()-1) {
-    NDNS_LOG_WARN(keyName.toUri() << " is not a key of " << identity.toUri());
-    return false;
-  }
-
-  if (!m_keyChain.doesKeyExistInTpm(keyName, KeyClass::PRIVATE)) {
-    NDNS_LOG_WARN("Private key: " << keyName.toUri() << " is not present in KeyChain");
-    return false;
-  }
-
-  return true;
+  return false;
 }
 
 void
@@ -598,10 +639,12 @@ ManagementTool::checkRrsetVersion(const Rrset& rrset)
   if (m_dbMgr.find(originalRrset)) {
     // update only if rrset has a newer version
     if (originalRrset.getVersion() == rrset.getVersion()) {
-      throw Error("Duplicate: " + boost::lexical_cast<std::string>(originalRrset));
+      BOOST_THROW_EXCEPTION(Error("Duplicate: "
+                                  + boost::lexical_cast<std::string>(originalRrset)));
     }
     else if (originalRrset.getVersion() > rrset.getVersion()) {
-      throw Error("Newer version exists: " + boost::lexical_cast<std::string>(originalRrset));
+      BOOST_THROW_EXCEPTION(Error("Newer version exists: "
+                                  + boost::lexical_cast<std::string>(originalRrset)));
     }
 
     m_dbMgr.remove(originalRrset);

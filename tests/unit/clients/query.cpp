@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -23,7 +23,6 @@
 
 #include <boost/lexical_cast.hpp>
 #include <string>
-#include <ndn-cxx/security/key-chain.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -33,7 +32,7 @@ BOOST_AUTO_TEST_SUITE(Query)
 
 BOOST_FIXTURE_TEST_CASE(TestCase, IdentityManagementFixture)
 {
-  Name certName = m_keyChain.createIdentity("/cert/name");
+  security::Identity certIdentity = addIdentity("/cert/name");
   Name zone("/net");
   name::Component qType = ndns::label::NDNS_ITERATIVE_QUERY;
   ndns::Query q(zone, qType);
@@ -52,13 +51,13 @@ BOOST_FIXTURE_TEST_CASE(TestCase, IdentityManagementFixture)
     link->addDelegation(i, std::string("/link/") + to_string(i));
   }
   // link has to be signed first, then wireDecode
-  m_keyChain.sign(*link, certName);
+  m_keyChain.sign(*link, security::signingByIdentity(certIdentity));
 
-  q.setLink(link->wireEncode());
-  BOOST_CHECK_EQUAL(Link(q.getLink()), *link);
+  q.setDelegationListFromLink(*link);
+  BOOST_CHECK_EQUAL(q.getDelegationList(), link->getDelegationList());
 
   Interest interest = q.toInterest();
-  BOOST_CHECK_EQUAL(interest.getLink(), *link);
+  BOOST_CHECK_EQUAL(interest.getForwardingHint(), link->getDelegationList());
 
   ndns::Query q2(zone, qType);
   BOOST_CHECK_EQUAL(q2.fromInterest(zone, interest), true);

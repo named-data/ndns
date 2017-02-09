@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -22,62 +22,20 @@
 
 #include "config.hpp"
 
-#include "ndn-cxx/data.hpp"
-#include <ndn-cxx/security/validator-config.hpp>
-
+#include <ndn-cxx/data.hpp>
+#include <ndn-cxx/security/v2/validator.hpp>
 
 namespace ndn {
 namespace ndns {
 
-/**
- * @brief NDNS validator, which validates Data with hierarchical way. Validator is used in three
- * scenarios:
- * 1) Dig client gets the final response Data;
- * 2) Authoritative name server receives update request;
- * 3) Update client gets the result of update request.
- *
- * @note Compared to its parent class, ValidatorConfig, the class provides is customized according
- * to config file and the above working scenarios:
- * 1) give the default path of config file;
- * 2) default rule is the given path if not valid or the content is wrong.
- *    Validator rule is must for NDNS, the daemon/dig/update must work even without manually edit
- * 3) some wrapper provides default behavior when verification succeeds or fails
- */
-class Validator : public ValidatorConfig
+class NdnsValidatorBuilder
 {
-
 public:
   static std::string VALIDATOR_CONF_FILE;
 
-  /**
-   * @brief the callback function which is called after validation finishes
-   */
-  explicit
-  Validator(Face& face, const std::string& confFile = VALIDATOR_CONF_FILE);
-
-  /**
-   * @brief validate the Data
-   */
-  virtual void
-  validate(const Data& data,
-           const OnDataValidated& onValidated,
-           const OnDataValidationFailed& onValidationFailed);
-
-private:
-  /**
-   * @brief the default callback function on data validated
-   */
-  void
-  onDataValidated(const shared_ptr<const Data>& data);
-
-  /**
-   * @brief the default callback function on data validation failed
-   */
-  void
-  onDataValidationFailed(const shared_ptr<const Data>& data, const std::string& str);
-
+  static unique_ptr<security::v2::Validator>
+  create(Face& face, const std::string& confFile = VALIDATOR_CONF_FILE);
 };
-
 
 } // namespace ndns
 } // namespace ndn

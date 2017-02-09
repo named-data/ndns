@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -45,9 +45,9 @@ const name::Component NDNS_ITERATIVE_QUERY("NDNS");
 // const name::Component NDNS_RECURSIVE_QUERY("NDNS-R");
 
 /**
- * @brief NDNS ID-CERT query type
+ * @brief NDNS CERT query type
  */
-const name::Component NDNS_CERT_QUERY("KEY");
+const name::Component NDNS_CERT_QUERY("NDNS");
 
 /////////////////////////////////////////////
 
@@ -65,9 +65,9 @@ const name::Component NDNS_UPDATE_LABEL("UPDATE");
 const name::Component NS_RR_TYPE("NS");
 
 /**
- * @brief ID-CERT resource record type
+ * @brief CERT resource record type
  */
-const name::Component CERT_RR_TYPE("ID-CERT");
+const name::Component CERT_RR_TYPE("CERT");
 
 /**
  * @brief TXT resource record type

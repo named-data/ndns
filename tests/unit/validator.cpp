@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
@@ -20,6 +20,9 @@
 #include "validator.hpp"
 
 #include "test-common.hpp"
+#include "util/cert-helper.hpp"
+
+#include <ndn-cxx/util/io.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -37,20 +40,13 @@ public:
     , m_testId2("/test02/ndn")
     , m_testId3("/test02/ndn/edu")
     , m_randomId("/test03")
-    , m_version(name::Component::fromVersion(0))
     , m_face(m_keyChain, {false, true})
   {
-    m_randomDsk = createRoot(m_randomId); // generate a root cert
+    m_randomDsk = createRoot(Name(m_randomId).append("NDNS")); // generate a root cert
 
-    m_dsk1 = createRoot(m_testId1); // replace to root cert
-    m_dsk2 = createIdentity(m_testId2, m_dsk1);
-    m_dsk3 = createIdentity(m_testId3, m_dsk2);
-
-    m_selfSignCert = m_keyChain.generateRsaKeyPair(m_testId3, false);
-    shared_ptr<IdentityCertificate> cert = m_keyChain.selfSign(m_selfSignCert);
-    m_selfSignCert = cert->getName();
-    m_keyChain.addCertificate(*cert);
-    NDNS_LOG_TRACE("add cert: " << cert->getName() << " to KeyChain");
+    m_dsk1 = createRoot(Name(m_testId1).append("NDNS")); // replace to root cert
+    m_dsk2 = createIdentity(Name(m_testId2).append("NDNS"), m_dsk1);
+    m_dsk3 = createIdentity(Name(m_testId3).append("NDNS"), m_dsk2);
 
     m_face.onSendInterest.connect(bind(&Fixture::respondInterest, this, _1));
   }
@@ -61,68 +57,53 @@ public:
     m_face.shutdown();
   }
 
-  const Name
-  createIdentity(const Name& id, const Name& parentCertName)
+  const Key
+  createIdentity(const Name& id, const Key& parentKey)
   {
-    Name kskCertName = m_keyChain.createIdentity(id);
-    Name kskName = m_keyChain.getDefaultKeyNameForIdentity(id);
-    m_keyChain.deleteCertificate(kskCertName);
-    auto kskCert = createCertificate(kskName, parentCertName);
+    Identity identity = addIdentity(id);
+    Key defaultKey = identity.getDefaultKey();
+    m_keyChain.deleteKey(identity, defaultKey);
 
-    Name dskName = m_keyChain.generateRsaKeyPair(id, false);
-    auto dskCert = createCertificate(dskName, kskCert);
-    return dskCert;
+    Key ksk = m_keyChain.createKey(identity);
+    Name defaultKskCert = ksk.getDefaultCertificate().getName();
+    m_keyChain.deleteCertificate(ksk, defaultKskCert);
+
+    Key dsk = m_keyChain.createKey(identity);
+    Name defaultDskCert = dsk.getDefaultCertificate().getName();
+    m_keyChain.deleteCertificate(dsk, defaultDskCert);
+
+    auto kskCert = CertHelper::createCertificate(m_keyChain, ksk, parentKey, "CERT", time::days(100));
+    auto dskCert = CertHelper::createCertificate(m_keyChain, dsk, ksk, "CERT", time::days(100));
+
+    m_keyChain.addCertificate(ksk, kskCert);
+    m_keyChain.addCertificate(dsk, dskCert);
+
+    m_keyChain.setDefaultKey(identity, dsk);
+    return dsk;
   }
 
-  const Name
+  const Key
   createRoot(const Name& root)
   {
-    m_rootCert = m_keyChain.createIdentity(root);
-    ndn::io::save(*(m_keyChain.getCertificate(m_rootCert)), TEST_CONFIG_PATH "/anchors/root.cert");
+    Identity rootIdentity = addIdentity(root);
+    auto cert = rootIdentity.getDefaultKey().getDefaultCertificate();
+    ndn::io::save(cert, TEST_CONFIG_PATH "/anchors/root.cert");
     NDNS_LOG_TRACE("save root cert "<< m_rootCert <<
                   " to: " << TEST_CONFIG_PATH "/anchors/root.cert");
-    Name dsk = m_keyChain.generateRsaKeyPair(root, false);
-    auto cert = createCertificate(dsk, m_rootCert);
-    return cert;
+    return rootIdentity.getDefaultKey();
   }
-
-
-  const Name
-  createCertificate(const Name& keyName, const Name& parentCertName)
-  {
-    std::vector<CertificateSubjectDescription> desc;
-    time::system_clock::TimePoint notBefore = time::system_clock::now();
-    time::system_clock::TimePoint notAfter = notBefore + time::days(365);
-    desc.push_back(CertificateSubjectDescription(oid::ATTRIBUTE_NAME,
-                                                 "Signer: " + parentCertName.toUri()));
-    shared_ptr<IdentityCertificate> cert =
-      m_keyChain.prepareUnsignedIdentityCertificate(keyName, parentCertName,
-                                                    notBefore, notAfter, desc);
-
-    Name tmp = cert->getName().getPrefix(-1).append(m_version);
-    cert->setName(tmp);
-    m_keyChain.sign(*cert, parentCertName);
-    m_keyChain.addCertificateAsKeyDefault(*cert);
-    NDNS_LOG_TRACE("add cert: " << cert->getName() << " to KeyChain");
-    return cert->getName();
-  }
-
 
   void
   respondInterest(const Interest& interest)
   {
-    Name certName = interest.getName();
-    if (certName.isPrefixOf(m_selfSignCert)) {
-      // self-sign cert's version number is not m_version
-      certName = m_selfSignCert;
-    } else {
-      certName.append(m_version);
-    }
-    NDNS_LOG_TRACE("validator needs: " << certName);
-    BOOST_CHECK_EQUAL(m_keyChain.doesCertificateExist(certName), true);
-    auto cert = m_keyChain.getCertificate(certName);
+    Name keyName = interest.getName();
+    Name identityName = keyName.getPrefix(-2);
+    NDNS_LOG_TRACE("validator needs cert of KEY: " << keyName);
+    auto cert = m_keyChain.getPib().getIdentity(identityName)
+                                   .getKey(keyName)
+                                   .getDefaultCertificate();
     m_face.getIoService().post([this, cert] {
-        m_face.receive(*cert);
+        m_face.receive(cert);
       });
   }
 
@@ -134,15 +115,11 @@ public:
 
   Name m_rootCert;
 
-  Name m_dsk1;
-  Name m_dsk2;
-  Name m_dsk3;
+  Key m_dsk1;
+  Key m_dsk2;
+  Key m_dsk3;
 
-  Name m_selfSignCert;
-
-  Name m_randomDsk;
-
-  name::Component m_version;
+  Key m_randomDsk;
 
   ndn::util::DummyClientFace m_face;
 };
@@ -151,8 +128,9 @@ public:
 BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
 {
   // validator must be created after root key is saved to the target
-  ndns::Validator validator(m_face, TEST_CONFIG_PATH "/" "validator.conf");
+  auto validator = NdnsValidatorBuilder::create(m_face, TEST_CONFIG_PATH "/" "validator.conf");
 
+  // case1: record of testId3, signed by its dsk, should be successful validated.
   Name dataName;
   dataName
     .append(m_testId3)
@@ -161,15 +139,15 @@ BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
     .append("rrType")
     .appendVersion();
   shared_ptr<Data> data = make_shared<Data>(dataName);
-  m_keyChain.sign(*data, m_dsk3);
+  m_keyChain.sign(*data, signingByKey(m_dsk3));
 
   bool hasValidated = false;
-  validator.validate(*data,
-                     [&] (const shared_ptr<const Data>& data) {
+  validator->validate(*data,
+                     [&] (const Data& data) {
                        hasValidated = true;
                        BOOST_CHECK(true);
                      },
-                     [&] (const shared_ptr<const Data>& data, const std::string& str) {
+                     [&] (const Data& data, const security::v2::ValidationError& str) {
                        hasValidated = true;
                        BOOST_CHECK(false);
                      });
@@ -178,23 +156,24 @@ BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
 
   BOOST_CHECK_EQUAL(hasValidated, true);
 
+  // case2: signing testId2's data by testId3's key, which should failed in validation
   dataName = Name();
   dataName
     .append(m_testId2)
-    .append("KEY")
+    .append("NDNS")
     .append("rrLabel")
-    .append("ID-CERT")
+    .append("CERT")
     .appendVersion();
   data = make_shared<Data>(dataName);
-  m_keyChain.sign(*data, m_dsk3); // key's owner's name is longer than data owner's
+  m_keyChain.sign(*data, signingByKey(m_dsk3)); // key's owner's name is longer than data owner's
 
   hasValidated = false;
-  validator.validate(*data,
-                     [&] (const shared_ptr<const Data>& data) {
+  validator->validate(*data,
+                     [&] (const Data& data) {
                        hasValidated = true;
                        BOOST_CHECK(false);
                      },
-                     [&] (const shared_ptr<const Data>& data, const std::string& str) {
+                     [&] (const Data& data, const security::v2::ValidationError& str) {
                        hasValidated = true;
                        BOOST_CHECK(true);
                      });
@@ -203,48 +182,24 @@ BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
   // cannot pass verification due to key's owner's name is longer than data owner's
   BOOST_CHECK_EQUAL(hasValidated, true);
 
-  dataName = Name();
-  dataName
-    .append(m_testId3)
-    .append("KEY")
-    .append("rrLabel")
-    .append("ID-CERT")
-    .appendVersion();
-  data = make_shared<Data>(dataName);
-  m_keyChain.sign(*data, m_selfSignCert);
-
-  hasValidated = false;
-  validator.validate(*data,
-                     [&] (const shared_ptr<const Data>& data) {
-                       hasValidated = true;
-                       BOOST_CHECK(false);
-                     },
-                     [&] (const shared_ptr<const Data>& data, const std::string& str) {
-                       hasValidated = true;
-                       BOOST_CHECK(true);
-                     });
-
-  m_face.processEvents(time::milliseconds(-1));
-  // cannot pass due to self-sign cert is used
-  BOOST_CHECK_EQUAL(hasValidated, true);
-
+  // case4: totally wrong key to sign
   dataName = Name();
   dataName
     .append(m_testId2)
     .append("KEY")
     .append("rrLabel")
-    .append("ID-CERT")
+    .append("CERT")
     .appendVersion();
   data = make_shared<Data>(dataName);
-  m_keyChain.sign(*data, m_randomDsk);
+  m_keyChain.sign(*data, signingByKey(m_randomDsk));
 
   hasValidated = false;
-  validator.validate(*data,
-                     [&] (const shared_ptr<const Data>& data) {
+  validator->validate(*data,
+                     [&] (const Data& data) {
                        hasValidated = true;
                        BOOST_CHECK(false);
                      },
-                     [&] (const shared_ptr<const Data>& data, const std::string& str) {
+                     [&] (const Data& data, const security::v2::ValidationError& str) {
                        hasValidated = true;
                        BOOST_CHECK(true);
                      });

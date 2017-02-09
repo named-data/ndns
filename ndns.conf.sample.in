@@ -6,16 +6,16 @@ zones
   zone
   {
     ; name / ; name of the zone
-             ; KeyChain must have a identity with this name
-    ; cert  /KEY/dsk-123/ID-CERT/%FD00 ; certificate to sign data
+             ; KeyChain must have a identity with this name appended by <NDNS> at tail
+    ; cert  /KEY/dsk-123/CERT/%FD00 ; certificate to sign data
              ; omit cert to select the default certificate of above identity
   }
 
   ; zone
   ; {
     ; name /ndn ; name of the zone, zone should not have the same name
-             ; KeyChain must have a identity with this name
-    ; cert  /ndn/KEY/dsk-234/ID-CERT/%FD00 ; certificate to sign data
+             ; KeyChain must have a identity with this name appended by <NDNS> at tail
+    ; cert  /ndn/KEY/dsk-234/CERT/%FD00 ; certificate to sign data
              ; omit cert to select the default certificate of above identity
   ; }
 }

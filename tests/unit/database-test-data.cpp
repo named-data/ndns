@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -19,6 +19,9 @@
 
 #include "database-test-data.hpp"
 #include "daemon/rrset-factory.hpp"
+#include "util/cert-helper.hpp"
+#include "mgmt/management-tool.hpp"
+#include <ndn-cxx/security/verification-helpers.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -30,6 +33,8 @@ const boost::filesystem::path DbTestData::TEST_DATABASE = TEST_CONFIG_PATH "/" "
 const Name DbTestData::TEST_IDENTITY_NAME("/test19");
 const boost::filesystem::path DbTestData::TEST_CERT =
   TEST_CONFIG_PATH "/" "anchors/root.cert";
+const boost::filesystem::path DbTestData::TEST_DKEY_CERT =
+  TEST_CONFIG_PATH "/" "dkey.cert";
 
 DbTestData::PreviousStateCleaner::PreviousStateCleaner()
 {
@@ -42,34 +47,46 @@ DbTestData::DbTestData()
 {
   NDNS_LOG_TRACE("start creating test data");
 
-  ndns::Validator::VALIDATOR_CONF_FILE = TEST_CONFIG_PATH "/" "validator.conf";
+  ndns::NdnsValidatorBuilder::VALIDATOR_CONF_FILE = TEST_CONFIG_PATH "/" "validator.conf";
 
-  m_keyChain.deleteIdentity(TEST_IDENTITY_NAME);
-  m_certName = m_keyChain.createIdentity(TEST_IDENTITY_NAME);
+  ManagementTool tool(TEST_DATABASE.string(), m_keyChain);
+  // this is how DKEY is added to parent zone in real world.
+  auto addDkeyCertToParent = [&tool](Zone& dkeyFrom, Zone& dkeyTo)->void{
+    Certificate dkeyCert;
+    dkeyCert = tool.getZoneDkey(dkeyFrom);
+    ndn::io::save(dkeyCert, TEST_DKEY_CERT.string());
+    tool.addRrsetFromFile(dkeyTo.getName(),
+                          TEST_DKEY_CERT.string(),
+                          DEFAULT_RR_TTL,
+                          DEFAULT_CERT,
+                          ndn::io::BASE64,
+                          true);
+  };
 
-  ndn::io::save(*(m_keyChain.getCertificate(m_certName)), TEST_CERT.string());
+  Name testName(TEST_IDENTITY_NAME);
+  m_test = tool.createZone(testName, ROOT_ZONE);
+  // m_test's DKEY is not added to parent zone
+  Name netName = Name(testName).append("net");
+  m_net = tool.createZone(netName, testName);
+  addDkeyCertToParent(m_net, m_test);
+  Name ndnsimName = Name(netName).append("ndnsim");
+  m_ndnsim = tool.createZone(ndnsimName, netName);
+  addDkeyCertToParent(m_ndnsim, m_net);
+
+  m_zones.push_back(m_test);
+  m_zones.push_back(m_net);
+  m_zones.push_back(m_ndnsim);
+
+  Name identityName = Name(testName).append("NDNS");
+  m_identity = CertHelper::getIdentity(m_keyChain, identityName);
+  m_certName = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain, identityName);
+  m_cert = CertHelper::getCertificate(m_keyChain, identityName, m_certName);
+
+  ndn::io::save(m_cert, TEST_CERT.string());
   NDNS_LOG_INFO("save test root cert " << m_certName << " to: " << TEST_CERT.string());
 
   BOOST_CHECK_GT(m_certName.size(), 0);
   NDNS_LOG_TRACE("test certName: " << m_certName);
-
-  m_root = Zone(TEST_IDENTITY_NAME);
-  Name name(TEST_IDENTITY_NAME);
-    name.append("net");
-  m_net = Zone(name);
-  name.append("ndnsim");
-  m_ndnsim =Zone(name);
-
-  m_session.insert(m_root);
-  BOOST_CHECK_GT(m_root.getId(), 0);
-  m_session.insert(m_net);
-  BOOST_CHECK_GT(m_net.getId(), 0);
-  m_session.insert(m_ndnsim);
-  BOOST_CHECK_GT(m_ndnsim.getId(), 0);
-
-  m_zones.push_back(m_root);
-  m_zones.push_back(m_net);
-  m_zones.push_back(m_ndnsim);
 
   int certificateIndex = 0;
   function<void(const Name&,Zone&,const name::Component&)> addQueryRrset =
@@ -82,9 +99,11 @@ DbTestData::DbTestData()
     if (type == label::CERT_RR_TYPE) {
       contentType = NDNS_KEY;
       qType = label::NDNS_CERT_QUERY;
-    } else if (type == label::NS_RR_TYPE) {
+    }
+    else if (type == label::NS_RR_TYPE) {
       contentType = NDNS_LINK;
-    } else if (type == label::TXT_RR_TYPE) {
+    }
+    else if (type == label::TXT_RR_TYPE) {
       contentType = NDNS_RESP;
     }
     std::ostringstream os;
@@ -92,13 +111,8 @@ DbTestData::DbTestData()
 
     addRrset(zone, label, type, ttl, version, qType, contentType, os.str());
   };
-  addQueryRrset("/dsk-1", m_root, label::CERT_RR_TYPE);
-  addQueryRrset("/net/ksk-2", m_root, label::CERT_RR_TYPE);
-  addQueryRrset("/dsk-3", m_net, label::CERT_RR_TYPE);
-  addQueryRrset("/ndnsim/ksk-4", m_net, label::CERT_RR_TYPE);
-  addQueryRrset("/dsk-5", m_ndnsim, label::CERT_RR_TYPE);
 
-  addQueryRrset("net", m_root, label::NS_RR_TYPE);
+  addQueryRrset("net", m_test, label::NS_RR_TYPE);
   addQueryRrset("ndnsim", m_net, label::NS_RR_TYPE);
   addQueryRrset("www", m_ndnsim, label::TXT_RR_TYPE);
   addQueryRrset("doc/www", m_ndnsim, label::TXT_RR_TYPE);
@@ -124,24 +138,26 @@ DbTestData::addRrset(Zone& zone, const Name& label, const name::Component& type,
                   m_keyChain, m_certName);
   rf.onlyCheckZone();
   if (type == label::NS_RR_TYPE) {
-    ndn::Link::DelegationSet ds = {std::pair<uint32_t, Name>(1,"/xx")};
+    ndn::DelegationList ds;
+    ds.insert(1, "xx");
     rrset = rf.generateNsRrset(label, type, version.toVersion(), ttl, ds);
     if (contentType != NDNS_AUTH) {
       // do not add AUTH packet to link
       m_links.push_back(Link(rrset.getData()));
     }
-  } else if (type == label::TXT_RR_TYPE) {
+  }
+  else if (type == label::TXT_RR_TYPE) {
     rrset = rf.generateTxtRrset(label, type, version.toVersion(), ttl,
-                           std::vector<std::string>());
-  } else if (type == label::CERT_RR_TYPE) {
+                                std::vector<std::string>());
+  }
+  else if (type == label::CERT_RR_TYPE) {
     rrset = rf.generateCertRrset(label, type, version.toVersion(), ttl,
-                                 *m_keyChain.getCertificate(m_certName));
+                                 m_cert);
   }
 
   shared_ptr<Data> data = make_shared<Data>(rrset.getData());
 
-  shared_ptr<IdentityCertificate> cert = m_keyChain.getCertificate(m_certName);
-  BOOST_CHECK_EQUAL(Validator::verifySignature(*data, cert->getPublicKeyInfo()), true);
+  security::verifySignature(*data, m_cert);
 
   m_session.insert(rrset);
   m_rrsets.push_back(rrset);

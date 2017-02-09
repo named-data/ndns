@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -38,6 +38,7 @@ main(int argc, char* argv[])
   string parentStr;
   string dskStr;
   string kskStr;
+  string dkeyStr;
   string db;
   try {
     namespace po = boost::program_options;
@@ -53,7 +54,7 @@ main(int argc, char* argv[])
     po::options_description config("Zone Options");
     config.add_options()
       ("cacheTtl,a", po::value<int>(&cacheTtlInt), "Set ttl of records of the zone and its "
-        "DSK ID-CERT. Default: 3600 seconds")
+        "DSK CERT. Default: 3600 seconds")
       ("certTtl,e", po::value<int>(&certTtlInt), "Set ttl of DSK and KSK certificates. "
         "Default: 365 days")
       ("parent,p", po::value<std::string>(&parentStr), "Set the parent zone of the zone to be "
@@ -61,6 +62,8 @@ main(int argc, char* argv[])
       ("dsk,d", po::value<std::string>(&dskStr), "Set the name of DSK's certificate, "
         "Default: generate new key and certificate")
       ("ksk,k", po::value<std::string>(&kskStr), "Set the name of KSK's certificate, "
+        "Default: generate new key and certificate")
+      ("dkey,g", po::value<std::string>(&dkeyStr), "Set the name of DKEY's certificate, "
         "Default: generate new key and certificate")
       ;
 
@@ -87,7 +90,7 @@ main(int argc, char* argv[])
 
     if (vm.count("help")) {
       std::cout << "Usage: ndns-create-zone [-b db] zone [-a cacheTtl] [-e certTtl] [-p parent] "
-        "[-d dskCert] [-k kskCert]" << std::endl;
+        "[-d dskCert] [-k kskCert] [-g dkeyCert]" << std::endl;
       std::cout << options << std::endl;
       return 0;
     }
@@ -110,6 +113,7 @@ main(int argc, char* argv[])
 
     Name ksk(kskStr);
     Name dsk(dskStr);
+    Name dkey(dkeyStr);
 
     time::seconds cacheTtl;
     time::seconds certTtl;
@@ -123,9 +127,12 @@ main(int argc, char* argv[])
     else
       certTtl = time::seconds(certTtlInt);
 
-    ndn::KeyChain keyChain;
+    KeyChain keyChain;
     ndn::ndns::ManagementTool tool(db, keyChain);
-    tool.createZone(zone, parent, cacheTtl, certTtl, ksk, dsk);
+    ndn::ndns::Zone createdZone = tool.createZone(zone, parent, cacheTtl, certTtl, ksk, dsk, dkey);
+    ndn::security::v2::Certificate dkeyCert = tool.getZoneDkey(createdZone);
+    std::cout << "Generated DKEY " << dkeyCert.getName() << std::endl;
+    ndn::io::save(dkeyCert, std::cout);
   }
   catch (const std::exception& ex) {
     std::cerr << "Error: " << ex.what() << std::endl;

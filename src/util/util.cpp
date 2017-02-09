@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -18,10 +18,15 @@
  */
 
 #include "util.hpp"
-#include <ndn-cxx/security/v1/cryptopp.hpp>
+
+#include <ndn-cxx/security/transform.hpp>
 
 namespace ndn {
 namespace ndns {
+
+using security::transform::base64Encode;
+using security::transform::streamSink;
+using security::transform::bufferSource;
 
 NdnsContentType
 toNdnsContentType(const std::string& str)
@@ -45,17 +50,14 @@ toNdnsContentType(const std::string& str)
 void
 output(const Data& data, std::ostream& os, const bool isPretty)
 {
-  using namespace CryptoPP;
   const Block& block = data.wireEncode();
   if (!isPretty) {
-    StringSource ss(block.wire(), block.size(), true,
-                    new Base64Encoder(new FileSink(os), true, 64));
+    bufferSource(block.wire(), block.size()) >> base64Encode() >> streamSink(os);
   }
   else {
     os << "Name: " << data.getName().toUri() << std::endl;
     os << "KeyLocator: " << data.getSignature().getKeyLocator().getName().toUri() << std::endl;
-    StringSource ss(block.wire(), block.size(), true,
-                    new Base64Encoder(new FileSink(os), true, 64));
+    bufferSource(block.wire(), block.size()) >> base64Encode() >> streamSink(os);
     os << std::endl;
   }
 }

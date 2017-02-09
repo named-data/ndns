@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -33,7 +33,7 @@ namespace ndns {
 #define DEFINE_ERROR(ErrorName, Base)           \
 class ErrorName : public Base                   \
 {                                               \
- public:                                        \
+public:                                         \
   explicit                                      \
   ErrorName(const std::string& what)            \
     : Base(what)                                \
@@ -103,6 +103,20 @@ public: // Zone manipulation
    */
   void
   insert(Zone& zone);
+
+  /**
+   * @brief set zoneInfo by key-value
+   */
+  void
+  setZoneInfo(Zone& zone,
+              const std::string& key,
+              const Block& value);
+
+  /**
+   * @brief get zoneInfo
+   */
+  std::map<std::string, Block>
+  getZoneInfo(Zone& zone);
 
   /**
    * @brief lookup the zone by name, fill the m_id and m_ttl

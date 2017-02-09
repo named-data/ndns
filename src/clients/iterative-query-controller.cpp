@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -17,8 +17,8 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "validator.hpp"
 #include "iterative-query-controller.hpp"
+#include "validator.hpp"
 #include "logger.hpp"
 #include <iostream>
 
@@ -32,7 +32,7 @@ IterativeQueryController::IterativeQueryController(const Name& dstLabel,
                                                    const QuerySucceedCallback& onSucceed,
                                                    const QueryFailCallback& onFail,
                                                    Face& face,
-                                                   Validator* validator)
+                                                   security::v2::Validator* validator)
   : QueryController(dstLabel, rrType, interestLifetime, onSucceed, onFail, face)
   , m_validator(validator)
   , m_step(QUERY_STEP_QUERY_NS)
@@ -68,20 +68,20 @@ IterativeQueryController::onData(const ndn::Interest& interest, const Data& data
   NDNS_LOG_TRACE("[* -> *] get a " << contentType
                  << " Response: " << data.getName());
   if (m_validator == nullptr) {
-    this->onDataValidated(make_shared<Data>(data), contentType);
+    this->onDataValidated(data, contentType);
   }
   else {
     m_validator->validate(data,
                           bind(&IterativeQueryController::onDataValidated, this, _1, contentType),
-                          [this] (const shared_ptr<const Data>& data, const std::string& str) {
-                            NDNS_LOG_WARN("data: " << data->getName() << " fails verification");
+                          [this] (const Data& data, const security::v2::ValidationError& err) {
+                            NDNS_LOG_WARN("data: " << data.getName() << " fails verification");
                             this->abort();
                           }
                           );
   }
 }
 void
-IterativeQueryController::onDataValidated(const shared_ptr<const Data>& data, NdnsContentType contentType)
+IterativeQueryController::onDataValidated(const Data& data, NdnsContentType contentType)
 {
   switch (m_step) {
   case QUERY_STEP_QUERY_NS:
@@ -89,11 +89,12 @@ IterativeQueryController::onDataValidated(const shared_ptr<const Data>& data, Nd
       m_step = QUERY_STEP_QUERY_RR;
     }
     else if (contentType == NDNS_LINK) {
-      Link link(data->wireEncode());
-      if (link.getDelegations().empty()) {
+      Link link(data.wireEncode());
+      if (link.getDelegationList().empty()) {
         m_lastLink = Block();
-      } else {
-        m_lastLink = data->wireEncode();
+      }
+      else {
+        m_lastLink = data.wireEncode();
       }
 
       // for NS query, if already received, just return, instead of more queries until NACK
@@ -113,7 +114,8 @@ IterativeQueryController::onDataValidated(const shared_ptr<const Data>& data, Nd
       std::ostringstream oss;
       oss << *this;
       NDNS_LOG_WARN("get unexpected Response: NDNS_BLOB for QUERY_NS: " << oss.str());
-    } else {
+    }
+    else {
       std::ostringstream oss;
       oss << *this;
       NDNS_LOG_WARN("get unexpected Response for QUERY_NS: " << oss.str());
@@ -142,9 +144,9 @@ IterativeQueryController::onDataValidated(const shared_ptr<const Data>& data, Nd
     this->express(this->makeLatestInterest()); // express new Expres
   else if (m_step == QUERY_STEP_ANSWER_STUB) {
     NDNS_LOG_TRACE("query ends: " << *this);
-    Response re = this->parseFinalResponse(*data);
+    Response re = this->parseFinalResponse(data);
     if (m_onSucceed != nullptr)
-      m_onSucceed(*data, re);
+      m_onSucceed(data, re);
     else
       NDNS_LOG_TRACE("succeed callback is nullptr");
   }
@@ -202,7 +204,7 @@ IterativeQueryController::makeLatestInterest()
 
   // addLink
   if (m_lastLink.hasWire()) {
-    query.setLink(m_lastLink);
+    query.setDelegationListFromLink(Link(m_lastLink));
   }
 
   switch (m_step) {
@@ -226,7 +228,8 @@ IterativeQueryController::makeLatestInterest()
     std::ostringstream oss;
     oss << *this;
     NDNS_LOG_WARN("unexpected state: " << oss.str());
-    throw std::runtime_error("call makeLatestInterest() unexpected: " + oss.str());
+    BOOST_THROW_EXCEPTION(std::runtime_error("call makeLatestInterest() unexpected: "
+                                             + oss.str()));
   }
 
   Interest interest = query.toInterest();

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -37,6 +37,7 @@ public:
   static const boost::filesystem::path TEST_DATABASE;
   static const Name TEST_IDENTITY_NAME;
   static const boost::filesystem::path TEST_CERT;
+  static const boost::filesystem::path TEST_DKEY_CERT;
 
   DbTestData();
 
@@ -60,10 +61,12 @@ public:
   std::vector<Rrset> m_rrsets;
   std::vector<Link>  m_links;
 
-  Zone m_root;
+  Zone m_test;
   Zone m_net;
   Zone m_ndnsim;
   DbMgr m_session;
+  Identity m_identity;
+  Certificate m_cert;
 };
 
 } // namespace tests

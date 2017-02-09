@@ -11,15 +11,15 @@ The following keys are currently pre-configured:
 $ HOME=tests/unit/mgmt ndnsec-ls-identity -C
   /
   +->  /ksk-1416974006376
-       +->  /KEY/ksk-1416974006376/ID-CERT/%FD%00%00%01I%EA%3Bx%BD
+       +->  /KEY/ksk-1416974006376/CERT/%FD%00%00%01I%EA%3Bx%BD
   +->  /dsk-1416974006466
-       +->  /KEY/dsk-1416974006466/ID-CERT/%FD%00%00%01I%EA%3By%28
+       +->  /KEY/dsk-1416974006466/CERT/%FD%00%00%01I%EA%3By%28
 
   /ndns-test
   +->  /ndns-test/ksk-1416974006577
-       +->  /ndns-test/KEY/ksk-1416974006577/ID-CERT/%FD%00%00%01I%EA%3By%7F
+       +->  /ndns-test/KEY/ksk-1416974006577/CERT/%FD%00%00%01I%EA%3By%7F
   +->  /ndns-test/dsk-1416974006659
-       +->  /ndns-test/KEY/dsk-1416974006659/ID-CERT/%FD%00%00%01I%EA%3Bz%0E
+       +->  /ndns-test/KEY/dsk-1416974006659/CERT/%FD%00%00%01I%EA%3Bz%0E
 
 
 After keys are re-generated, the following actions need to be taken in ManagementTool test suite:

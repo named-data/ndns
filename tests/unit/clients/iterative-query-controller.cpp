@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -35,10 +35,10 @@ public:
   QueryControllerFixture()
     : producerFace(io, {false, true})
     , consumerFace(io, {true, true})
-    , validator(producerFace)
-    , top(m_root.getName(), m_certName, producerFace, m_session, m_keyChain, validator)
-    , net(m_net.getName(), m_certName, producerFace, m_session, m_keyChain, validator)
-    , ndnsim(m_ndnsim.getName(), m_certName, producerFace, m_session, m_keyChain, validator)
+    , validator(NdnsValidatorBuilder::create(producerFace))
+    , top(m_test.getName(), m_certName, producerFace, m_session, m_keyChain, *validator)
+    , net(m_net.getName(), m_certName, producerFace, m_session, m_keyChain, *validator)
+    , ndnsim(m_ndnsim.getName(), m_certName, producerFace, m_session, m_keyChain, *validator)
   {
     run();
     producerFace.onSendInterest.connect([this] (const Interest& interest) {
@@ -67,7 +67,7 @@ public:
   ndn::util::DummyClientFace producerFace;
   ndn::util::DummyClientFace consumerFace;
 
-  Validator validator;
+  unique_ptr<security::v2::Validator> validator;
   ndns::NameServer top;
   ndns::NameServer net;
   ndns::NameServer ndnsim;
@@ -124,9 +124,9 @@ BOOST_FIXTURE_TEST_CASE(Basic, QueryControllerFixture)
     BOOST_CHECK_EQUAL(interestRx[i].getName(), Name(interestNames[i]));
     // except for the first one, interest sent should has a Link object
     if (i > 0) {
-      BOOST_CHECK_EQUAL(interestRx[i].hasLink(), true);
-      if (interestRx[i].hasLink()) {
-        BOOST_CHECK_EQUAL(interestRx[i].getLink(), m_links[i - 1]);
+      BOOST_CHECK_EQUAL(!interestRx[i].getForwardingHint().empty(), true);
+      if (!interestRx[i].getForwardingHint().empty()) {
+        BOOST_CHECK_EQUAL(interestRx[i].getForwardingHint(), m_links[i - 1].getDelegationList());
       }
     }
   }

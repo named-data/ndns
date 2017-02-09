@@ -1,5 +1,5 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
+/*
  * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
@@ -64,7 +64,7 @@ public:
                   const name::Component& type,
                   const uint64_t version,
                   time::seconds ttl,
-                  const ndn::Link::DelegationSet& delegations);
+                  const ndn::DelegationList& delegations);
 
   Rrset
   generateTxtRrset(const Name& label,
@@ -84,7 +84,7 @@ public:
                     const name::Component& type,
                     const uint64_t version,
                     time::seconds ttl,
-                    const IdentityCertificate& cert);
+                    const ndn::security::v2::Certificate& cert);
 
   static std::vector<std::string>
   wireDecodeTxt(const Block& wire);

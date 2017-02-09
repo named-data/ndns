@@ -1,22 +1,64 @@
 rule
 {
-  id "NDNS Validator"
+  id "NDNS KEY signing rule"
   for data
+  filter
+  {
+    type name
+    regex ^([^<NDNS>]*)<NDNS><KEY><><><>$
+  }
   checker
   {
     type customized
-    sig-type rsa-sha256
+    sig-type ecdsa-sha256
     key-locator
     {
       type name
       hyper-relation
       {
-        k-regex ^(<>*)<KEY>(<>*)<><ID-CERT>$
+        k-regex ^([^<NDNS>]*)<NDNS>(<>*)<KEY><>$
         k-expand \\1\\2
-        h-relation @RELATION@ ; data is only allowed to be signed by the zone key
-        p-regex ^(<>*)[<KEY><NDNS>](<>*)<><>$
-        p-expand \\1\\2
+        h-relation is-prefix-of ; ksk should be signed by dkey in parent zone
+        p-regex ^([^<NDNS>]*)<NDNS><KEY><><><>$
+        p-expand \\1
       }
+      ; example1:
+      ; data: /ndn/ndnsim/NDNS/KEY/ksk-1/CERT/123
+      ; k-locator: /ndn/NDNS/ndnsim/KEY/dkey-1
+      ; example2:
+      ; data: /ndn/ndnsim/NDNS/KEY/dsk-1/CERT/123
+      ; k-locator: /ndn/ndnsim/NDNS/KEY/ksk-1
+    }
+  }
+}
+
+rule
+{
+  id "NDNS data signing rule"
+  for data
+  filter
+  {
+    type name
+    regex ^([^<NDNS>]*)<NDNS>(<>*)<><>$
+  }
+  checker
+  {
+    type customized
+    sig-type ecdsa-sha256
+    key-locator
+    {
+      type name
+      hyper-relation
+      {
+        k-regex ^([^<NDNS>]*)<NDNS><KEY><>$
+        k-expand \\1
+        h-relation equal; data should be signed by dsk
+        p-regex ^([^<NDNS>]*)<NDNS>(<>*)<><>$
+        p-expand \\1
+      }
+      ; example:
+      ; data: /ndn/ndnsim/NDNS/NS/CERT/123
+      ; k-locator: /ndn/ndnsim/NDNS/KEY/dsk-1
     }
   }
 }

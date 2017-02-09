@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -26,10 +26,13 @@
 #include "logger.hpp"
 #include "daemon/db-mgr.hpp"
 #include "util/util.hpp"
+#include "util/cert-helper.hpp"
 
 #include <ndn-cxx/security/key-chain.hpp>
+#include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/util/io.hpp>
+#include <ndn-cxx/util/regex.hpp>
 #include <ndn-cxx/encoding/block.hpp>
 #include <ndn-cxx/encoding/block-helpers.hpp>
 #include <boost/noncopyable.hpp>
@@ -52,7 +55,7 @@ public:
     : m_zone(zone)
     , m_interestLifetime(DEFAULT_INTEREST_LIFETIME)
     , m_face(face)
-    , m_validator(face)
+    , m_validator(NdnsValidatorBuilder::create(face))
     , m_update(update)
     , m_hasError(false)
   {
@@ -102,7 +105,7 @@ private:
     }
 
     NDNS_LOG_INFO("to verify the response");
-    m_validator.validate(data,
+    m_validator->validate(data,
                          bind(&NdnsUpdate::onDataValidated, this, _1),
                          bind(&NdnsUpdate::onDataValidationFailed, this, _1, _2)
                          );
@@ -154,14 +157,14 @@ private:
   }
 
   void
-  onDataValidated(const shared_ptr<const Data>& data)
+  onDataValidated(const Data& data)
   {
     NDNS_LOG_INFO("data pass verification");
     this->stop();
   }
 
   void
-  onDataValidationFailed(const shared_ptr<const Data>& data, const std::string& str)
+  onDataValidationFailed(const Data& data, const security::v2::ValidationError& str)
   {
     NDNS_LOG_INFO("data does not pass verification");
     m_hasError = true;
@@ -188,7 +191,7 @@ private:
   time::milliseconds m_interestLifetime;
 
   Face& m_face;
-  Validator m_validator;
+  unique_ptr<security::v2::Validator> m_validator;
   KeyChain m_keyChain;
 
   shared_ptr<Data> m_update;
@@ -288,12 +291,12 @@ main(int argc, char* argv[])
         // choosing the longest match of the identity who also have default certificate
         for (size_t i = name.size() + 1; i > 0; --i) { // i >=0 will present warnning
           Name tmp = name.getPrefix(i - 1);
-          if (keyChain.doesIdentityExist(tmp)) {
+          if (CertHelper::doesIdentityExist(keyChain, tmp)) {
             try {
-              certName = keyChain.getDefaultCertificateNameForIdentity(tmp);
+              certName = CertHelper::getDefaultCertificateNameOfIdentity(keyChain, tmp);
               break;
             }
-            catch (std::exception&) {
+            catch (const std::exception&) {
               // If it cannot get a default certificate from one identity,
               // just ignore this one try next identity.
               ;
@@ -304,12 +307,6 @@ main(int argc, char* argv[])
         if (certName.empty()) {
           std::cerr << "cannot figure out the certificate automatically. "
                     << "please set it with -c CERT_NAEME" << std::endl;
-          return 1;
-        }
-      }
-      else {
-        if (!keyChain.doesCertificateExist(certName)) {
-          std::cerr << "certificate: " << certName << " does not exist" << std::endl;
           return 1;
         }
       }
@@ -324,7 +321,7 @@ main(int argc, char* argv[])
       Response re;
       re.setZone(zone);
       re.setRrLabel(rrLabel);
-      name::Component qType = (rrType == "ID-CERT" ?
+      name::Component qType = (rrType == "CERT" ?
                                ndns::label::NDNS_CERT_QUERY : ndns::label::NDNS_ITERATIVE_QUERY);
 
       re.setQueryType(qType);
@@ -338,7 +335,7 @@ main(int argc, char* argv[])
       }
 
       update = re.toData();
-      keyChain.sign(*update, certName);
+      keyChain.sign(*update, security::signingByCertificate(certName));
     }
     else {
       try {
@@ -353,7 +350,7 @@ main(int argc, char* argv[])
 
       try {
         // must check the Data is a legal Response with right name
-        shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<KEY>(<>+)<ID-CERT><>*");
+        shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<KEY>(<>+)<CERT><>*");
         shared_ptr<Regex> regex2 = make_shared<Regex>("(<>*)<NDNS>(<>+)");
 
         Name zone2;
@@ -417,10 +414,6 @@ main(int argc, char* argv[])
       return 1;
     else
       return 0;
-  }
-  catch (const ndn::ValidatorConfig::Error& e) {
-    std::cerr << "Fail to create the validator: " << e.what() << std::endl;
-    return 1;
   }
   catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;

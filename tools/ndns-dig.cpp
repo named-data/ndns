@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -32,8 +32,10 @@
 #include <boost/filesystem.hpp>
 #include <boost/noncopyable.hpp>
 
+#include <iostream>
 #include <memory>
 #include <string>
+#include <fstream>
 
 NDNS_LOG_INIT("NdnsDig")
 
@@ -48,7 +50,7 @@ public:
     : m_dstLabel(dstLabel)
     , m_rrType(rrType)
     , m_interestLifetime(DEFAULT_INTEREST_LIFETIME)
-    , m_validator(m_face)
+    , m_validator(NdnsValidatorBuilder::create(m_face))
     , m_shouldValidateIntermediate(shouldValidateIntermediate)
     , m_hasError(false)
   {
@@ -57,7 +59,7 @@ public:
         (new IterativeQueryController(m_dstLabel, m_rrType, m_interestLifetime,
                                       bind(&NdnsDig::onSucceed, this, _1, _2),
                                       bind(&NdnsDig::onFail, this, _1, _2),
-                                      m_face, &m_validator));
+                                      m_face, m_validator.get()));
     else
       m_ctr = std::unique_ptr<IterativeQueryController>
         (new IterativeQueryController(m_dstLabel, m_rrType, m_interestLifetime,
@@ -78,7 +80,7 @@ public:
       m_ctr->start(); // non-block, may throw exception
       m_face.processEvents();
     }
-    catch (std::exception& e) {
+    catch (const std::exception& e) {
       std::cerr << "Error: " << e.what();
       m_hasError = true;
     }
@@ -116,7 +118,7 @@ private:
           NDNS_LOG_INFO("succeed to get the info from RR[" << i << "]"
                         "type=" << rr.type() << " content=" << msg);
         }
-        catch (std::exception& e) {
+        catch (const std::exception& e) {
           NDNS_LOG_INFO("error to get the info from RR[" << i << "]"
                         "type=" << rr.type());
         }
@@ -145,7 +147,7 @@ private:
     NDNS_LOG_INFO(response);
 
     NDNS_LOG_TRACE("to verify the response");
-    m_validator.validate(data,
+    m_validator->validate(data,
                          bind(&NdnsDig::onDataValidated, this, _1),
                          bind(&NdnsDig::onDataValidationFailed, this, _1, _2)
                          );
@@ -161,14 +163,14 @@ private:
   }
 
   void
-  onDataValidated(const shared_ptr<const Data>& data)
+  onDataValidated(const Data& data)
   {
     NDNS_LOG_INFO("final data pass verification");
     this->stop();
   }
 
   void
-  onDataValidationFailed(const shared_ptr<const Data>& data, const std::string& str)
+  onDataValidationFailed(const Data& data, const security::v2::ValidationError& err)
   {
     NDNS_LOG_INFO("final data does not pass verification");
     m_hasError = true;
@@ -203,7 +205,7 @@ private:
 
   Face m_face;
 
-  Validator m_validator;
+  unique_ptr<security::v2::Validator> m_validator;
   bool m_shouldValidateIntermediate;
   std::unique_ptr<QueryController> m_ctr;
 
@@ -318,10 +320,6 @@ main(int argc, char* argv[])
       return 1;
     else
       return 0;
-  }
-  catch (const ndn::ValidatorConfig::Error& e) {
-    std::cerr << "Fail to create the validator: " << e.what() << std::endl;
-    return 1;
   }
   catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;

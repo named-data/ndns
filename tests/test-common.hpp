@@ -1,15 +1,8 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016,  Regents of the University of California,
- *                           Arizona Board of Regents,
- *                           Colorado State University,
- *                           University Pierre & Marie Curie, Sorbonne University,
- *                           Washington University in St. Louis,
- *                           Beijing Institute of Technology,
- *                           The University of Memphis.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
- * This file is part of NDNS (Named Data Networking Domain Name Service) and is
- * based on the code written as part of NFD (Named Data Networking Daemon).
+ * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
  *
  * NDNS is free software: you can redistribute it and/or modify it under the terms
@@ -28,6 +21,9 @@
 #define NDNS_TESTS_TEST_COMMON_HPP
 
 #include "logger.hpp"
+#include "boost-test.hpp"
+#include "unit-test-common-fixtures.hpp"
+#include "identity-management-fixture.hpp"
 
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/data.hpp>
@@ -35,7 +31,7 @@
 #include <ndn-cxx/link.hpp>
 #include <ndn-cxx/lp/nack.hpp>
 #include <ndn-cxx/util/dummy-client-face.hpp>
-#include <ndn-cxx/security/key-chain.hpp>
+#include <ndn-cxx/security/signing-helpers.hpp>
 
 #include <boost/version.hpp>
 #include <boost/asio.hpp>
@@ -43,13 +39,14 @@
 
 #include <fstream>
 
-#include "boost-test.hpp"
-#include "unit-test-common-fixtures.hpp"
-#include "identity-management-fixture.hpp"
-
 namespace ndn {
 namespace ndns {
 namespace tests {
+
+using ndn::security::v2::KeyChain;
+using ndn::security::Identity;
+using ndn::security::pib::Key;
+using ndn::security::v2::Certificate;
 
 /** \brief create an Interest
  *  \param name Interest name
@@ -79,13 +76,6 @@ signData(shared_ptr<Data> data)
   signData(*data);
   return data;
 }
-
-/** \brief create a Link object with fake signature
- *  \note Link may be modified afterwards without losing the fake signature.
- *        If a real signature is desired, sign again with KeyChain.
- */
-shared_ptr<Link>
-makeLink(const Name& name, std::initializer_list<std::pair<uint32_t, Name>> delegations);
 
 /** \brief create a Nack
  *  \param name Interest name
@@ -123,4 +113,4 @@ setNameComponent(Packet& packet, ssize_t index, const A& ...a)
 } // namespace ndns
 } // namespace ndn
 
-#endif // NFD_TESTS_TEST_COMMON_HPP
+#endif // NDNS_TESTS_TEST_COMMON_HPP

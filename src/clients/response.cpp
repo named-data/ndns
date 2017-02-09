@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -39,7 +39,7 @@ Response::Response(const Name& zone, const name::Component& queryType)
 {
 }
 
-template<bool T>
+template<encoding::Tag T>
 inline size_t
 Response::wireEncode(EncodingImpl<T>& block) const
 {
@@ -180,8 +180,10 @@ Response::setAppContent(const Block& block)
 {
   if (block.type() != ndn::tlv::Content) {
     m_appContent = Block(ndn::tlv::Content, block);
-  } else
+  }
+  else {
     m_appContent = block;
+  }
 
   m_appContent.encode(); // this is a must
 }

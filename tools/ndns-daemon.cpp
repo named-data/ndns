@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2017, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -22,7 +22,10 @@
 #include "config.hpp"
 #include "daemon/config-file.hpp"
 #include "ndn-cxx/security/key-chain.hpp"
+#include "util/cert-helper.hpp"
+
 #include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -54,7 +57,7 @@ public:
       config.parse(configFile, false);
 
     }
-    catch (boost::filesystem::filesystem_error& e) {
+    catch (const boost::filesystem::filesystem_error& e) {
       if (e.code() == boost::system::errc::permission_denied) {
         NDNS_LOG_FATAL("Permissions denied for " << e.path1());
       }
@@ -75,7 +78,7 @@ public:
     using ndn::ndns::ConfigSection;
 
     if (section.begin() == section.end()) {
-      throw Error("zones section is empty");
+      BOOST_THROW_EXCEPTION(Error("zones section is empty"));
     }
 
     std::string dbFile = DEFAULT_DATABASE_PATH "/" "ndns.db";
@@ -92,7 +95,7 @@ public:
       validatorConfigFile = item->second.get_value<std::string>();
     }
     NDNS_LOG_INFO("ValidatorConfigFile = " << validatorConfigFile);
-    m_validator = unique_ptr<Validator>(new Validator(m_validatorFace, validatorConfigFile));
+    m_validator = NdnsValidatorBuilder::create(m_validatorFace, validatorConfigFile);
 
     for (const auto& option : section) {
       Name name;
@@ -103,34 +106,30 @@ public:
         }
         catch (const std::exception& e) {
           NDNS_LOG_ERROR("Required `name' attribute missing in `zone' section");
-          throw Error("Required `name' attribute missing in `zone' section");
+          BOOST_THROW_EXCEPTION(Error("Required `name' attribute missing in `zone' section"));
         }
         try {
           cert = option.second.get<Name>("cert");
         }
-        catch (std::exception&) {
+        catch (const std::exception&) {
           ;
-        }
-
-
-        if (!m_keyChain.doesIdentityExist(name)) {
-          NDNS_LOG_FATAL("Identity: " << name << " does not exist in the KeyChain");
-          throw Error("Identity does not exist in the KeyChain");
         }
 
         if (cert.empty()) {
           try {
-            cert = m_keyChain.getDefaultCertificateNameForIdentity(name);
+            cert = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain, Name(name).append(label::NDNS_ITERATIVE_QUERY));
           }
-          catch (std::exception& e) {
+          catch (const std::exception& e) {
             NDNS_LOG_FATAL("Identity: " << name << " does not have default certificate. "
                            << e.what());
-            throw Error("identity does not have default certificate");
+            BOOST_THROW_EXCEPTION(Error("identity does not have default certificate"));
           }
         }
         else {
-          if (!m_keyChain.doesCertificateExist(cert)) {
-            throw Error("Certificate `" + cert.toUri() + "` does not exist in the KeyChain");
+          try {
+            CertHelper::getCertificate(m_keyChain, name, cert);
+          } catch (const std::exception& e) {
+            BOOST_THROW_EXCEPTION(Error("Certificate `" + cert.toUri() + "` does not exist in the KeyChain"));
           }
         }
         NDNS_LOG_TRACE("name = " << name << " cert = " << cert);
@@ -143,7 +142,7 @@ public:
 private:
   Face& m_face;
   Face& m_validatorFace;
-  unique_ptr<Validator> m_validator;
+  unique_ptr<security::v2::Validator> m_validator;
   unique_ptr<DbMgr> m_dbMgr;
   std::vector<shared_ptr<NameServer>> m_servers;
   KeyChain m_keyChain;
@@ -211,13 +210,13 @@ main(int argc, char* argv[])
     // the validator cannot be forwarded to the name server itself
     // For current, two faces are used here.
 
-    // refs: http://redmine.named-data.net/issues/2206
+    // refs: https://redmine.named-data.net/issues/2206
     // @TODO enhance validator to get the certificate from the local db if it has
 
     NdnsDaemon daemon(configFile, face, validatorFace);
     face.processEvents();
   }
-  catch (std::exception& e) {
+  catch (const std::exception& e) {
     NDNS_LOG_FATAL("ERROR: " << e.what());
     return 1;
   }
