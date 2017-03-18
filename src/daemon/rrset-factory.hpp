@@ -61,27 +61,23 @@ public:
 
   Rrset
   generateNsRrset(const Name& label,
-                  const name::Component& type,
                   const uint64_t version,
                   time::seconds ttl,
                   const ndn::DelegationList& delegations);
 
   Rrset
   generateTxtRrset(const Name& label,
-                   const name::Component& type,
                    const uint64_t version,
                    time::seconds ttl,
                    const std::vector<std::string>& contents);
 
   Rrset
   generateAuthRrset(const Name& label,
-                    const name::Component& type,
                     const uint64_t version,
                     time::seconds ttl);
 
   Rrset
   generateCertRrset(const Name& label,
-                    const name::Component& type,
                     const uint64_t version,
                     time::seconds ttl,
                     const ndn::security::v2::Certificate& cert);

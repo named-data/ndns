@@ -559,13 +559,13 @@ BOOST_AUTO_TEST_CASE(AddRrset)
 
   RrsetFactory rf(TEST_DATABASE, zoneName, m_keyChain, DEFAULT_CERT);
   rf.checkZoneKey();
-  Rrset rrset1 = rf.generateNsRrset("/l1", label::NS_RR_TYPE, 7654, ttl2, DelegationList());
+  Rrset rrset1 = rf.generateNsRrset("/l1", 7654, ttl2, DelegationList());
 
   BOOST_CHECK_NO_THROW(m_tool.addRrset(rrset1));
   Rrset rrset2 = findRrSet(zone, "/l1", label::NS_RR_TYPE);
   BOOST_CHECK_EQUAL(rrset1, rrset2);
 
-  Rrset rrset3 = rf.generateNsRrset("/l1/l2/l3", label::NS_RR_TYPE, 7654, ttl2, DelegationList());
+  Rrset rrset3 = rf.generateNsRrset("/l1/l2/l3", 7654, ttl2, DelegationList());
   BOOST_CHECK_THROW(m_tool.addRrset(rrset3), ndns::ManagementTool::Error);
 }
 
@@ -592,7 +592,7 @@ BOOST_AUTO_TEST_CASE(AddMultiLevelLabelRrset)
 
   Name labelName("/l1/l2/l3");
 
-  Rrset rrset1 = rf.generateNsRrset(labelName, label::NS_RR_TYPE, 7654, ttl, DelegationList());
+  Rrset rrset1 = rf.generateNsRrset(labelName, 7654, ttl, DelegationList());
 
   //add NS NDNS_AUTH and check user-defined ttl
   BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(rrset1, rf, ttl));
@@ -603,7 +603,7 @@ BOOST_AUTO_TEST_CASE(AddMultiLevelLabelRrset)
   checkRrset("/l1/l2", label::NS_RR_TYPE, ndns::NDNS_AUTH);
 
   // insert a same-name rrset with TXT type
-  Rrset txtRr = rf.generateTxtRrset("/l1/l2/l3", label::TXT_RR_TYPE, 7654, ttl, std::vector<std::string>());
+  Rrset txtRr = rf.generateTxtRrset("/l1/l2/l3", 7654, ttl, std::vector<std::string>());
   BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(txtRr, rf, ttl));
 
   checkRrset("/l1", label::NS_RR_TYPE, ndns::NDNS_AUTH);
@@ -613,28 +613,28 @@ BOOST_AUTO_TEST_CASE(AddMultiLevelLabelRrset)
   checkRrset("/l1/l2/l3", label::NS_RR_TYPE, ndns::NDNS_LINK);
 
   // insert a shorter NS, when there are longer NS or TXT
-  Rrset shorterNs = rf.generateNsRrset("/l1/l2", label::NS_RR_TYPE, 7654, ttl, DelegationList());
+  Rrset shorterNs = rf.generateNsRrset("/l1/l2", 7654, ttl, DelegationList());
   BOOST_CHECK_THROW(m_tool.addMultiLevelLabelRrset(shorterNs, rf, ttl),
                     ndns::ManagementTool::Error);
 
   // insert a longer NS, when there is already a shorter NS
-  Rrset longerNs = rf.generateNsRrset("/l1/l2/l3/l4", label::NS_RR_TYPE, 7654, ttl, DelegationList());
+  Rrset longerNs = rf.generateNsRrset("/l1/l2/l3/l4", 7654, ttl, DelegationList());
   BOOST_CHECK_THROW(m_tool.addMultiLevelLabelRrset(longerNs, rf, ttl),
                     ndns::ManagementTool::Error);
 
   // insert a smaller TXT, when there are longer NS and TXT
-  Rrset shorterTxt = rf.generateTxtRrset("/l1/l2", label::TXT_RR_TYPE, 7654, ttl, std::vector<std::string>());
+  Rrset shorterTxt = rf.generateTxtRrset("/l1/l2", 7654, ttl, std::vector<std::string>());
   BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(shorterTxt, rf, ttl));
 
   // insert a smaller NS, when there is long TXT
-  Rrset longTxt = rf.generateTxtRrset("/k1/k2/k3", label::TXT_RR_TYPE, 7654, ttl, std::vector<std::string>());
-  Rrset smallerNs = rf.generateNsRrset("/k1/k2", label::NS_RR_TYPE, 7654, ttl, DelegationList());
+  Rrset longTxt = rf.generateTxtRrset("/k1/k2/k3", 7654, ttl, std::vector<std::string>());
+  Rrset smallerNs = rf.generateNsRrset("/k1/k2", 7654, ttl, DelegationList());
   BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(longTxt, rf, ttl));
   BOOST_CHECK_THROW(m_tool.addMultiLevelLabelRrset(smallerNs, rf, ttl),
                     ndns::ManagementTool::Error);
 
   // inserting a longer TXT, when there is shoter TXT
-  Rrset longerTxt = rf.generateTxtRrset("/k1/k2/k3/k4", label::TXT_RR_TYPE, 7654, ttl, std::vector<std::string>());
+  Rrset longerTxt = rf.generateTxtRrset("/k1/k2/k3/k4", 7654, ttl, std::vector<std::string>());
   BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(longerTxt, rf, ttl));
 }
 
@@ -735,21 +735,21 @@ BOOST_AUTO_TEST_CASE(AddRrSetVersionControl)
   RrsetFactory rf(TEST_DATABASE, zoneName, m_keyChain, DEFAULT_CERT);
   rf.checkZoneKey();
 
-  Rrset rrset1 = rf.generateTxtRrset(label, label::NS_RR_TYPE, version, ttl, {});
+  Rrset rrset1 = rf.generateTxtRrset(label, version, ttl, {});
 
   m_tool.addRrset(rrset1);
   // throw error when adding duplicated rrset with the same version
   BOOST_CHECK_THROW(m_tool.addRrset(rrset1),
                     ndns::ManagementTool::Error);
   version--;
-  Rrset rrset2 = rf.generateTxtRrset(label, label::NS_RR_TYPE, version, ttl, {});
+  Rrset rrset2 = rf.generateTxtRrset(label, version, ttl, {});
   // throw error when adding duplicated rrset with older version
   BOOST_CHECK_THROW(m_tool.addRrset(rrset2),
                     ndns::ManagementTool::Error);
 
   version++;
   version++;
-  Rrset rrset3 = rf.generateTxtRrset(label, label::NS_RR_TYPE, version, ttl, {});
+  Rrset rrset3 = rf.generateTxtRrset(label, version, ttl, {});
   BOOST_CHECK_NO_THROW(m_tool.addRrset(rrset3));
 
   Zone zone(zoneName);
@@ -757,7 +757,7 @@ BOOST_AUTO_TEST_CASE(AddRrSetVersionControl)
   Rrset rrset;
   rrset.setZone(&zone);
   rrset.setLabel(label);
-  rrset.setType(label::NS_RR_TYPE);
+  rrset.setType(label::TXT_RR_TYPE);
   m_dbMgr.find(rrset);
 
   BOOST_CHECK_EQUAL(rrset.getVersion(), name::Component::fromVersion(version));
@@ -838,11 +838,11 @@ BOOST_AUTO_TEST_CASE(ListZone)
   del.preference = 10;
   del.name = Name("/get/link");
   DelegationList ds = {del};
-  Rrset rrset1 = rf.generateNsRrset("/label1", label::NS_RR_TYPE, 100, DEFAULT_RR_TTL, ds);
+  Rrset rrset1 = rf.generateNsRrset("/label1", 100, DEFAULT_RR_TTL, ds);
   m_tool.addRrset(rrset1);
 
   // Add NS with NDNS_AUTH
-  Rrset rrset2 = rf.generateAuthRrset("/label2", label::NS_RR_TYPE, 100000, DEFAULT_RR_TTL);
+  Rrset rrset2 = rf.generateAuthRrset("/label2", 100000, DEFAULT_RR_TTL);
   m_tool.addRrset(rrset2);
 
   // Add TXT from file
@@ -863,7 +863,7 @@ BOOST_AUTO_TEST_CASE(ListZone)
   m_tool.addRrsetFromFile("/ndns-test", output);
 
   // Add TXT in normal way
-  Rrset rrset3 = rf.generateTxtRrset("/label3", label::TXT_RR_TYPE, 3333, DEFAULT_RR_TTL, {"Hello", "World"});
+  Rrset rrset3 = rf.generateTxtRrset("/label3", 3333, DEFAULT_RR_TTL, {"Hello", "World"});
   m_tool.addRrset(rrset3);
 
   m_tool.listZone("/ndns-test", std::cout, true);
@@ -920,7 +920,7 @@ BOOST_FIXTURE_TEST_CASE(GetRrSet, ManagementToolFixture)
   m_tool.createZone(zoneName, ROOT_ZONE, time::seconds(1), time::days(1), otherKsk, otherDsk);
   RrsetFactory rf(TEST_DATABASE, zoneName, m_keyChain, DEFAULT_CERT);
   rf.checkZoneKey();
-  Rrset rrset1 = rf.generateTxtRrset("/label", label::TXT_RR_TYPE, 100, DEFAULT_RR_TTL, {"Value1", "Value2"});
+  Rrset rrset1 = rf.generateTxtRrset("/label", 100, DEFAULT_RR_TTL, {"Value1", "Value2"});
 
   m_tool.addRrset(rrset1);
 
@@ -947,12 +947,12 @@ BOOST_FIXTURE_TEST_CASE(RemoveRrSet, ManagementToolFixture)
   RrsetFactory rf(TEST_DATABASE, zoneName, m_keyChain, DEFAULT_CERT);
   rf.checkZoneKey();
 
-  Rrset rrset1 = rf.generateTxtRrset("/label", label::NS_RR_TYPE, 100, DEFAULT_RR_TTL, {});
+  Rrset rrset1 = rf.generateTxtRrset("/label", 100, DEFAULT_RR_TTL, {});
 
   BOOST_CHECK_NO_THROW(m_tool.addRrset(rrset1));
 
   Zone zone(zoneName);
-  BOOST_CHECK_NO_THROW(findRrSet(zone, "/label", label::NS_RR_TYPE));
+  BOOST_CHECK_NO_THROW(findRrSet(zone, "/label", label::TXT_RR_TYPE));
 
   BOOST_CHECK_NO_THROW(m_tool.removeRrSet(zoneName, "/label", label::NS_RR_TYPE));
 

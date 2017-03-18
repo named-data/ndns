@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE(GenerateNsRrset)
 
   // rf without checkZoneKey: throw.
   ndn::DelegationList delegations;
-  BOOST_CHECK_THROW(rf.generateNsRrset(label, type, version, ttl, delegations),
+  BOOST_CHECK_THROW(rf.generateNsRrset(label, version, ttl, delegations),
                     ndns::RrsetFactory::Error);
   rf.checkZoneKey();
 
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(GenerateNsRrset)
     delegations.insert(i, name);
   }
 
-  Rrset rrset = rf.generateNsRrset(label, type, version, ttl, delegations);
+  Rrset rrset = rf.generateNsRrset(label, version, ttl, delegations);
 
   BOOST_CHECK_EQUAL(rrset.getId(), 0);
   BOOST_REQUIRE(rrset.getZone() != nullptr);
@@ -150,17 +150,17 @@ BOOST_AUTO_TEST_CASE(GenerateTxtRrset)
   RrsetFactory rf(TEST_DATABASE2, m_zoneName, m_keyChain, m_certName);
 
   // rf without checkZoneKey: throw.
-  BOOST_CHECK_THROW(rf.generateTxtRrset(label, type, version, ttl, txts),
+  BOOST_CHECK_THROW(rf.generateTxtRrset(label, version, ttl, txts),
                     ndns::RrsetFactory::Error);
   rf.checkZoneKey();
-  BOOST_CHECK_NO_THROW(rf.generateTxtRrset(label, type, version, ttl, txts));
+  BOOST_CHECK_NO_THROW(rf.generateTxtRrset(label, version, ttl, txts));
   rf.checkZoneKey();
 
   for (int i = 1; i <= 4; i++) {
     txts.push_back(std::to_string(i));
   }
 
-  Rrset rrset = rf.generateTxtRrset(label, type, version, ttl, txts);
+  Rrset rrset = rf.generateTxtRrset(label, version, ttl, txts);
 
   BOOST_CHECK_EQUAL(rrset.getId(), 0);
   BOOST_CHECK_EQUAL(*rrset.getZone(), zone);

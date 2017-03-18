@@ -188,11 +188,11 @@ main(int argc, char* argv[])
           delegations.insert(priority, Name(data[1]));
         }
 
-        rrset = rrsetFactory.generateNsRrset(label, type,
+        rrset = rrsetFactory.generateNsRrset(label,
                                              version, ttl, delegations);
       }
       else if (type == label::TXT_RR_TYPE) {
-        rrset = rrsetFactory.generateTxtRrset(label, type,
+        rrset = rrsetFactory.generateTxtRrset(label,
                                               version, ttl, content);
       }
 

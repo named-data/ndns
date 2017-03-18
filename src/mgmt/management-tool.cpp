@@ -284,7 +284,7 @@ ManagementTool::addMultiLevelLabelRrset(Rrset& rrset,
       continue;
     }
 
-    Rrset authRr = zoneRrFactory.generateAuthRrset(prefix, label::NS_RR_TYPE,
+    Rrset authRr = zoneRrFactory.generateAuthRrset(prefix,
                                                    VERSION_USE_UNIX_TIMESTAMP, authTtl);
     NDNS_LOG_INFO("Adding NDNS_AUTH " << authRr);
     m_dbMgr.insert(authRr);
