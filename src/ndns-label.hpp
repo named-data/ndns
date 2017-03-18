@@ -60,9 +60,14 @@ const name::Component NDNS_UPDATE_LABEL("UPDATE");
 const name::Component NS_RR_TYPE("NS");
 
 /**
- * @brief CERT resource record type
+ * @brief ndns related certificate resource record type
  */
 const name::Component CERT_RR_TYPE("CERT");
+
+/**
+ * @brief application stored certificate resource record type
+ */
+const name::Component APPCERT_RR_TYPE("APPCERT");
 
 /**
  * @brief TXT resource record type
