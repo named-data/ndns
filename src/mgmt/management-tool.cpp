@@ -67,7 +67,7 @@ ManagementTool::createZone(const Name& zoneName,
                            const Name& dkeyCertName)
 {
   bool isRoot = zoneName == ROOT_ZONE;
-  Name zoneIdentityName = Name(zoneName).append(label::NDNS_CERT_QUERY);
+  Name zoneIdentityName = Name(zoneName).append(label::NDNS_ITERATIVE_QUERY);
 
   //check preconditions
   Zone zone(zoneName, cacheTtl);
@@ -103,7 +103,7 @@ ManagementTool::createZone(const Name& zoneName,
   // This D-key will be passed to parent zone and resigned.
   Name dkeyIdentityName;
   if (dkeyCertName == DEFAULT_CERT) {
-    dkeyIdentityName = Name(parentZoneName).append(label::NDNS_CERT_QUERY)
+    dkeyIdentityName = Name(parentZoneName).append(label::NDNS_ITERATIVE_QUERY)
       .append(zoneName.getSubName(parentZoneName.size()));
   }
   else {
@@ -220,7 +220,7 @@ ManagementTool::exportCertificate(const Name& certName, const std::string& outFi
   }
 
   Name zoneName = regex->expand("\\1");
-  Name identityName = Name(zoneName).append(label::NDNS_CERT_QUERY);
+  Name identityName = Name(zoneName).append(label::NDNS_ITERATIVE_QUERY);
   Name label = regex->expand("\\2");
 
   Zone zone(zoneName);
@@ -326,7 +326,7 @@ ManagementTool::addRrsetFromFile(const Name& zoneName,
 {
   //check precondition
   Zone zone(zoneName);
-  Name zoneIdentityName = Name(zoneName).append(label::NDNS_CERT_QUERY);
+  Name zoneIdentityName = Name(zoneName).append(label::NDNS_ITERATIVE_QUERY);
   if (!m_dbMgr.find(zone)) {
     BOOST_THROW_EXCEPTION(Error(zoneName.toUri() + " is not presented in the NDNS db"));
   }
@@ -528,7 +528,7 @@ ManagementTool::listAllZones(std::ostream& os) {
     os.setf(os.left);
     os.width(nameWidth + 2);
     os << zone.getName().toUri();
-    Name zoneIdentity = Name(zone.getName()).append(label::NDNS_CERT_QUERY);
+    Name zoneIdentity = Name(zone.getName()).append(label::NDNS_ITERATIVE_QUERY);
 
     os << "; default-ttl=" << zone.getTtl().count();
     os << " default-key=" << CertHelper::getDefaultKeyNameOfIdentity(m_keyChain, zoneIdentity);

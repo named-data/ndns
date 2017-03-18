@@ -64,7 +64,7 @@ Query::fromInterest(const Name& zone, const Interest& interest)
 Interest
 Query::toInterest() const
 {
-  // <zone> [<KEY>|<NDNS>|<NDNS-R>] <rrLabel> <rrType>
+  // <zone> [<NDNS>|<NDNS-R>] <rrLabel> <rrType>
   Name name;
 
   name.append(this->m_zone)

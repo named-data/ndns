@@ -44,11 +44,6 @@ const name::Component NDNS_ITERATIVE_QUERY("NDNS");
 // it is not supported now
 // const name::Component NDNS_RECURSIVE_QUERY("NDNS-R");
 
-/**
- * @brief NDNS CERT query type
- */
-const name::Component NDNS_CERT_QUERY("NDNS");
-
 /////////////////////////////////////////////
 
 /**

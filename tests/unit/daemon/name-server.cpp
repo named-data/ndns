@@ -90,7 +90,6 @@ BOOST_AUTO_TEST_CASE(NdnsQuery)
 BOOST_AUTO_TEST_CASE(KeyQuery)
 {
   Query q(zone, ndns::label::NDNS_ITERATIVE_QUERY);
-  q.setQueryType(ndns::label::NDNS_CERT_QUERY);
   q.setRrType(ndns::label::CERT_RR_TYPE);
 
   size_t nDataBack = 0;

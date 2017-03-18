@@ -214,13 +214,7 @@ IterativeQueryController::makeLatestInterest()
     query.setRrType(label::NS_RR_TYPE);
     break;
   case QUERY_STEP_QUERY_RR:
-    if (m_rrType == label::CERT_RR_TYPE) {
-      // this only works for dsk, and ksk needs different mechanism
-      query.setQueryType(label::NDNS_CERT_QUERY);
-    }
-    else {
-      query.setQueryType(label::NDNS_ITERATIVE_QUERY);
-    }
+    query.setQueryType(label::NDNS_ITERATIVE_QUERY);
     query.setRrLabel(m_dstLabel.getSubName(m_nFinishedComps));
     query.setRrType(m_rrType);
     break;

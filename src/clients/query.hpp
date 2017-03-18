@@ -34,7 +34,7 @@ namespace ndns {
  *
  * Query is an Interest whose name follows the format:
  *
- *      <zone> [<KEY>|<NDNS>|<NDNS-R>] <rrLabel> <rrType>
+ *      <zone> [<NDNS>|<NDNS-R>] <rrLabel> <rrType>
  */
 class Query : noncopyable
 {

@@ -319,7 +319,7 @@ BOOST_AUTO_TEST_CASE(CreateDeleteChildFixture)
   Name zoneName = Name(parentZoneName).append("child-zone");
 
   Zone zone1(zoneName);
-  Name zoneIdentityName = Name(zoneName).append(label::NDNS_CERT_QUERY);
+  Name zoneIdentityName = Name(zoneName).append(label::NDNS_ITERATIVE_QUERY);
   BOOST_REQUIRE_EQUAL(m_dbMgr.find(zone1), false);
 
   // will generate keys automatically
@@ -351,7 +351,7 @@ BOOST_AUTO_TEST_CASE(CreateZoneWithFixture)
 {
   Name parentZoneName("/ndns-test");
   Name zoneName = Name(parentZoneName).append("child-zone");
-  Name zoneIdentityName = Name(zoneName).append(label::NDNS_CERT_QUERY);
+  Name zoneIdentityName = Name(zoneName).append(label::NDNS_ITERATIVE_QUERY);
 
   m_tool.createZone(zoneName, parentZoneName, time::seconds(4200), time::days(30));
   BOOST_CHECK_EQUAL(CertHelper::doesIdentityExist(m_keyChain, zoneIdentityName), true);
@@ -665,7 +665,7 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCert)
 {
   Name parentZoneName("/ndns-test");
   Name zoneName("/ndns-test/child-zone");
-  Name zoneIdentityName = Name(zoneName).append(label::NDNS_CERT_QUERY);
+  Name zoneIdentityName = Name(zoneName).append(label::NDNS_ITERATIVE_QUERY);
 
   m_tool.createZone(parentZoneName, ROOT_ZONE, time::seconds(1), time::days(1), otherKsk, otherDsk);
   m_tool.createZone(zoneName, parentZoneName);
@@ -686,9 +686,9 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCertUserProvidedCert)
 {
   //check using user provided certificate
   Name parentZoneName("/ndns-test");
-  Name parentZoneIdentityName = Name(parentZoneName).append(label::NDNS_CERT_QUERY);
+  Name parentZoneIdentityName = Name(parentZoneName).append(label::NDNS_ITERATIVE_QUERY);
   Name zoneName("/ndns-test/child-zone");
-  Name zoneIdentityName = Name(zoneName).append(label::NDNS_CERT_QUERY);
+  Name zoneIdentityName = Name(zoneName).append(label::NDNS_ITERATIVE_QUERY);
 
   // Name dskName = m_keyChain.generateRsaKeyPair(parentZoneName, false);
   Identity id = CertHelper::getIdentity(m_keyChain, parentZoneIdentityName);
@@ -775,6 +775,8 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCertFormat)
 
   Certificate cert(findDkeyFromDb(zoneName));
   std::string output = TEST_CERTDIR.string() + "/a.cert";
+
+  Name parentZoneIdentityName = Name(parentZoneName).append(label::NDNS_ITERATIVE_QUERY);
 
   // base64
   ndn::io::save(cert, output, ndn::io::BASE64);

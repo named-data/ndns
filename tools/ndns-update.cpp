@@ -321,8 +321,7 @@ main(int argc, char* argv[])
       Response re;
       re.setZone(zone);
       re.setRrLabel(rrLabel);
-      name::Component qType = (rrType == "CERT" ?
-                               ndns::label::NDNS_CERT_QUERY : ndns::label::NDNS_ITERATIVE_QUERY);
+      name::Component qType = ndns::label::NDNS_ITERATIVE_QUERY;
 
       re.setQueryType(qType);
       re.setRrType(name::Component(rrType));
@@ -350,7 +349,7 @@ main(int argc, char* argv[])
 
       try {
         // must check the Data is a legal Response with right name
-        shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<KEY>(<>+)<CERT><>*");
+        shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<NDNS>(<>+)<CERT><>*");
         shared_ptr<Regex> regex2 = make_shared<Regex>("(<>*)<NDNS>(<>+)");
 
         Name zone2;

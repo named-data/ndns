@@ -186,7 +186,7 @@ BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
   dataName = Name();
   dataName
     .append(m_testId2)
-    .append("KEY")
+    .append("NDNS")
     .append("rrLabel")
     .append("CERT")
     .appendVersion();

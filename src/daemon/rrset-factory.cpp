@@ -40,7 +40,7 @@ RrsetFactory::RrsetFactory(const boost::filesystem::path& dbFile,
   , m_dskCertName(inputDskCertName)
   , m_checked(false)
 {
-  Name identityName = Name(zoneName).append(label::NDNS_CERT_QUERY);
+  Name identityName = Name(zoneName).append(label::NDNS_ITERATIVE_QUERY);
   if (m_dskCertName == DEFAULT_CERT) {
     m_dskName = CertHelper::getDefaultKeyNameOfIdentity(m_keyChain, identityName);
     m_dskCertName = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain, identityName);
@@ -51,7 +51,7 @@ void
 RrsetFactory::checkZoneKey()
 {
   onlyCheckZone();
-  Name zoneIdentityName = Name(m_zone.getName()).append(label::NDNS_CERT_QUERY);
+  Name zoneIdentityName = Name(m_zone.getName()).append(label::NDNS_ITERATIVE_QUERY);
   if (m_dskCertName != DEFAULT_CERT &&
       !matchCertificate(m_dskCertName, zoneIdentityName)) {
     BOOST_THROW_EXCEPTION(Error("Cannot verify certificate"));
@@ -86,17 +86,9 @@ RrsetFactory::generateBaseRrset(const Name& label,
   rrset.setType(type);
   rrset.setTtl(ttl);
 
-  name::Component qType;
-  if (type == label::CERT_RR_TYPE) {
-    qType = label::NDNS_CERT_QUERY;
-  }
-  else {
-    qType = label::NDNS_ITERATIVE_QUERY;
-  }
-
   Name name;
   name.append(m_zone.getName())
-      .append(qType)
+      .append(label::NDNS_ITERATIVE_QUERY)
       .append(label)
       .append(type);
 
