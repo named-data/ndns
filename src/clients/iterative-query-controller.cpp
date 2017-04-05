@@ -32,12 +32,14 @@ IterativeQueryController::IterativeQueryController(const Name& dstLabel,
                                                    const QuerySucceedCallback& onSucceed,
                                                    const QueryFailCallback& onFail,
                                                    Face& face,
-                                                   security::v2::Validator* validator)
+                                                   security::v2::Validator* validator,
+                                                   ndn::InMemoryStorage* cache)
   : QueryController(dstLabel, rrType, interestLifetime, onSucceed, onFail, face)
   , m_validator(validator)
   , m_step(QUERY_STEP_QUERY_NS)
   , m_nFinishedComps(0)
   , m_nTryComps(1)
+  , m_nsCache(cache)
 {
 }
 
@@ -83,6 +85,10 @@ IterativeQueryController::onData(const ndn::Interest& interest, const Data& data
 void
 IterativeQueryController::onDataValidated(const Data& data, NdnsContentType contentType)
 {
+  if (m_nsCache != nullptr && contentType == NDNS_LINK) {
+    m_nsCache->insert(data);
+  }
+
   switch (m_step) {
   case QUERY_STEP_QUERY_NS:
     if (contentType == NDNS_NACK) {
@@ -174,6 +180,16 @@ IterativeQueryController::start()
 void
 IterativeQueryController::express(const Interest& interest)
 {
+  if (m_nsCache != nullptr) {
+    shared_ptr<const Data> cachedData = m_nsCache->find(interest);
+    if (cachedData != nullptr) {
+      NDNS_LOG_DEBUG("[* cached *] NS record has been cached before: "
+                     << interest.getName());
+      onData(interest, *cachedData);
+      return ;
+    }
+  }
+
   NDNS_LOG_DEBUG("[* <- *] send a Query: " << interest.getName());
   m_face.expressInterest(interest,
                          bind(&IterativeQueryController::onData, this, _1, _2),

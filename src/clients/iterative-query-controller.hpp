@@ -33,6 +33,7 @@
 #include <ndn-cxx/interest.hpp>
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/link.hpp>
+#include <ndn-cxx/ims/in-memory-storage.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -61,7 +62,8 @@ public:
   IterativeQueryController(const Name& dstLabel, const name::Component& rrType,
                            const time::milliseconds& interestLifetime,
                            const QuerySucceedCallback& onSucceed, const QueryFailCallback& onFail,
-                           Face& face, security::v2::Validator* validator = nullptr);
+                           Face& face, security::v2::Validator* validator = nullptr,
+                           ndn::InMemoryStorage* cache = nullptr);
 
   virtual void
   start();
@@ -149,6 +151,7 @@ protected:
 
 private:
   Block m_lastLink;
+  ndn::InMemoryStorage* m_nsCache;
 };
 
 std::ostream&
