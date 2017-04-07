@@ -23,7 +23,7 @@
 #include "daemon/db-mgr.hpp"
 #include "clients/response.hpp"
 #include "clients/query.hpp"
-#include "validator.hpp"
+#include "validator/validator.hpp"
 
 #include "test-common.hpp"
 

@@ -17,7 +17,7 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "validator.hpp"
+#include "validator/validator.hpp"
 
 #include "test-common.hpp"
 #include "util/cert-helper.hpp"

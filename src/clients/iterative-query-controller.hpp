@@ -26,7 +26,7 @@
 #include "query-controller.hpp"
 #include "config.hpp"
 #include "common.hpp"
-#include "validator.hpp"
+#include "validator/validator.hpp"
 
 #include <ndn-cxx/common.hpp>
 #include <ndn-cxx/data.hpp>

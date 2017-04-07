@@ -17,8 +17,8 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NDNS_VALIDATOR_HPP
-#define NDNS_VALIDATOR_HPP
+#ifndef NDNS_VALIDATOR_VALIDATOR_HPP
+#define NDNS_VALIDATOR_VALIDATOR_HPP
 
 #include "config.hpp"
 
@@ -40,4 +40,4 @@ public:
 } // namespace ndns
 } // namespace ndn
 
-#endif // NDNS_VALIDATOR_HPP
+#endif // NDNS_VALIDATOR_VALIDATOR_HPP

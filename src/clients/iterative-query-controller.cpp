@@ -18,7 +18,6 @@
  */
 
 #include "iterative-query-controller.hpp"
-#include "validator.hpp"
 #include "logger.hpp"
 #include <iostream>
 

@@ -25,7 +25,7 @@
 #include "db-mgr.hpp"
 #include "ndns-label.hpp"
 #include "ndns-tlv.hpp"
-#include "validator.hpp"
+#include "validator/validator.hpp"
 #include "common.hpp"
 
 #include <ndn-cxx/security/key-chain.hpp>

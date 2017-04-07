@@ -26,6 +26,8 @@
 #include <boost/filesystem.hpp>
 #include <string>
 
+NDNS_LOG_INIT("NdnsCreateZone")
+
 int
 main(int argc, char* argv[])
 {
@@ -131,7 +133,7 @@ main(int argc, char* argv[])
     ndn::ndns::ManagementTool tool(db, keyChain);
     ndn::ndns::Zone createdZone = tool.createZone(zone, parent, cacheTtl, certTtl, ksk, dsk, dkey);
     ndn::security::v2::Certificate dkeyCert = tool.getZoneDkey(createdZone);
-    std::cout << "Generated DKEY " << dkeyCert.getName() << std::endl;
+    NDNS_LOG_INFO("Generated DKEY " << dkeyCert.getName());
     ndn::io::save(dkeyCert, std::cout);
   }
   catch (const std::exception& ex) {

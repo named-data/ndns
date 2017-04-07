@@ -20,7 +20,7 @@
 #include "clients/response.hpp"
 #include "clients/query.hpp"
 #include "ndns-label.hpp"
-#include "validator.hpp"
+#include "validator/validator.hpp"
 #include "ndns-enum.hpp"
 #include "ndns-tlv.hpp"
 #include "logger.hpp"

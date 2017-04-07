@@ -22,7 +22,7 @@
 #include "clients/response.hpp"
 #include "clients/query.hpp"
 #include "clients/iterative-query-controller.hpp"
-#include "validator.hpp"
+#include "validator/validator.hpp"
 #include "util/util.hpp"
 
 #include <ndn-cxx/security/key-chain.hpp>
