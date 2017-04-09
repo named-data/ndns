@@ -115,17 +115,12 @@ IterativeQueryController::onDataValidated(const Data& data, NdnsContentType cont
     else if (contentType == NDNS_AUTH) {
       m_nTryComps += 1;
     }
-    else if (contentType == NDNS_BLOB) {
-      std::ostringstream oss;
-      oss << *this;
-      NDNS_LOG_WARN("get unexpected Response: NDNS_BLOB for QUERY_NS: " << oss.str());
-    }
     else {
       std::ostringstream oss;
       oss << *this;
       NDNS_LOG_WARN("get unexpected Response for QUERY_NS: " << oss.str());
     }
-    //
+
     if (m_nFinishedComps + m_nTryComps > m_dstLabel.size()) {
       if (m_rrType == label::NS_RR_TYPE) {
         m_step = QUERY_STEP_ANSWER_STUB;
