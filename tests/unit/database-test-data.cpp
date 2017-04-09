@@ -43,7 +43,10 @@ DbTestData::PreviousStateCleaner::PreviousStateCleaner()
 }
 
 DbTestData::DbTestData()
-  : m_session(TEST_DATABASE.string())
+  : m_session(TEST_DATABASE.string()),
+    m_testName("/test19"),
+    m_netName("/test19/net"),
+    m_ndnsimName("/test19/net/ndnsim")
 {
   NDNS_LOG_TRACE("start creating test data");
 
@@ -63,13 +66,13 @@ DbTestData::DbTestData()
                           true);
   };
 
-  Name testName(TEST_IDENTITY_NAME);
+  Name testName(m_testName);
   m_test = tool.createZone(testName, ROOT_ZONE);
   // m_test's DKEY is not added to parent zone
-  Name netName = Name(testName).append("net");
+  Name netName(m_netName);
   m_net = tool.createZone(netName, testName);
   addDkeyCertToParent(m_net, m_test);
-  Name ndnsimName = Name(netName).append("ndnsim");
+  Name ndnsimName(m_ndnsimName);
   m_ndnsim = tool.createZone(ndnsimName, netName);
   addDkeyCertToParent(m_ndnsim, m_net);
 

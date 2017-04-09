@@ -18,9 +18,13 @@
  */
 
 #include "validator/validator.hpp"
+#include "ndns-label.hpp"
+#include "util/cert-helper.hpp"
+#include "daemon/name-server.hpp"
 
 #include "test-common.hpp"
-#include "util/cert-helper.hpp"
+#include "dummy-forwarder.hpp"
+#include "unit/database-test-data.hpp"
 
 #include <ndn-cxx/util/io.hpp>
 
@@ -32,179 +36,135 @@ NDNS_LOG_INIT("ValidatorTest")
 
 BOOST_AUTO_TEST_SUITE(Validator)
 
-class Fixture : public IdentityManagementFixture
+class ValidatorTestFixture : public DbTestData
 {
 public:
-  Fixture()
-    : m_testId1("/test02")
-    , m_testId2("/test02/ndn")
-    , m_testId3("/test02/ndn/edu")
-    , m_randomId("/test03")
-    , m_face(m_keyChain, {false, true})
+  ValidatorTestFixture()
+    : m_forwarder(m_io, m_keyChain)
+    , m_face(m_forwarder.addFace())
+    , m_validator(NdnsValidatorBuilder::create(m_face, 500, 0, TEST_CONFIG_PATH "/" "validator.conf"))
   {
-    m_randomDsk = createRoot(Name(m_randomId).append("NDNS")); // generate a root cert
-
-    m_dsk1 = createRoot(Name(m_testId1).append("NDNS")); // replace to root cert
-    m_dsk2 = createIdentity(Name(m_testId2).append("NDNS"), m_dsk1);
-    m_dsk3 = createIdentity(Name(m_testId3).append("NDNS"), m_dsk2);
-
-    m_face.onSendInterest.connect(bind(&Fixture::respondInterest, this, _1));
+    // generate a random cert
+    // check how does name-server test do
+    // initlize all servers
+    auto addServer = [&] (const Name& zoneName) {
+      Face& face = m_forwarder.addFace();
+      // validator is used only for check update signature
+      // no updates tested here, so validator will not be used
+      // passing m_validator is only for construct server
+      Name certName = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain,
+                                                                      Name(zoneName).append("NDNS"));
+      auto server = make_shared<NameServer>(zoneName, certName, face,
+                                            m_session, m_keyChain, *m_validator);
+      m_servers.push_back(server);
+    };
+    addServer(m_testName);
+    addServer(m_netName);
+    addServer(m_ndnsimName);
+    m_ndnsimCert = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain,
+                                                        Name(m_ndnsimName).append("NDNS"));
+    m_randomCert = m_keyChain.createIdentity("/random/identity").getDefaultKey()
+    .getDefaultCertificate().getName();
+    advanceClocks(time::milliseconds(10), 1);
   }
 
-  ~Fixture()
+  ~ValidatorTestFixture()
   {
     m_face.getIoService().stop();
     m_face.shutdown();
   }
 
-  const Key
-  createIdentity(const Name& id, const Key& parentKey)
-  {
-    Identity identity = addIdentity(id);
-    Key defaultKey = identity.getDefaultKey();
-    m_keyChain.deleteKey(identity, defaultKey);
-
-    Key ksk = m_keyChain.createKey(identity);
-    Name defaultKskCert = ksk.getDefaultCertificate().getName();
-    m_keyChain.deleteCertificate(ksk, defaultKskCert);
-
-    Key dsk = m_keyChain.createKey(identity);
-    Name defaultDskCert = dsk.getDefaultCertificate().getName();
-    m_keyChain.deleteCertificate(dsk, defaultDskCert);
-
-    auto kskCert = CertHelper::createCertificate(m_keyChain, ksk, parentKey, "CERT", time::days(100));
-    auto dskCert = CertHelper::createCertificate(m_keyChain, dsk, ksk, "CERT", time::days(100));
-
-    m_keyChain.addCertificate(ksk, kskCert);
-    m_keyChain.addCertificate(dsk, dskCert);
-
-    m_keyChain.setDefaultKey(identity, dsk);
-    return dsk;
-  }
-
-  const Key
-  createRoot(const Name& root)
-  {
-    Identity rootIdentity = addIdentity(root);
-    auto cert = rootIdentity.getDefaultKey().getDefaultCertificate();
-    ndn::io::save(cert, TEST_CONFIG_PATH "/anchors/root.cert");
-    NDNS_LOG_TRACE("save root cert "<< m_rootCert <<
-                  " to: " << TEST_CONFIG_PATH "/anchors/root.cert");
-    return rootIdentity.getDefaultKey();
-  }
-
-  void
-  respondInterest(const Interest& interest)
-  {
-    Name keyName = interest.getName();
-    Name identityName = keyName.getPrefix(-2);
-    NDNS_LOG_TRACE("validator needs cert of KEY: " << keyName);
-    auto cert = m_keyChain.getPib().getIdentity(identityName)
-                                   .getKey(keyName)
-                                   .getDefaultCertificate();
-    m_face.getIoService().post([this, cert] {
-        m_face.receive(cert);
-      });
-  }
-
 public:
-  Name m_testId1;
-  Name m_testId2;
-  Name m_testId3;
-  Name m_randomId;
-
-  Name m_rootCert;
-
-  Key m_dsk1;
-  Key m_dsk2;
-  Key m_dsk3;
-
-  Key m_randomDsk;
-
-  ndn::util::DummyClientFace m_face;
+  DummyForwarder m_forwarder;
+  ndn::Face& m_face;
+  unique_ptr<security::v2::Validator> m_validator;
+  std::vector<shared_ptr<ndns::NameServer>> m_servers;
+  Name m_ndnsimCert;
+  Name m_randomCert;
 };
 
 
-BOOST_FIXTURE_TEST_CASE(Basic, Fixture)
+BOOST_FIXTURE_TEST_CASE(Basic, ValidatorTestFixture)
 {
-  // validator must be created after root key is saved to the target
-  auto validator = NdnsValidatorBuilder::create(m_face, TEST_CONFIG_PATH "/" "validator.conf");
+  SignatureInfo info;
+  info.setValidityPeriod(security::ValidityPeriod(time::system_clock::TimePoint::min(),
+                                                  time::system_clock::now() + time::days(10)));
 
   // case1: record of testId3, signed by its dsk, should be successful validated.
   Name dataName;
   dataName
-    .append(m_testId3)
+    .append(m_ndnsimName)
     .append("NDNS")
     .append("rrLabel")
     .append("rrType")
     .appendVersion();
   shared_ptr<Data> data = make_shared<Data>(dataName);
-  m_keyChain.sign(*data, signingByKey(m_dsk3));
+  m_keyChain.sign(*data, signingByCertificate(m_ndnsimCert).setSignatureInfo(info));
 
   bool hasValidated = false;
-  validator->validate(*data,
-                     [&] (const Data& data) {
-                       hasValidated = true;
-                       BOOST_CHECK(true);
-                     },
-                     [&] (const Data& data, const security::v2::ValidationError& str) {
-                       hasValidated = true;
-                       BOOST_CHECK(false);
-                     });
+  m_validator->validate(*data,
+                        [&] (const Data& data) {
+                          hasValidated = true;
+                          BOOST_CHECK(true);
+                        },
+                        [&] (const Data& data, const security::v2::ValidationError& str) {
+                          hasValidated = true;
+                          BOOST_CHECK(false);
+                        });
 
-  m_face.processEvents(time::milliseconds(-1));
-
+  advanceClocks(time::seconds(3), 100);
+  // m_io.run();
   BOOST_CHECK_EQUAL(hasValidated, true);
 
   // case2: signing testId2's data by testId3's key, which should failed in validation
   dataName = Name();
   dataName
-    .append(m_testId2)
+    .append(m_netName)
     .append("NDNS")
     .append("rrLabel")
     .append("CERT")
     .appendVersion();
   data = make_shared<Data>(dataName);
-  m_keyChain.sign(*data, signingByKey(m_dsk3)); // key's owner's name is longer than data owner's
+  m_keyChain.sign(*data, signingByCertificate(m_ndnsimCert)); // key's owner's name is longer than data owner's
 
   hasValidated = false;
-  validator->validate(*data,
-                     [&] (const Data& data) {
-                       hasValidated = true;
-                       BOOST_CHECK(false);
-                     },
-                     [&] (const Data& data, const security::v2::ValidationError& str) {
-                       hasValidated = true;
-                       BOOST_CHECK(true);
-                     });
+  m_validator->validate(*data,
+                        [&] (const Data& data) {
+                          hasValidated = true;
+                          BOOST_CHECK(false);
+                        },
+                        [&] (const Data& data, const security::v2::ValidationError& str) {
+                          hasValidated = true;
+                          BOOST_CHECK(true);
+                        });
 
-  m_face.processEvents(time::milliseconds(-1));
+  advanceClocks(time::seconds(3), 100);
   // cannot pass verification due to key's owner's name is longer than data owner's
   BOOST_CHECK_EQUAL(hasValidated, true);
 
-  // case4: totally wrong key to sign
+  // case3: totally wrong key to sign
   dataName = Name();
   dataName
-    .append(m_testId2)
+    .append(m_ndnsimName)
     .append("NDNS")
     .append("rrLabel")
     .append("CERT")
     .appendVersion();
   data = make_shared<Data>(dataName);
-  m_keyChain.sign(*data, signingByKey(m_randomDsk));
+  m_keyChain.sign(*data, signingByCertificate(m_randomCert));
 
   hasValidated = false;
-  validator->validate(*data,
-                     [&] (const Data& data) {
-                       hasValidated = true;
-                       BOOST_CHECK(false);
-                     },
-                     [&] (const Data& data, const security::v2::ValidationError& str) {
-                       hasValidated = true;
-                       BOOST_CHECK(true);
-                     });
+  m_validator->validate(*data,
+                        [&] (const Data& data) {
+                          hasValidated = true;
+                          BOOST_CHECK(false);
+                        },
+                        [&] (const Data& data, const security::v2::ValidationError& str) {
+                          hasValidated = true;
+                          BOOST_CHECK(true);
+                        });
 
-  m_face.processEvents(time::milliseconds(-1));
+  advanceClocks(time::seconds(3), 100);
   // cannot pass due to a totally mismatched key
   BOOST_CHECK_EQUAL(hasValidated, true);
 }

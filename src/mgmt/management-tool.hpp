@@ -148,9 +148,6 @@ public:
 
   /** @brief Add rrset to the NDNS local database
    *
-   *  @throw Error if the @p rrset label size is larger than 1 or @p rrset will override an
-   *               existing AUTH record
-   *
    *  @param rrset rrset
    */
   void

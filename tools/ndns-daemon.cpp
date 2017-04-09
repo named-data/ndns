@@ -95,7 +95,7 @@ public:
       validatorConfigFile = item->second.get_value<std::string>();
     }
     NDNS_LOG_INFO("ValidatorConfigFile = " << validatorConfigFile);
-    m_validator = NdnsValidatorBuilder::create(m_validatorFace, validatorConfigFile);
+    m_validator = NdnsValidatorBuilder::create(m_validatorFace, 500, 0, validatorConfigFile);
 
     for (const auto& option : section) {
       Name name;

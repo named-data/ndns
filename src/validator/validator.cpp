@@ -18,11 +18,11 @@
  */
 
 #include "validator.hpp"
-#include "logger.hpp"
 #include "config.hpp"
+#include "certificate-fetcher-ndns-cert.hpp"
+#include "logger.hpp"
 
 #include <ndn-cxx/security/v2/validation-policy-config.hpp>
-#include <ndn-cxx/security/v2/certificate-fetcher-from-network.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -32,10 +32,15 @@ NDNS_LOG_INIT("validator")
 std::string NdnsValidatorBuilder::VALIDATOR_CONF_FILE = DEFAULT_CONFIG_PATH "/" "validator.conf";
 
 unique_ptr<security::v2::Validator>
-NdnsValidatorBuilder::create(Face& face, const std::string& confFile)
+NdnsValidatorBuilder::create(Face& face,
+                             size_t nsCacheSize,
+                             size_t startComponentIndex,
+                             const std::string& confFile)
 {
   auto validator = make_unique<security::v2::Validator>(make_unique<security::v2::ValidationPolicyConfig>(),
-                                                        make_unique<security::v2::CertificateFetcherFromNetwork>(face));
+                                                        make_unique<CertificateFetcherNdnsCert>(face,
+                                                                                                nsCacheSize,
+                                                                                                startComponentIndex));
   security::v2::ValidationPolicyConfig& policy = dynamic_cast<security::v2::ValidationPolicyConfig&>(validator->getPolicy());
   policy.load(confFile);
   NDNS_LOG_TRACE("Validator loads configuration: " << confFile);

@@ -125,7 +125,7 @@ ManagementTool::createZone(const Name& zoneName,
     dkey = m_keyChain.createKey(dkeyIdentity);
     m_keyChain.deleteCertificate(dkey, dkey.getDefaultCertificate().getName());
 
-    dkeyCert = CertHelper::createCertificate(m_keyChain, dkey, dkey, label::CERT_RR_TYPE.toUri(), time::days(90));
+    dkeyCert = CertHelper::createCertificate(m_keyChain, dkey, dkey, label::CERT_RR_TYPE.toUri(), certValidity);
     dkeyCert.setFreshnessPeriod(cacheTtl);
     m_keyChain.addCertificate(dkey, dkeyCert);
     NDNS_LOG_INFO("Generated DKEY: " << dkeyCert.getName());
@@ -141,7 +141,7 @@ ManagementTool::createZone(const Name& zoneName,
     // delete automatically generated certificates,
     // because its issue is 'self' instead of CERT_RR_TYPE
     m_keyChain.deleteCertificate(ksk, ksk.getDefaultCertificate().getName());
-    kskCert = CertHelper::createCertificate(m_keyChain, ksk, dkey, label::CERT_RR_TYPE.toUri(), time::days(90));
+    kskCert = CertHelper::createCertificate(m_keyChain, ksk, dkey, label::CERT_RR_TYPE.toUri(), certValidity);
     kskCert.setFreshnessPeriod(cacheTtl);
     m_keyChain.addCertificate(ksk, kskCert);
     NDNS_LOG_INFO("Generated KSK: " << kskCert.getName());
@@ -298,10 +298,6 @@ ManagementTool::addMultiLevelLabelRrset(Rrset& rrset,
 void
 ManagementTool::addRrset(Rrset& rrset)
 {
-  if (rrset.getLabel().size() > 1) {
-    BOOST_THROW_EXCEPTION(Error("Cannot add rrset with label size > 1, should use addMultiLevelLabelRrset instead"));
-  }
-
   // check that it does not override existing AUTH
   Rrset rrsetCopy = rrset;
   rrsetCopy.setType(label::NS_RR_TYPE);
@@ -362,7 +358,11 @@ ManagementTool::addRrsetFromFile(const Name& zoneName,
   }
 
   if (needResign) {
-    m_keyChain.sign(*data, signingByCertificate(dskCertName));
+    // TODO validityPeriod should be able to be configured
+    SignatureInfo info;
+    info.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
+                                                    time::system_clock::now() + DEFAULT_CERT_TTL));
+    m_keyChain.sign(*data, signingByCertificate(dskCertName).setSignatureInfo(info));
   }
 
   // create response for the input data

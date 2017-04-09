@@ -160,6 +160,11 @@ operator<<(std::ostream& os, const IterativeQueryController& iq);
 std::ostream&
 operator<<(std::ostream& os, const IterativeQueryController::QueryStep step);
 
+// Used if you want the controller's lifetime equals to other object inherited
+// from TagHost. For example, in the CertificateFetcher, the queryController's
+// lifetime is equal to ValidationState.
+using IterativeQueryTag = SimpleTag<shared_ptr<IterativeQueryController>, 1086>;
+
 } // namespace ndns
 } // namespace ndn
 

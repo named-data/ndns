@@ -34,7 +34,10 @@ public:
   static std::string VALIDATOR_CONF_FILE;
 
   static unique_ptr<security::v2::Validator>
-  create(Face& face, const std::string& confFile = VALIDATOR_CONF_FILE);
+  create(Face& face,
+         size_t nsCacheSize = 500,
+         size_t startComponentIndex = 0,
+         const std::string& confFile = VALIDATOR_CONF_FILE);
 };
 
 } // namespace ndns

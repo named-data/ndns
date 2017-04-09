@@ -44,6 +44,7 @@ public:
   {
     // ensure prefix is registered
     run();
+    advanceClocks(time::milliseconds(10), 1);
   }
 
   void

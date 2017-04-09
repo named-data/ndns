@@ -564,9 +564,6 @@ BOOST_AUTO_TEST_CASE(AddRrset)
   BOOST_CHECK_NO_THROW(m_tool.addRrset(rrset1));
   Rrset rrset2 = findRrSet(zone, "/l1", label::NS_RR_TYPE);
   BOOST_CHECK_EQUAL(rrset1, rrset2);
-
-  Rrset rrset3 = rf.generateNsRrset("/l1/l2/l3", 7654, ttl2, DelegationList());
-  BOOST_CHECK_THROW(m_tool.addRrset(rrset3), ndns::ManagementTool::Error);
 }
 
 BOOST_AUTO_TEST_CASE(AddMultiLevelLabelRrset)

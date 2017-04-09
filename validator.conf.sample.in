@@ -18,7 +18,7 @@ rule
       {
         k-regex ^([^<NDNS>]*)<NDNS>(<>*)<KEY><>$
         k-expand \\1\\2
-        h-relation is-prefix-of ; ksk should be signed by dkey in parent zone
+        h-relation equal ; ksk should be signed by dkey in parent zone
         p-regex ^([^<NDNS>]*)<NDNS><KEY><><><>$
         p-expand \\1
       }
