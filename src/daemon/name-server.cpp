@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -91,14 +91,24 @@ NameServer::handleQuery(const Name& prefix, const Interest& interest, const labe
     m_face.put(*answer);
   }
   else {
-    // no record, construct NACK
     Name name = interest.getName();
     name.appendVersion();
     shared_ptr<Data> answer = make_shared<Data>(name);
+    Rrset doe(&m_zone);
+    // currently, there is only one DoE record contains everything
+    doe.setLabel(Name(re.rrLabel).append(re.rrType));
+    doe.setType(label::DOE_RR_TYPE);
+    if (!m_dbMgr.findLowerBound(doe)) {
+        NDNS_LOG_FATAL("fail to find DoE record of zone:" + m_zone.getName().toUri());
+        BOOST_THROW_EXCEPTION(std::runtime_error("fail to find DoE record of zone:" + m_zone.getName().toUri()));
+    }
+
+    answer->setContent(doe.getData());
     answer->setFreshnessPeriod(this->getContentFreshness());
     answer->setContentType(NDNS_NACK);
+    // give this NACk a random signature
+    m_keyChain.sign(*answer);
 
-    m_keyChain.sign(*answer, signingByCertificate(m_certName));
     NDNS_LOG_TRACE("answer query with NDNS-NACK: " << answer->getName());
     m_face.put(*answer);
   }

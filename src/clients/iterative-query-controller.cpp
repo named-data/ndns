@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -68,11 +68,22 @@ IterativeQueryController::onData(const ndn::Interest& interest, const Data& data
 
   NDNS_LOG_TRACE("[* -> *] get a " << contentType
                  << " Response: " << data.getName());
-  if (m_validator == nullptr) {
-    this->onDataValidated(data, contentType);
+
+  const Data* toBeValidatedData = nullptr;
+  if (contentType == NDNS_NACK) {
+    m_doe = Data(data.getContent().blockFromValue());
+    toBeValidatedData = &m_doe;
+    contentType = NDNS_DOE;
   }
   else {
-    m_validator->validate(data,
+    toBeValidatedData = &data;
+  }
+
+  if (m_validator == nullptr) {
+    this->onDataValidated(*toBeValidatedData, contentType);
+  }
+  else {
+    m_validator->validate(*toBeValidatedData,
                           bind(&IterativeQueryController::onDataValidated, this, _1, contentType),
                           [this] (const Data& data, const security::v2::ValidationError& err) {
                             NDNS_LOG_WARN("data: " << data.getName() << " fails verification");
@@ -81,6 +92,7 @@ IterativeQueryController::onData(const ndn::Interest& interest, const Data& data
                           );
   }
 }
+
 void
 IterativeQueryController::onDataValidated(const Data& data, NdnsContentType contentType)
 {
@@ -90,8 +102,18 @@ IterativeQueryController::onDataValidated(const Data& data, NdnsContentType cont
 
   switch (m_step) {
   case QUERY_STEP_QUERY_NS:
-    if (contentType == NDNS_NACK) {
-      m_step = QUERY_STEP_QUERY_RR;
+    if (contentType == NDNS_DOE) {
+      // check if requested record is absent by looking up in doe
+      if (isAbsentByDoe(data)) {
+        m_step = QUERY_STEP_QUERY_RR;
+      }
+      else {
+        std::ostringstream oss;
+        oss << "In onDataValidated, absence of record can not be infered from DoE.";
+        oss << " Last query:" << m_lastLabelType << " ";
+        oss << *this;
+        BOOST_THROW_EXCEPTION(std::runtime_error(oss.str()));
+      }
     }
     else if (contentType == NDNS_LINK) {
       Link link(data.wireEncode());
@@ -236,8 +258,25 @@ IterativeQueryController::makeLatestInterest()
                                              + oss.str()));
   }
 
+  m_lastLabelType = Name(query.getRrLabel()).append(query.getRrType());
   Interest interest = query.toInterest();
   return interest;
+}
+
+bool
+IterativeQueryController::isAbsentByDoe(const Data& data) const
+{
+  std::pair<Name, Name> range = Response::wireDecodeDoe(data.getContent());
+
+  // should not be simple <, use our own definition of compare
+  if (range.first < m_lastLabelType && m_lastLabelType < range.second) {
+    return true;
+  }
+  if (range.second < range.first &&
+      (m_lastLabelType < range.first || range.second < m_lastLabelType)) {
+    return true;
+  }
+  return false;
 }
 
 std::ostream&

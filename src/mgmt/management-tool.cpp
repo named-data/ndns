@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -186,6 +186,7 @@ ManagementTool::createZone(const Name& zoneName,
   NDNS_LOG_INFO("Start saving DKEY certificate id to ZoneInfo");
   m_dbMgr.setZoneInfo(zone, "dkey", dkeyCert.wireEncode());
 
+  generateDoe(zone);
   return zone;
 }
 
@@ -293,6 +294,7 @@ ManagementTool::addMultiLevelLabelRrset(Rrset& rrset,
   checkRrsetVersion(rrset);
   NDNS_LOG_INFO("Adding " << rrset);
   m_dbMgr.insert(rrset);
+  generateDoe(*rrset.getZone());
 }
 
 void
@@ -310,6 +312,7 @@ ManagementTool::addRrset(Rrset& rrset)
   checkRrsetVersion(rrset);
   NDNS_LOG_INFO("Added " << rrset);
   m_dbMgr.insert(rrset);
+  generateDoe(*rrset.getZone());
 }
 
 void
@@ -384,6 +387,7 @@ ManagementTool::addRrsetFromFile(const Name& zoneName,
   checkRrsetVersion(rrset);
   NDNS_LOG_INFO("Adding rrset from file " << rrset);
   m_dbMgr.insert(rrset);
+  generateDoe(*rrset.getZone());
 }
 
 security::v2::Certificate
@@ -552,6 +556,7 @@ ManagementTool::removeRrSet(const Name& zoneName, const Name& label, const name:
   NDNS_LOG_INFO("Remove rrset with zone-id: " << zone.getId() << " label: " << label << " type: "
                 << type);
   m_dbMgr.remove(rrset);
+  generateDoe(zone);
 }
 
 void
@@ -649,6 +654,52 @@ ManagementTool::checkRrsetVersion(const Rrset& rrset)
 
     m_dbMgr.remove(originalRrset);
   }
+}
+
+void
+ManagementTool::generateDoe(Zone& zone)
+{
+  // check zone existence
+  if (!m_dbMgr.find(zone)) {
+    BOOST_THROW_EXCEPTION(Error(zone.getName().toUri() + " is not presented in the NDNS db"));
+  }
+
+  // remove all the Doe records
+  m_dbMgr.removeRrsetsOfZoneByType(zone, label::DOE_RR_TYPE);
+
+  // get the records out
+  std::vector<Rrset> allRecords = m_dbMgr.findRrsets(zone);
+
+  // sort them by DoE label name (same as in the database)
+  std::sort(allRecords.begin(), allRecords.end());
+
+  RrsetFactory factory(m_dbMgr.getDbFile(), zone.getName(), m_keyChain, DEFAULT_CERT);
+  factory.checkZoneKey();
+
+  for (size_t i = 0; i < allRecords.size() - 1; i++) {
+    Name lowerLabel = Name(allRecords[i].getLabel()).append(allRecords[i].getType());
+    Name upperLabel = Name(allRecords[i + 1].getLabel()).append(allRecords[i + 1].getType());
+    Rrset doe = factory.generateDoeRrset(lowerLabel,
+                                         VERSION_USE_UNIX_TIMESTAMP,
+                                         DEFAULT_CACHE_TTL, lowerLabel, upperLabel);
+    m_dbMgr.insert(doe);
+  }
+
+  Name lastLabel = Name(allRecords.back().getLabel()).append(allRecords.back().getType());
+  Name firstLabel = Name(allRecords.front().getLabel()).append(allRecords.front().getType());
+  Rrset lastRange = factory.generateDoeRrset(lastLabel,
+                                             VERSION_USE_UNIX_TIMESTAMP,
+                                             DEFAULT_CACHE_TTL, lastLabel, firstLabel);
+  m_dbMgr.insert(lastRange);
+
+  // This guard will be the lowest label-ranked record
+  // so if requested label+type is less than the lowest label except for this one, it will be choosed
+  // by findLowerBound. This small trick avoids complicated SQL query in findLowerBound
+  Rrset guardRange = factory.generateDoeRrset(Name(""),
+                                              VERSION_USE_UNIX_TIMESTAMP,
+                                              DEFAULT_CACHE_TTL, lastLabel, firstLabel);
+  m_dbMgr.insert(guardRange);
+  NDNS_LOG_INFO("DoE record updated");
 }
 
 } // namespace ndns

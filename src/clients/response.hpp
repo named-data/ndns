@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -40,7 +40,7 @@ namespace ndns {
 /**
  * @brief Default life time of resource record
  */
-const time::seconds DEFAULT_RR_FRESHNESS_PERIOD(3600);
+const time::seconds DEFAULT_RR_FRESHNESS_PERIOD = 3600_s;
 
 
 /**
@@ -50,6 +50,12 @@ const time::seconds DEFAULT_RR_FRESHNESS_PERIOD(3600);
 class Response
 {
 public:
+  class Error : public ndn::tlv::Error
+  {
+  public:
+    using ndn::tlv::Error::Error;
+  };
+
   Response();
 
   Response(const Name& zone, const name::Component& queryType);
@@ -111,6 +117,9 @@ public:
   template<encoding::Tag T>
   size_t
   wireEncode(EncodingImpl<T>& block) const;
+
+  static std::pair<Name, Name>
+  wireDecodeDoe(const Block& wire);
 
 public:
   ///////////////////////////////////////////////

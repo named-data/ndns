@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -161,7 +161,9 @@ DbTestData::addRrset(Zone& zone, const Name& label, const name::Component& type,
 
   security::verifySignature(*data, m_cert);
 
-  m_session.insert(rrset);
+  ManagementTool tool(TEST_DATABASE.string(), m_keyChain);
+  tool.addRrset(rrset);
+
   m_rrsets.push_back(rrset);
 }
 

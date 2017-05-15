@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -61,26 +61,37 @@ public:
 
   Rrset
   generateNsRrset(const Name& label,
-                  const uint64_t version,
+                  uint64_t version,
                   time::seconds ttl,
                   const ndn::DelegationList& delegations);
 
   Rrset
   generateTxtRrset(const Name& label,
-                   const uint64_t version,
+                   uint64_t version,
                    time::seconds ttl,
                    const std::vector<std::string>& contents);
 
   Rrset
   generateAuthRrset(const Name& label,
-                    const uint64_t version,
+                    uint64_t version,
                     time::seconds ttl);
 
   Rrset
   generateCertRrset(const Name& label,
-                    const uint64_t version,
+                    uint64_t version,
                     time::seconds ttl,
                     const ndn::security::v2::Certificate& cert);
+
+  /**
+   * @brief DoE records are just txt records of all entries of a zone
+   * which means the any range showed in this record does not exist
+   */
+  Rrset
+  generateDoeRrset(const Name& label,
+                   uint64_t version,
+                   time::seconds ttl,
+                   const Name& lowerLabel,
+                   const Name& upperLabel);
 
   static std::vector<std::string>
   wireDecodeTxt(const Block& wire);
@@ -94,7 +105,7 @@ private:
   std::pair<Rrset, Name>
   generateBaseRrset(const Name& label,
                     const name::Component& type,
-                    const uint64_t version,
+                    uint64_t version,
                     const time::seconds& ttl);
 
   bool

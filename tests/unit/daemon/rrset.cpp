@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -50,6 +50,9 @@ BOOST_AUTO_TEST_CASE(Basic)
   // rrset2.setZone(nullptr);
   BOOST_CHECK_EQUAL(rrset1, rrset2); // zone point to nullptr
 
+  bool isLess = rrset1 < rrset2;
+  BOOST_CHECK_EQUAL(isLess, false);
+
   rrset2.setId(2);
   BOOST_CHECK_EQUAL(rrset1, rrset2); // with different Id
 
@@ -58,8 +61,13 @@ BOOST_AUTO_TEST_CASE(Basic)
   rrset2.setZone(&zone);
   BOOST_CHECK_NE(rrset1, rrset2); // with different zone name
 
+  BOOST_CHECK_THROW(isLess = rrset1 < rrset2, std::runtime_error);
+
   rrset1.setZone(&zone);
   BOOST_CHECK_EQUAL(rrset1, rrset2);
+
+  isLess = rrset1 < rrset2;
+  BOOST_CHECK_EQUAL(isLess, false);
 
   Zone zone3("/ndn");
   rrset1.setZone(&zone3);
@@ -71,14 +79,26 @@ BOOST_AUTO_TEST_CASE(Basic)
   rrset2 = rrset1;
   rrset2.setLabel(Name("/www/2"));
   BOOST_CHECK_NE(rrset1, rrset2);
+
+  isLess = rrset1 < rrset2;
+  BOOST_CHECK_EQUAL(isLess, true);
+
   rrset2 = rrset1;
 
   rrset2.setType(name::Component("TXT"));
   BOOST_CHECK_NE(rrset1, rrset2);
+
+  isLess = rrset1 < rrset2;
+  BOOST_CHECK_EQUAL(isLess, true);
+
   rrset2 = rrset1;
 
   rrset2.setVersion(name::Component::fromVersion(2));
   BOOST_CHECK_NE(rrset1, rrset2);
+
+  isLess = rrset1 < rrset2;
+  BOOST_CHECK_EQUAL(isLess, true);
+
   rrset2 = rrset1;
 
   rrset2.setTtl(time::seconds(1));

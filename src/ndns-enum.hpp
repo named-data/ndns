@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -34,6 +34,7 @@ enum NdnsContentType {
   NDNS_LINK = ndn::tlv::ContentType_Link,
   NDNS_KEY  = ndn::tlv::ContentType_Key,
   NDNS_NACK = ndn::tlv::ContentType_Nack,
+  NDNS_DOE  = 1085,
   NDNS_AUTH = 1086, ///< only has RR for detailed (longer) label
   NDNS_RESP = 1087, ///< response type means there are requested RR
   NDNS_UNKNOWN = 1088,  ///< this is not a real type, just mean that contentType is unknown

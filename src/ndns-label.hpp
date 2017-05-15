@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -74,6 +74,10 @@ const name::Component APPCERT_RR_TYPE("APPCERT");
  */
 const name::Component TXT_RR_TYPE("TXT");
 
+/**
+ * @brief Denial of Existance record type
+ */
+const name::Component DOE_RR_TYPE("DOE");
 
 //////////////////////////////////////////
 
@@ -114,7 +118,6 @@ bool
 matchName(const Data& data,
           const Name& zone,
           MatchResult& result);
-
 
 } // namespace label
 } // namespace ndns

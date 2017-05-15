@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -77,7 +77,7 @@ RrsetFactory::onlyCheckZone()
 std::pair<Rrset, Name>
 RrsetFactory::generateBaseRrset(const Name& label,
                                 const name::Component& type,
-                                const uint64_t version,
+                                uint64_t version,
                                 const time::seconds& ttl)
 {
   Rrset rrset(&m_zone);
@@ -117,7 +117,7 @@ RrsetFactory::matchCertificate(const Name& certName, const Name& identity)
 
 Rrset
 RrsetFactory::generateNsRrset(const Name& label,
-                              const uint64_t version,
+                              uint64_t version,
                               time::seconds ttl,
                               const ndn::DelegationList& delegations)
 {
@@ -144,7 +144,7 @@ RrsetFactory::generateNsRrset(const Name& label,
 
 Rrset
 RrsetFactory::generateTxtRrset(const Name& label,
-                               const uint64_t version,
+                               uint64_t version,
                                time::seconds ttl,
                                const std::vector<std::string>& strings)
 {
@@ -178,7 +178,7 @@ RrsetFactory::generateTxtRrset(const Name& label,
 
 Rrset
 RrsetFactory::generateCertRrset(const Name& label,
-                                const uint64_t version,
+                                uint64_t version,
                                 time::seconds ttl,
                                 const ndn::security::v2::Certificate& cert)
 {
@@ -205,7 +205,7 @@ RrsetFactory::generateCertRrset(const Name& label,
 
 Rrset
 RrsetFactory::generateAuthRrset(const Name& label,
-                                const uint64_t version,
+                                uint64_t version,
                                 time::seconds ttl)
 {
   if (!m_checked) {
@@ -227,6 +227,39 @@ RrsetFactory::generateAuthRrset(const Name& label,
 
   return rrset;
 }
+
+Rrset
+RrsetFactory::generateDoeRrset(const Name& label,
+                               uint64_t version,
+                               time::seconds ttl,
+                               const Name& lowerLabel,
+                               const Name& upperLabel)
+{
+  if (!m_checked) {
+    BOOST_THROW_EXCEPTION(Error("You have to call checkZoneKey before call generate functions"));
+  }
+
+  if (ttl == DEFAULT_RR_TTL)
+    ttl = m_zone.getTtl();
+
+  Name name;
+  Rrset rrset;
+  std::tie(rrset, name) = generateBaseRrset(label, label::DOE_RR_TYPE, version, ttl);
+
+  std::vector<Block> range;
+  range.push_back(lowerLabel.wireEncode());
+  range.push_back(upperLabel.wireEncode());
+
+  Data data(name);
+  data.setContent(wireEncode(range));
+
+  setContentType(data, NDNS_DOE, ttl);
+  sign(data);
+  rrset.setData(data.wireEncode());
+
+  return rrset;
+}
+
 
 void
 RrsetFactory::sign(Data& data)

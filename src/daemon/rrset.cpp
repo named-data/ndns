@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -56,6 +56,26 @@ Rrset::operator==(const Rrset& other) const
             getType() == other.getType() && getVersion() == other.getVersion());
 
 }
+
+bool
+Rrset::operator<(const Rrset& other) const
+{
+  if (getZone() != other.getZone() ||
+      (getZone() != nullptr && *getZone() != *other.getZone())) {
+    BOOST_THROW_EXCEPTION(std::runtime_error("Cannot compare Rrset that belong to different zones"));
+  }
+
+  bool isLess = getLabel() < other.getLabel();
+  if (!isLess && getLabel() == other.getLabel()) {
+    isLess = getType() < other.getType();
+
+    if (!isLess && getType() == other.getType()) {
+      isLess = getVersion() < other.getVersion();
+    }
+  }
+  return isLess;
+}
+
 
 } // namespace ndns
 } // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -34,6 +34,9 @@ operator<<(std::ostream& os, const NdnsContentType ndnsType)
     break;
   case NDNS_NACK:
     os << "NACK";
+    break;
+  case NDNS_DOE:
+    os << "DOE";
     break;
   case NDNS_KEY:
     os << "KEY";

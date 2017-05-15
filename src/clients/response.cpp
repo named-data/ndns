@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -91,6 +91,16 @@ Response::wireDecode(const Block& wire)
   for (; iter != wire.elements().end(); ++iter) {
     m_rrs.push_back(*iter);
   }
+}
+
+std::pair<Name, Name>
+Response::wireDecodeDoe(const Block& wire)
+{
+  wire.parse();
+  if (wire.elements().size() != 2) {
+    BOOST_THROW_EXCEPTION(Error("Unexpected number of components while decoding DOE record"));
+  }
+  return std::make_pair(Name(wire.elements().front()), Name(wire.elements().back()));
 }
 
 bool
