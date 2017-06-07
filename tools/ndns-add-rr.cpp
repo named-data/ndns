@@ -51,7 +51,7 @@ main(int argc, char* argv[])
   string file = "-";
   string encoding = "base64";
   bool setFile = false;
-  bool needResign = false;
+  bool needResign = true;
   try {
     namespace po = boost::program_options;
     po::variables_map vm;
@@ -75,7 +75,7 @@ main(int argc, char* argv[])
        "type, content-type, content, and version parameters will be ignored. Default is stdin(-)")
       ("encoding,e", po::value<string>(&encoding),
        "Set encoding format of input file. Default: base64")
-      ("resign,r", po::value<bool>(&needResign), "Resign the input with DSK")
+      ("resign,r", po::value<bool>(&needResign), "Resign the input with DSK. Default is true")
       ;
 
     // add "Record Options" as a separate section
