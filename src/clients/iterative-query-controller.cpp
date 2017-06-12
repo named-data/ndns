@@ -175,6 +175,7 @@ IterativeQueryController::express(const Interest& interest)
   NDNS_LOG_DEBUG("[* <- *] send a Query: " << interest.getName());
   m_face.expressInterest(interest,
                          bind(&IterativeQueryController::onData, this, _1, _2),
+                         bind(&IterativeQueryController::onTimeout, this, _1), // nack
                          bind(&IterativeQueryController::onTimeout, this, _1)
                          );
 }

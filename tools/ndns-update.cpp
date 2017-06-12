@@ -73,6 +73,7 @@ public:
     NDNS_LOG_TRACE("[* <- *] send Update: " << m_update->getName().toUri());
     m_face.expressInterest(interest,
                            bind(&NdnsUpdate::onData, this, _1, _2),
+                           bind(&NdnsUpdate::onTimeout, this, _1), // nack
                            bind(&NdnsUpdate::onTimeout, this, _1) //dynamic binding
                            );
   }
