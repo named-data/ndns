@@ -33,7 +33,7 @@
 #include <ndn-cxx/util/regex.hpp>
 #include <ndn-cxx/util/indented-stream.hpp>
 #include <ndn-cxx/encoding/oid.hpp>
-#include <ndn-cxx/security/cryptopp.hpp>
+#include <ndn-cxx/security/v1/cryptopp.hpp>
 #include <ndn-cxx/link.hpp>
 
 namespace ndn {

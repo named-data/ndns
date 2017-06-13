@@ -18,7 +18,7 @@
  */
 
 #include "util.hpp"
-#include <ndn-cxx/security/cryptopp.hpp>
+#include <ndn-cxx/security/v1/cryptopp.hpp>
 
 namespace ndn {
 namespace ndns {
