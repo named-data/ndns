@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -27,7 +27,7 @@
 namespace ndn {
 namespace ndns {
 
-NDNS_LOG_INIT("validator")
+NDNS_LOG_INIT(Validator);
 
 std::string NdnsValidatorBuilder::VALIDATOR_CONF_FILE = DEFAULT_CONFIG_PATH "/" "validator.conf";
 

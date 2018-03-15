@@ -23,7 +23,8 @@
 
 namespace ndn {
 namespace ndns {
-NDNS_LOG_INIT("IterQueryCtr")
+
+NDNS_LOG_INIT(IterQueryCtr);
 
 IterativeQueryController::IterativeQueryController(const Name& dstLabel,
                                                    const name::Component& rrType,

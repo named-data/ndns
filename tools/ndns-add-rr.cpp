@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -30,7 +30,7 @@
 
 #include <string>
 
-NDNS_LOG_INIT("AddRrTool")
+NDNS_LOG_INIT(AddRrTool);
 
 int
 main(int argc, char* argv[])
@@ -39,7 +39,6 @@ main(int argc, char* argv[])
   using namespace ndn;
   using namespace ndns;
 
-  ndn::ndns::log::init();
   int ttlInt = -1;
   int versionInt = -1;
   string zoneStr;

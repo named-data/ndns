@@ -1,6 +1,12 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2018,  Regents of the University of California,
+ *                           Arizona Board of Regents,
+ *                           Colorado State University,
+ *                           University Pierre & Marie Curie, Sorbonne University,
+ *                           Washington University in St. Louis,
+ *                           Beijing Institute of Technology,
+ *                           The University of Memphis.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -17,40 +23,19 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
- * Copyright (c) 2014  Regents of the University of California,
- *                     Arizona Board of Regents,
- *                     Colorado State University,
- *                     University Pierre & Marie Curie, Sorbonne University,
- *                     Washington University in St. Louis,
- *                     Beijing Institute of Technology
- *
- * This file is part of NFD (Named Data Networking Forwarding Daemon).
- * See AUTHORS.md for complete list of NFD authors and contributors.
- *
- * NFD is free software: you can redistribute it and/or modify it under the terms
- * of the GNU General Public License as published by the Free Software Foundation,
- * either version 3 of the License, or (at your option) any later version.
- *
- * NFD is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
- * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
- * PURPOSE.  See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with
- * NFD, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
- **/
-
 #include "config-file.hpp"
 #include "logger.hpp"
 
 #include <boost/property_tree/info_parser.hpp>
 #include <fstream>
 
-
 namespace ndn {
 namespace ndns {
 
-NDNS_LOG_INIT("ConfigFile")
+ConfigFile::ConfigFile(UnknownConfigSectionHandler unknownSectionCallback)
+  : m_unknownSectionCallback(unknownSectionCallback)
+{
+}
 
 void
 ConfigFile::throwErrorOnUnknownSection(const std::string& filename,
@@ -58,11 +43,8 @@ ConfigFile::throwErrorOnUnknownSection(const std::string& filename,
                                        const ConfigSection& section,
                                        bool isDryRun)
 {
-  std::string msg = "Error processing configuration file ";
-  msg += filename;
-  msg += ": no module subscribed for section \"" + sectionName + "\"";
-
-  throw ConfigFile::Error(msg);
+  BOOST_THROW_EXCEPTION(Error("Error processing configuration file " + filename +
+                              ": no module subscribed for section \"" + sectionName + "\""));
 }
 
 void
@@ -74,9 +56,21 @@ ConfigFile::ignoreUnknownSection(const std::string& filename,
   // do nothing
 }
 
-ConfigFile::ConfigFile(UnknownConfigSectionHandler unknownSectionCallback)
-  : m_unknownSectionCallback(unknownSectionCallback)
+bool
+ConfigFile::parseYesNo(const ConfigSection& node, const std::string& key,
+                       const std::string& sectionName)
 {
+  auto value = node.get_value<std::string>();
+
+  if (value == "yes") {
+    return true;
+  }
+  else if (value == "no") {
+    return false;
+  }
+
+  BOOST_THROW_EXCEPTION(Error("Invalid value \"" + value + "\" for option \"" +
+                              key + "\" in \"" + sectionName + "\" section"));
 }
 
 void
@@ -89,15 +83,10 @@ ConfigFile::addSectionHandler(const std::string& sectionName,
 void
 ConfigFile::parse(const std::string& filename, bool isDryRun)
 {
-  BOOST_ASSERT(isDryRun == false);
-  std::ifstream inputFile;
-  inputFile.open(filename.c_str());
-  if (!inputFile.good() || !inputFile.is_open())
-    {
-      std::string msg = "Failed to read configuration file: ";
-      msg += filename;
-      throw Error(msg);
-    }
+  std::ifstream inputFile(filename);
+  if (!inputFile.good() || !inputFile.is_open()) {
+    BOOST_THROW_EXCEPTION(Error("Failed to read configuration file " + filename));
+  }
   parse(inputFile, isDryRun, filename);
   inputFile.close();
 }
@@ -109,57 +98,41 @@ ConfigFile::parse(const std::string& input, bool isDryRun, const std::string& fi
   parse(inputStream, isDryRun, filename);
 }
 
-
 void
 ConfigFile::parse(std::istream& input, bool isDryRun, const std::string& filename)
 {
-  try
-    {
-      boost::property_tree::read_info(input, m_global);
-    }
-  catch (const boost::property_tree::info_parser_error& error)
-    {
-      std::stringstream msg;
-      msg << "Failed to parse configuration file";
-      msg << " " << filename;
-      msg << " " << error.message() << " line " << error.line();
-      throw Error(msg.str());
-    }
+  try {
+    boost::property_tree::read_info(input, m_global);
+  }
+  catch (const boost::property_tree::info_parser_error& error) {
+    BOOST_THROW_EXCEPTION(Error("Failed to parse configuration file " + filename +
+                                ": " + error.message() + " on line " + to_string(error.line())));
+  }
 
   process(isDryRun, filename);
 }
 
 void
-ConfigFile::process(bool isDryRun, const std::string& filename)
+ConfigFile::parse(const ConfigSection& config, bool isDryRun, const std::string& filename)
 {
-  BOOST_ASSERT(isDryRun == false);
+  m_global = config;
+  process(isDryRun, filename);
+}
+
+void
+ConfigFile::process(bool isDryRun, const std::string& filename) const
+{
   BOOST_ASSERT(!filename.empty());
-  // NFD_LOG_DEBUG("processing..." << ((isDryRun)?("dry run"):("")));
 
-  if (m_global.begin() == m_global.end())
-    {
-      std::string msg = "Error processing configuration file: ";
-      msg += filename;
-      msg += " no data";
-      throw Error(msg);
+  for (const auto& i : m_global) {
+    try {
+      const ConfigSectionHandler& subscriber = m_subscriptions.at(i.first);
+      subscriber(i.second, isDryRun, filename);
     }
-
-  for (ConfigSection::const_iterator i = m_global.begin(); i != m_global.end(); ++i)
-    {
-      const std::string& sectionName = i->first;
-      const ConfigSection& section = i->second;
-
-      SubscriptionTable::iterator subscriberIt = m_subscriptions.find(sectionName);
-      if (subscriberIt != m_subscriptions.end())
-        {
-          ConfigSectionHandler subscriber = subscriberIt->second;
-          subscriber(section, isDryRun, filename);
-        }
-      else
-        {
-          m_unknownSectionCallback(filename, sectionName, section, isDryRun);
-        }
+    catch (const std::out_of_range&) {
+      m_unknownSectionCallback(filename, i.first, i.second, isDryRun);
     }
+  }
 }
 
 } // namespace ndns

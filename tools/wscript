@@ -5,18 +5,45 @@ import os.path
 top = '..'
 
 def build(bld):
-    for app in bld.path.ant_glob('**/*', dir=True):
-        if os.path.isdir(app.abspath()):
-            bld(features=['cxx', 'cxxprogram'],
-                target = '../bin/%s' % app.path_from(bld.path),
-                source = app.ant_glob(['**/*.cpp']),
-                use = 'ndns-objects',
-                )
+    # Single object tools:
+    # tools/example-tool.cpp is a self-contained tool with a main() function
+    # and is built as build/bin/example-tool.
+    # These tools cannot be unit-tested.
+    for tool in bld.path.ant_glob('*.cpp'):
+        name = tool.change_ext('').path_from(bld.path.get_bld())
+        bld.program(name=name,
+                    target='../bin/%s' % name,
+                    source=[tool],
+                    use='ndns-objects')
 
-    for app in bld.path.ant_glob('**/*.cpp'):
-        name = app.path_from(bld.path)[:-len(".cpp")]
-        bld(features=['cxx', 'cxxprogram'],
-            target = '../bin/%s' % name,
-            source = app,
-            use = 'ndns-objects',
-            )
+    # Sub-directory tools:
+    # tools/example-tool/**/*.cpp is compiled and linked into build/bin/example-tool.
+    # tools/example-tool/main.cpp must exist and must contain the main() function.
+    # All other objects are collected into 'tools-objects' and can be unit-tested.
+    testableObjects = []
+    for subdir in bld.path.ant_glob('*', dir=True, src=False):
+        mainFile = subdir.find_node('main.cpp')
+        if mainFile is None:
+            continue # not a C++ tool
+
+        name = subdir.path_from(bld.path)
+        srcFiles = subdir.ant_glob('**/*.cpp', excl=['main.cpp'])
+        srcObjects = ''
+        if srcFiles:
+            srcObjects = 'tools-%s-objects' % name
+            bld.objects(target=srcObjects,
+                        source=srcFiles,
+                        use='ndn-cxx',
+                        includes=name)
+            testableObjects.append(srcObjects)
+
+        bld.program(name=name,
+                    target='../bin/%s' % name,
+                    source=[mainFile],
+                    use='ndns-objects ' + srcObjects,
+                    includes=name)
+
+    bld.objects(target='tools-objects',
+                source=[],
+                export_includes='.',
+                use=testableObjects)

@@ -24,7 +24,8 @@
 
 namespace ndn {
 namespace ndns {
-NDNS_LOG_INIT("NameServer")
+
+NDNS_LOG_INIT(NameServer);
 
 const time::milliseconds NAME_SERVER_DEFAULT_CONTENT_FRESHNESS(4000);
 
@@ -134,7 +135,7 @@ NameServer::handleUpdate(const Name& prefix, const Interest& interest, const lab
                          bind(&NameServer::doUpdate, this, interest.shared_from_this(), data),
                          [this] (const Data& data, const security::v2::ValidationError& msg) {
                            NDNS_LOG_WARN("Ignoring update that did not pass the verification. "
-                                         << "Check the root certificate")
+                                         << "Check the root certificate");
                          });
   }
 }

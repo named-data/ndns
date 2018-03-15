@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -32,7 +32,6 @@ main(int argc, char* argv[])
   using namespace ndn;
   using namespace ndns;
 
-  ndn::ndns::log::init();
   string zoneStr;
   string db;
   try {

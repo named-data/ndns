@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -20,49 +20,18 @@
 #ifndef NDNS_LOGGER_HPP
 #define NDNS_LOGGER_HPP
 
-#include "config.hpp"
-#include <log4cxx/logger.h>
+#include <ndn-cxx/util/logger.hpp>
 
-namespace ndn {
-namespace ndns {
-namespace log {
+#define NDNS_LOG_INIT(name) NDN_LOG_INIT(ndns.name)
 
-void
-init(const std::string& configFile = DEFAULT_CONFIG_PATH "/" "log4cxx.properties");
+#define NDNS_LOG_FATAL(x) NDN_LOG_FATAL(x)
+#define NDNS_LOG_ERROR(x) NDN_LOG_ERROR(x)
+#define NDNS_LOG_WARN(x)  NDN_LOG_WARN(x)
+#define NDNS_LOG_INFO(x)  NDN_LOG_INFO(x)
+#define NDNS_LOG_DEBUG(x) NDN_LOG_DEBUG(x)
+#define NDNS_LOG_TRACE(x) NDN_LOG_TRACE(x)
 
-// The following has to be pre-processor defines in order to properly determine
-// log locations
-
-#define NDNS_LOG_INIT(name)                                             \
-  static log4cxx::LoggerPtr staticModuleLogger = log4cxx::Logger::getLogger(name);
-
-#define NDNS_LOG_TRACE(x)                       \
-  LOG4CXX_TRACE(staticModuleLogger, x);
-
-#define NDNS_LOG_DEBUG(x)                       \
-  LOG4CXX_DEBUG(staticModuleLogger, x);
-
-#define NDNS_LOG_INFO(x)                        \
-  LOG4CXX_INFO(staticModuleLogger, x);
-
-#define NDNS_LOG_WARN(x)                        \
-  LOG4CXX_WARN(staticModuleLogger, x);
-
-#define NDNS_LOG_ERROR(x)                       \
-  LOG4CXX_ERROR(staticModuleLogger, x);
-
-#define NDNS_LOG_FATAL(x)                       \
-  LOG4CXX_FATAL(staticModuleLogger, x);
-
-#define NDNS_LOG_FUNCTION(x)                                            \
-  LOG4CXX_TRACE(staticModuleLogger, __FUNCTION__ << "(" << x << ")");
-
-#define NDNS_LOG_FUNCTION_NOARGS                                \
-  LOG4CXX_TRACE(staticModuleLogger, __FUNCTION__ << "()");
-
-
-} // namespace log
-} // namespace ndns
-} // namespace ndn
+#define NDNS_LOG_FUNCTION(x)     NDN_LOG_TRACE(__FUNCTION__ << "(" << x << ")")
+#define NDNS_LOG_FUNCTION_NOARGS NDN_LOG_TRACE(__FUNCTION__ << "()")
 
 #endif // NDNS_LOGGER_HPP

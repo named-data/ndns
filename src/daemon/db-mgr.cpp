@@ -27,7 +27,7 @@
 namespace ndn {
 namespace ndns {
 
-NDNS_LOG_INIT("DbMgr")
+NDNS_LOG_INIT(DbMgr);
 
 static const std::string NDNS_SCHEMA = R"VALUE(
 CREATE TABLE IF NOT EXISTS zones (

@@ -28,8 +28,6 @@
 namespace ndn {
 namespace ndns {
 
-NDNS_LOG_INIT("RrsetFactory")
-
 RrsetFactory::RrsetFactory(const boost::filesystem::path& dbFile,
                            const Name& zoneName,
                            KeyChain& keyChain,

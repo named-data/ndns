@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -26,8 +26,6 @@
 namespace ndn {
 namespace ndns {
 namespace tests {
-
-NDNS_LOG_INIT("IterativeQueryControllerTest")
 
 class QueryControllerFixture : public DbTestData
 {
@@ -87,7 +85,7 @@ BOOST_FIXTURE_TEST_CASE(Basic, QueryControllerFixture)
   time::milliseconds lifetime(4000);
 
   bool hasDataBack = false;
-  auto ctr = make_shared<ndns::IterativeQueryController>(
+  auto ctr = std::make_shared<ndns::IterativeQueryController>(
     dstLabel, rrType, lifetime,
     [&hasDataBack] (const Data&, const Response&) {
       hasDataBack = true;

@@ -42,7 +42,7 @@
 namespace ndn {
 namespace ndns {
 
-NDNS_LOG_INIT("ManagementTool")
+NDNS_LOG_INIT(ManagementTool);
 
 using security::transform::base64Encode;
 using security::transform::streamSink;

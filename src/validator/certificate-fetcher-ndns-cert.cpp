@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2017, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -30,7 +30,7 @@ namespace ndns {
 
 using security::v2::Certificate;
 
-NDNS_LOG_INIT("CertificateFetcherNdnsCert")
+NDNS_LOG_INIT(CertificateFetcherNdnsCert);
 
 CertificateFetcherNdnsCert::CertificateFetcherNdnsCert(Face& face,
                                                        size_t nsCacheSize,
@@ -57,18 +57,18 @@ CertificateFetcherNdnsCert::doFetch(const shared_ptr<security::v2::CertificateRe
     return ;
   }
 
-  auto query = make_shared<IterativeQueryController>(domain,
-                                                     label::NS_RR_TYPE,
-                                                     certRequest->m_interest.getInterestLifetime(),
-                                                     [=] (const Data& data, const Response& response) {
-                                                       nsSuccessCallback(data, certRequest, state, continueValidation);
-                                                     },
-                                                     [=] (uint32_t errCode, const std::string& errMsg) {
-                                                       nsFailCallback(errMsg, certRequest, state, continueValidation);
-                                                     },
-                                                     m_face,
-                                                     nullptr,
-                                                     m_nsCache.get());
+  auto query = std::make_shared<IterativeQueryController>(domain,
+                                                          label::NS_RR_TYPE,
+                                                          certRequest->m_interest.getInterestLifetime(),
+                                                          [=] (const Data& data, const Response& response) {
+                                                            nsSuccessCallback(data, certRequest, state, continueValidation);
+                                                          },
+                                                          [=] (uint32_t errCode, const std::string& errMsg) {
+                                                            nsFailCallback(errMsg, certRequest, state, continueValidation);
+                                                          },
+                                                          m_face,
+                                                          nullptr,
+                                                          m_nsCache.get());
   query->setStartComponentIndex(m_startComponentIndex);
   query->start();
   auto queryTag = make_shared<IterativeQueryTag>(query);

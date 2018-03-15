@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -20,6 +20,8 @@
 #ifndef NDNS_COMMON_HPP
 #define NDNS_COMMON_HPP
 
+#include "config.hpp"
+
 #ifdef NDNS_HAVE_TESTS
 #define NDNS_VIRTUAL_WITH_TESTS virtual
 #define NDNS_PUBLIC_WITH_TESTS_ELSE_PROTECTED public
@@ -31,5 +33,12 @@
 #define NDNS_PUBLIC_WITH_TESTS_ELSE_PRIVATE private
 #define NDNS_PROTECTED_WITH_TESTS_ELSE_PRIVATE private
 #endif
+
+#include <ndn-cxx/name.hpp>
+
+#include <functional>
+#include <map>
+#include <boost/noncopyable.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 #endif // NDNS_COMMON_HPP

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -37,7 +37,7 @@
 #include <string>
 #include <fstream>
 
-NDNS_LOG_INIT("NdnsDig")
+NDNS_LOG_INIT(Dig);
 
 namespace ndn {
 namespace ndns {
@@ -220,7 +220,6 @@ private:
 int
 main(int argc, char* argv[])
 {
-  ndn::ndns::log::init();
   using std::string;
   using namespace ndn;
 

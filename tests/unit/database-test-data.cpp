@@ -27,7 +27,7 @@ namespace ndn {
 namespace ndns {
 namespace tests {
 
-NDNS_LOG_INIT("TestFakeData")
+NDNS_LOG_INIT(TestFakeData);
 
 const boost::filesystem::path DbTestData::TEST_DATABASE = TEST_CONFIG_PATH "/" "test-ndns.db";
 const Name DbTestData::TEST_IDENTITY_NAME("/test19");

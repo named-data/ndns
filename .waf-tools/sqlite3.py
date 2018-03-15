@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 # encoding: utf-8
 
-from waflib import Options
+from waflib import Options, Logs
 from waflib.Configure import conf
 
 def options(opt):
@@ -19,6 +19,9 @@ def check_sqlite3(self, *k, **kw):
     mandatory = kw.get('mandatory', True)
     var = kw.get('uselib_store', 'SQLITE3')
 
+    if not self.options.with_sqlite_locking:
+        conf.define('DISABLE_SQLITE3_FS_LOCKING', 1)
+
     if root:
         self.check_cxx(lib='sqlite3',
                        msg='Checking for SQLite3 library',
@@ -31,6 +34,8 @@ def check_sqlite3(self, *k, **kw):
         try:
             self.check_cfg(package='sqlite3',
                            args=['--cflags', '--libs'],
+                           global_define=True,
+                           define_name='HAVE_%s' % var,
                            uselib_store='SQLITE3',
                            mandatory=True)
         except:

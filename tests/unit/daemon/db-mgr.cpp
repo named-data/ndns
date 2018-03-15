@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -26,7 +26,7 @@ namespace ndn {
 namespace ndns {
 namespace tests {
 
-NDNS_LOG_INIT("DbMgrTest")
+NDNS_LOG_INIT(DbMgrTest);
 
 BOOST_AUTO_TEST_SUITE(DbMgr)
 
