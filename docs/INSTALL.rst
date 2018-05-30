@@ -9,39 +9,11 @@ Prerequisites
 -  Install the `ndn-cxx library <http://named-data.net/doc/ndn-cxx/current/INSTALL.html>`_
    and its requirements
 
-Another additional libraries include:
--  ``log4cxx``
-
-   On OS X 10.8, 10.9 and 10.10 with MacPorts:
-
-   ::
-
-       sudo port install log4cxx
-
-   On Ubuntu >= 12.04:
-
-   ::
-
-       sudo apt-get install liblog4cxx10-dev
-
 To build manpages and API documentation:
 
 -  ``doxygen``
 -  ``graphviz``
 -  ``python-sphinx``
-
-   On OS X 10.8 and 10.9 with MacPorts:
-
-   ::
-
-       sudo port install doxygen graphviz py27-sphinx sphinx_select
-       sudo port select sphinx py27-sphinx
-
-   On Ubuntu >= 12.04:
-
-   ::
-
-       sudo apt-get install doxygen graphviz python-sphinx
 
 Build
 -----
@@ -53,28 +25,6 @@ The following basic commands should be used to build NDNS on Ubuntu:
     ./waf configure
     ./waf
     sudo ./waf install
-
-Some platforms, such as OS X with MacPorts and certain Linux distributions (e.g., Fedora)
-require setting the ``PKG_CONFIG_PATH`` before running configure.
-
-For example, on OS X with MacPorts (assuming the default ``/opt/local`` MacPorts path):
-
-::
-
-    export PKG_CONFIG_PATH=/opt/local/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:$PKG_CONFIG_PATH
-    ./waf configure
-    ./waf
-    sudo ./waf install
-
-or some Linux distributions:
-
-::
-
-    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/usr/lib/pkgconfig:/usr/lib64/pkgconfig:$PKG_CONFIG_PATH
-    ./waf configure
-    ./waf
-    sudo ./waf install
-
 
 Refer to ``./waf --help`` for more options that can be used during ``configure`` stage and
 how to properly configure and run NFD.

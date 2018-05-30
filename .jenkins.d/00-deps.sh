@@ -9,13 +9,12 @@ set -x
 if has OSX $NODE_LABELS; then
     brew update
     brew upgrade
-    brew install boost pkg-config cryptopp openssl log4cxx
+    brew install pkg-config boost openssl
     brew cleanup
 fi
 
 if has Ubuntu $NODE_LABELS; then
     sudo apt-get -qq update
     sudo apt-get -qq install build-essential pkg-config libboost-all-dev \
-                             libcrypto++-dev libsqlite3-dev libssl-dev \
-                             liblog4cxx10-dev
+                             libsqlite3-dev libssl-dev
 fi
