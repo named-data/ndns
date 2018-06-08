@@ -133,7 +133,7 @@ NameServer::handleUpdate(const Name& prefix, const Interest& interest, const lab
     }
     m_validator.validate(*data,
                          bind(&NameServer::doUpdate, this, interest.shared_from_this(), data),
-                         [this] (const Data& data, const security::v2::ValidationError& msg) {
+                         [] (const Data& data, const security::v2::ValidationError& msg) {
                            NDNS_LOG_WARN("Ignoring update that did not pass the verification. "
                                          << "Check the root certificate");
                          });

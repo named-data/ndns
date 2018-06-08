@@ -91,7 +91,7 @@ BOOST_FIXTURE_TEST_CASE(Basic, QueryControllerFixture)
       hasDataBack = true;
       BOOST_CHECK(true);
     },
-    [&hasDataBack] (uint32_t errCode, const std::string& errMsg) {
+    [] (uint32_t errCode, const std::string& errMsg) {
       BOOST_CHECK(false);
     },
     consumerFace);

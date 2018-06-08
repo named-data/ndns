@@ -61,9 +61,7 @@ copyDir(const boost::filesystem::path& source, const boost::filesystem::path& de
       copyDir(current, destination / current.filename());
     }
     else {
-      // cannot use fs::copy_file, see https://svn.boost.org/trac/boost/ticket/10038
-      // fs::copy works, as it doesn't use problematic private API
-      copy(current, destination / current.filename());
+      copy_file(current, destination / current.filename());
     }
   }
 }
