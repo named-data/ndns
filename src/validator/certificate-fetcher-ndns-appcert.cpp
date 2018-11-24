@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2017, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2018, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -44,10 +44,10 @@ CertificateFetcherAppCert::doFetch(const shared_ptr<security::v2::CertificateReq
                                    const shared_ptr<security::v2::ValidationState>& state,
                                    const ValidationContinuation& continueValidation)
 {
-  const Name& key = certRequest->m_interest.getName();
+  const Name& key = certRequest->interest.getName();
   auto query = make_shared<IterativeQueryController>(key,
                                                      label::APPCERT_RR_TYPE,
-                                                     certRequest->m_interest.getInterestLifetime(),
+                                                     certRequest->interest.getInterestLifetime(),
                                                      [=] (const Data& data, const Response& response) {
                                                        onQuerySuccessCallback(data, certRequest, state, continueValidation);
                                                      },
@@ -85,7 +85,7 @@ CertificateFetcherAppCert::onQueryFailCallback(const std::string& errMsg,
                                                const ValidationContinuation& continueValidation)
 {
   state->fail({security::v2::ValidationError::Code::CANNOT_RETRIEVE_CERT, "Cannot fetch certificate due to " +
-        errMsg + " `" + certRequest->m_interest.getName().toUri() + "`"});
+               errMsg + " `" + certRequest->interest.getName().toUri() + "`"});
 }
 
 void
@@ -96,7 +96,7 @@ CertificateFetcherAppCert::onValidationSuccessCallback(const Data& data,
 {
   if (data.getContentType() == NDNS_NACK) {
     state->fail({security::v2::ValidationError::Code::CANNOT_RETRIEVE_CERT, "Cannot fetch certificate: get a Nack "
-          "in query `" + certRequest->m_interest.getName().toUri() + "`"});
+                 "in query `" + certRequest->interest.getName().toUri() + "`"});
     return;
   }
 
@@ -118,8 +118,8 @@ CertificateFetcherAppCert::onValidationFailCallback(const security::v2::Validati
                                                     const ValidationContinuation& continueValidation)
 {
   state->fail({security::v2::ValidationError::Code::CANNOT_RETRIEVE_CERT,
-        "Cannot fetch certificate due to NDNS validation error :"
-        + err.getInfo() + " `" + certRequest->m_interest.getName().toUri() + "`"});
+               "Cannot fetch certificate due to NDNS validation error: " +
+               err.getInfo() + " `" + certRequest->interest.getName().toUri() + "`"});
 }
 
 } // namespace ndns

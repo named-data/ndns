@@ -108,7 +108,7 @@ RrsetFactory::matchCertificate(const Name& certName, const Name& identity)
   try {
     CertHelper::getCertificate(m_keyChain, identity, certName);
     return true;
-  } catch (ndn::security::Pib::Error) {
+  } catch (const ndn::security::Pib::Error&) {
     return false;
   }
 }

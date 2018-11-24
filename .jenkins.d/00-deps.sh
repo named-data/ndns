@@ -7,14 +7,27 @@ source "$JDIR"/util.sh
 set -x
 
 if has OSX $NODE_LABELS; then
+    FORMULAE=(boost openssl pkg-config)
     brew update
-    brew upgrade
-    brew install pkg-config boost openssl
+    if [[ -n $TRAVIS ]]; then
+        # travis images come with a large number of brew packages
+        # pre-installed, don't waste time upgrading all of them
+        for FORMULA in "${FORMULAE[@]}"; do
+            brew outdated $FORMULA || brew upgrade $FORMULA
+        done
+    else
+        brew upgrade
+    fi
+    brew install "${FORMULAE[@]}"
     brew cleanup
 fi
 
 if has Ubuntu $NODE_LABELS; then
     sudo apt-get -qq update
-    sudo apt-get -qq install build-essential pkg-config libboost-all-dev \
+    sudo apt-get -qy install build-essential pkg-config libboost-all-dev \
                              libsqlite3-dev libssl-dev
+
+    if [[ $JOB_NAME == *"code-coverage" ]]; then
+        sudo apt-get -qy install gcovr lcov libgd-perl
+    fi
 fi

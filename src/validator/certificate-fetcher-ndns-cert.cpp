@@ -46,7 +46,7 @@ CertificateFetcherNdnsCert::doFetch(const shared_ptr<security::v2::CertificateRe
                                     const ValidationContinuation& continueValidation)
 {
   using IterativeQueryTag = SimpleTag<shared_ptr<IterativeQueryController>, 1086>;
-  const Name& key = certRequest->m_interest.getName();
+  const Name& key = certRequest->interest.getName();
   Name domain = calculateDomain(key);
   if (domain.size() == m_startComponentIndex) {
     // NS record does not exist, since the domain is actually globally routable
@@ -59,7 +59,7 @@ CertificateFetcherNdnsCert::doFetch(const shared_ptr<security::v2::CertificateRe
 
   auto query = std::make_shared<IterativeQueryController>(domain,
                                                           label::NS_RR_TYPE,
-                                                          certRequest->m_interest.getInterestLifetime(),
+                                                          certRequest->interest.getInterestLifetime(),
                                                           [=] (const Data& data, const Response& response) {
                                                             nsSuccessCallback(data, certRequest, state, continueValidation);
                                                           },
@@ -81,7 +81,7 @@ CertificateFetcherNdnsCert::nsSuccessCallback(const Data& data,
                                               const shared_ptr<security::v2::ValidationState>& state,
                                               const ValidationContinuation& continueValidation)
 {
-  Name interestName(certRequest->m_interest.getName());
+  Name interestName(certRequest->interest.getName());
   interestName.append(label::CERT_RR_TYPE);
   Interest interest(interestName);
 
@@ -118,9 +118,9 @@ CertificateFetcherNdnsCert::nsFailCallback(const std::string& errMsg,
                                            const ValidationContinuation& continueValidation)
 {
   NDNS_LOG_WARN("Cannot fetch link due to " +
-                errMsg + " `" + certRequest->m_interest.getName().toUri() + "`");
+                errMsg + " `" + certRequest->interest.getName().toUri() + "`");
 
-  Name interestName(certRequest->m_interest.getName());
+  Name interestName(certRequest->interest.getName());
   interestName.append(label::CERT_RR_TYPE);
   Interest interest(interestName);
   m_face.expressInterest(interest,
@@ -172,16 +172,16 @@ CertificateFetcherNdnsCert::nackCallback(const lp::Nack& nack,
                                          const ValidationContinuation& continueValidation)
 {
   NDNS_LOG_DEBUG("NACK (" << nack.getReason() <<  ") while fetching certificate "
-                 << certRequest->m_interest.getName());
+                 << certRequest->interest.getName());
 
-  --certRequest->m_nRetriesLeft;
-  if (certRequest->m_nRetriesLeft >= 0) {
+  --certRequest->nRetriesLeft;
+  if (certRequest->nRetriesLeft >= 0) {
     // TODO implement delay for the the next fetch
     fetch(certRequest, state, continueValidation);
   }
   else {
     state->fail({security::v2::ValidationError::Code::CANNOT_RETRIEVE_CERT, "Cannot fetch certificate after all "
-                 "retries `" + certRequest->m_interest.getName().toUri() + "`"});
+                 "retries `" + certRequest->interest.getName().toUri() + "`"});
   }
 }
 
@@ -190,16 +190,16 @@ CertificateFetcherNdnsCert::timeoutCallback(const shared_ptr<security::v2::Certi
                                             const shared_ptr<security::v2::ValidationState>& state,
                                             const ValidationContinuation& continueValidation)
 {
-  NDNS_LOG_DEBUG("Timeout while fetching certificate " << certRequest->m_interest.getName()
+  NDNS_LOG_DEBUG("Timeout while fetching certificate " << certRequest->interest.getName()
                  << ", retrying");
 
-  --certRequest->m_nRetriesLeft;
-  if (certRequest->m_nRetriesLeft >= 0) {
+  --certRequest->nRetriesLeft;
+  if (certRequest->nRetriesLeft >= 0) {
     fetch(certRequest, state, continueValidation);
   }
   else {
     state->fail({security::v2::ValidationError::Code::CANNOT_RETRIEVE_CERT, "Cannot fetch certificate after all "
-                 "retries `" + certRequest->m_interest.getName().toUri() + "`"});
+                 "retries `" + certRequest->interest.getName().toUri() + "`"});
   }
 }
 
