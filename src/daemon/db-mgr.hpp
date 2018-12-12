@@ -21,11 +21,10 @@
 #define NDNS_DAEMON_DB_MGR_HPP
 
 #include "config.hpp"
-#include "zone.hpp"
 #include "rrset.hpp"
+#include "zone.hpp"
 
 #include <map>
-#include <ndn-cxx/common.hpp>
 #include <sqlite3.h>
 
 namespace ndn {

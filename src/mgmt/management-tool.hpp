@@ -22,16 +22,16 @@
 
 #include "config.hpp"
 #include "ndns-enum.hpp"
-#include "./daemon/zone.hpp"
-#include "./daemon/db-mgr.hpp"
-#include "./daemon/rrset.hpp"
-#include "./daemon/rrset-factory.hpp"
-#include "./clients/response.hpp"
+#include "clients/response.hpp"
+#include "daemon/db-mgr.hpp"
+#include "daemon/rrset.hpp"
+#include "daemon/rrset-factory.hpp"
+#include "daemon/zone.hpp"
 
-#include <stdexcept>
-#include <ndn-cxx/common.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/util/io.hpp>
+
+#include <stdexcept>
 
 namespace ndn {
 namespace ndns {

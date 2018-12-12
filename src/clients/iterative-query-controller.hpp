@@ -21,18 +21,16 @@
 #define NDNS_CLIENTS_ITERATIVE_QUERY_CONTROLLER_HPP
 
 #include "ndns-enum.hpp"
-#include "query.hpp"
-#include "response.hpp"
-#include "query-controller.hpp"
-#include "config.hpp"
 #include "common.hpp"
+#include "query.hpp"
+#include "query-controller.hpp"
+#include "response.hpp"
 #include "validator/validator.hpp"
 
-#include <ndn-cxx/common.hpp>
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/interest.hpp>
-#include <ndn-cxx/name.hpp>
 #include <ndn-cxx/link.hpp>
+#include <ndn-cxx/name.hpp>
 #include <ndn-cxx/ims/in-memory-storage.hpp>
 
 namespace ndn {
