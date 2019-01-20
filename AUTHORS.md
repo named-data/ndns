@@ -15,3 +15,4 @@ in the library:
 
 * Eric Newberry         <http://ericnewberry.com/>
 * Jiewen Tan            <alanwake@ucla.edu>
+* Davide Pesavento      <https://www.linkedin.com/in/davidepesavento>

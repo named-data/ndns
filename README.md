@@ -1,5 +1,6 @@
-NDNS: Domain Name Service for Named Data Networking
-===================================================
+# NDNS: Domain Name Service for Named Data Networking
+
+[![Build Status](https://travis-ci.org/named-data/ndns.svg?branch=master)](https://travis-ci.org/named-data/ndns)
 
 NDNS is a completely distributed database system that largely mimics the structure of the
 DNS system in today's Internet but operates within the NDN architecture.  Although the
