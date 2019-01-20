@@ -1,7 +1,5 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
-import os.path
-
 top = '..'
 
 def build(bld):
@@ -30,18 +28,16 @@ def build(bld):
         srcFiles = subdir.ant_glob('**/*.cpp', excl=['main.cpp'])
         srcObjects = ''
         if srcFiles:
-            srcObjects = 'tools-%s-objects' % name
+            srcObjects = 'tool-%s-objects' % name
             bld.objects(target=srcObjects,
                         source=srcFiles,
-                        use='ndn-cxx',
-                        includes=name)
+                        use='ndns-objects')
             testableObjects.append(srcObjects)
 
         bld.program(name=name,
                     target='../bin/%s' % name,
                     source=[mainFile],
-                    use='ndns-objects ' + srcObjects,
-                    includes=name)
+                    use='ndns-objects ' + srcObjects)
 
     bld.objects(target='tools-objects',
                 source=[],

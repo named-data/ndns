@@ -1,0 +1,54 @@
+# Copyright (c) 2015-2019, Arizona Board of Regents.
+#
+# This file is part of NDNS (Named Data Networking Domain Name Service).
+# See AUTHORS.md for complete list of NDNS authors and contributors.
+#
+# NDNS is free software: you can redistribute it and/or modify it under the terms
+# of the GNU General Public License as published by the Free Software Foundation,
+# either version 3 of the License, or (at your option) any later version.
+#
+# NDNS is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;
+# without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+# PURPOSE.  See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
+#
+# Author: Eric Newberry <enewberry@email.arizona.edu>
+# Author: Davide Pesavento <davidepesa@gmail.com>
+
+[Unit]
+Description=Domain Name Service for NDN
+Documentation=man:ndns-daemon(1)
+BindsTo=nfd.service
+After=nfd.service
+
+[Service]
+Environment=HOME=%S/ndn/ndns
+ExecStart=@BINDIR@/ndns-daemon
+Restart=on-failure
+RestartPreventExitStatus=2
+User=ndns
+
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateTmp=yes
+PrivateUsers=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectSystem=full
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=yes
+RestrictRealtime=yes
+StateDirectory=ndn/ndns
+SystemCallArchitectures=native
+SystemCallErrorNumber=EPERM
+SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete @privileged @raw-io @reboot @setuid @swap
+
+[Install]
+WantedBy=multi-user.target
+WantedBy=nfd.service

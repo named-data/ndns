@@ -58,7 +58,6 @@ def build (bld):
         name='version.hpp',
         source='src/version.hpp.in',
         target='src/version.hpp',
-        install_path=None,
         VERSION_STRING=VERSION_BASE,
         VERSION_BUILD=VERSION,
         VERSION=int(VERSION_SPLIT[0]) * 1000000 +
@@ -70,34 +69,39 @@ def build (bld):
 
     bld.objects(
         name='ndns-objects',
-        source=bld.path.ant_glob('src/**/*.cpp', excl=['src/main.cpp',]),
+        source=bld.path.ant_glob('src/**/*.cpp'),
         use='version NDN_CXX BOOST',
         includes='src',
         export_includes='src')
 
-    if bld.env.SPHINX_BUILD:
-        bld(features='sphinx',
-            builder='man',
-            outdir='docs/manpages',
-            config='docs/conf.py',
-            source=bld.path.ant_glob('docs/manpages/**/*.rst'),
-            install_path='${MANDIR}',
-            VERSION=VERSION)
-
     bld.recurse('tests')
-
     bld.recurse('tools')
 
     bld(features='subst',
+        name='conf-samples',
         source=['validator.conf.sample.in', 'ndns.conf.sample.in'],
         target=['validator.conf.sample', 'ndns.conf.sample'],
         install_path='${SYSCONFDIR}/ndns',
-        name='validator-sample',
         ANCHORPATH='anchors/root.cert',
         RELATION='is-prefix-of',
         DEFAULT_CONFIG_PATH='%s/ndns' % bld.env['SYSCONFDIR'],
-        DEFAULT_DATABASE_PATH='%s/ndns' % bld.env['LOCALSTATEDIR'],
-        help='the validator configuration of ndns')
+        DEFAULT_DATABASE_PATH='%s/ndns' % bld.env['LOCALSTATEDIR'])
+
+    if Utils.unversioned_sys_platform() == 'linux':
+        bld(features='subst',
+            name='ndns.service',
+            source='systemd/ndns.service.in',
+            target='systemd/ndns.service')
+
+    if bld.env.SPHINX_BUILD:
+        bld(features='sphinx',
+            name='manpages',
+            builder='man',
+            config='docs/conf.py',
+            outdir='docs/manpages',
+            source=bld.path.ant_glob('docs/manpages/**/*.rst'),
+            install_path='${MANDIR}',
+            VERSION=VERSION)
 
 def docs(bld):
     from waflib import Options
