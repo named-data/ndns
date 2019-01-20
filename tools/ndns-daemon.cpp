@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2019, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -17,20 +17,23 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "daemon/name-server.hpp"
-#include "logger.hpp"
 #include "config.hpp"
+#include "logger.hpp"
 #include "daemon/config-file.hpp"
-#include "ndn-cxx/security/key-chain.hpp"
+#include "daemon/name-server.hpp"
 #include "util/cert-helper.hpp"
 
-#include <boost/program_options.hpp>
+#include <ndn-cxx/face.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
+
+#include <boost/asio/io_service.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/program_options.hpp>
+
+NDNS_LOG_INIT(NdnsDaemon);
 
 namespace ndn {
 namespace ndns {
-
-NDNS_LOG_INIT(NdnsDaemon);
 
 /**
  * @brief Name Server Daemon
@@ -42,52 +45,30 @@ class NdnsDaemon : noncopyable
 public:
   DEFINE_ERROR(Error, std::runtime_error);
 
-  explicit
   NdnsDaemon(const std::string& configFile, Face& face, Face& validatorFace)
     : m_face(face)
     , m_validatorFace(validatorFace)
   {
-    try {
-      ConfigFile config;
-      NDNS_LOG_INFO("NnsnDaemon ConfigFile = " << configFile);
-
-      config.addSectionHandler("zones",
-                               bind(&NdnsDaemon::processZonesSection, this, _1, _3));
-
-      config.parse(configFile, false);
-
-    }
-    catch (const boost::filesystem::filesystem_error& e) {
-      if (e.code() == boost::system::errc::permission_denied) {
-        NDNS_LOG_FATAL("Permissions denied for " << e.path1());
-      }
-      else {
-        NDNS_LOG_FATAL(e.what());
-      }
-    }
-    catch (const std::exception& e) {
-      NDNS_LOG_FATAL(e.what());
-    }
+    NDNS_LOG_INFO("ConfigFile = " << configFile);
+    ConfigFile config;
+    config.addSectionHandler("zones", bind(&NdnsDaemon::processZonesSection, this, _1));
+    config.parse(configFile, false);
   }
 
   void
-  processZonesSection(const ndn::ndns::ConfigSection& section, const std::string& filename)
+  processZonesSection(const ndn::ndns::ConfigSection& section)
   {
-    using namespace boost::filesystem;
-    using namespace ndn::ndns;
-    using ndn::ndns::ConfigSection;
-
     if (section.begin() == section.end()) {
       BOOST_THROW_EXCEPTION(Error("zones section is empty"));
     }
 
     std::string dbFile = DEFAULT_DATABASE_PATH "/" "ndns.db";
-    ConfigSection::const_assoc_iterator item = section.find("dbFile");
+    auto item = section.find("dbFile");
     if (item != section.not_found()) {
       dbFile = item->second.get_value<std::string>();
     }
     NDNS_LOG_INFO("DbFile = " << dbFile);
-    m_dbMgr = unique_ptr<DbMgr>(new DbMgr(dbFile));
+    m_dbMgr = make_unique<DbMgr>(dbFile);
 
     std::string validatorConfigFile = DEFAULT_CONFIG_PATH "/" "validator.conf";
     item = section.find("validatorConfigFile");
@@ -104,7 +85,7 @@ public:
         try {
           name = option.second.get<Name>("name"); // exception leads to exit
         }
-        catch (const std::exception& e) {
+        catch (const std::exception&) {
           NDNS_LOG_ERROR("Required `name' attribute missing in `zone' section");
           BOOST_THROW_EXCEPTION(Error("Required `name' attribute missing in `zone' section"));
         }
@@ -112,23 +93,24 @@ public:
           cert = option.second.get<Name>("cert");
         }
         catch (const std::exception&) {
-          ;
+          // ignore
         }
 
         if (cert.empty()) {
           try {
-            cert = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain, Name(name).append(label::NDNS_ITERATIVE_QUERY));
+            cert = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain,
+                                                                   Name(name)
+                                                                   .append(label::NDNS_ITERATIVE_QUERY));
           }
           catch (const std::exception& e) {
-            NDNS_LOG_FATAL("Identity: " << name << " does not have default certificate. "
-                           << e.what());
+            NDNS_LOG_ERROR("Identity " << name << " does not have a default certificate: " << e.what());
             BOOST_THROW_EXCEPTION(Error("identity does not have default certificate"));
           }
         }
         else {
           try {
             CertHelper::getCertificate(m_keyChain, name, cert);
-          } catch (const std::exception& e) {
+          } catch (const std::exception&) {
             BOOST_THROW_EXCEPTION(Error("Certificate `" + cert.toUri() + "` does not exist in the KeyChain"));
           }
         }
@@ -154,49 +136,35 @@ private:
 int
 main(int argc, char* argv[])
 {
-  using std::string;
-  using ndn::ndns::ConfigFile;
-  using namespace ndn::ndns;
+  std::string configFile(DEFAULT_CONFIG_PATH "/ndns.conf");
 
-  string configFile = DEFAULT_CONFIG_PATH "/" "ndns.conf";
+  namespace po = boost::program_options;
+  po::options_description optsDesc("Options");
+  optsDesc.add_options()
+    ("help,h",        "print this help message and exit")
+    ("config-file,c", po::value<std::string>(&configFile)->default_value(configFile),
+                      "path to configuration file")
+    ;
 
+  po::variables_map vm;
   try {
-    namespace po = boost::program_options;
-    po::variables_map vm;
-
-    po::options_description generic("Generic Options");
-    generic.add_options()("help,h", "print help message");
-
-    po::options_description config("Configuration");
-    config.add_options()
-      ("config,c", po::value<string>(&configFile), "set the path of configuration file")
-      ;
-
-    po::options_description cmdline_options;
-    cmdline_options.add(generic).add(config);
-
-    po::parsed_options parsed =
-      po::command_line_parser(argc, argv).options(cmdline_options).run();
-
-    po::store(parsed, vm);
+    po::store(po::parse_command_line(argc, argv, optsDesc), vm);
     po::notify(vm);
-
-    if (vm.count("help")) {
-      std::cout << "Usage:\n"
-                << "  ndns-daemon [-c configFile]\n"
-                << std::endl;
-      std::cout << generic << config << std::endl;
-      return 0;
-    }
   }
-  catch (const std::exception& ex) {
-    std::cerr << "Parameter Error: " << ex.what() << std::endl;
-
-    return 1;
+  catch (const po::error& e) {
+    std::cerr << "ERROR: " << e.what() << std::endl;
+    return 2;
   }
-  catch (...) {
-    std::cerr << "Parameter Unknown error" << std::endl;
-    return 1;
+  catch (const boost::bad_any_cast& e) {
+    std::cerr << "ERROR: " << e.what() << std::endl;
+    return 2;
+  }
+
+  if (vm.count("help") != 0) {
+    std::cout << "Usage: " << argv[0] << " [options]\n"
+              << "\n"
+              << optsDesc;
+    return 0;
   }
 
   boost::asio::io_service io;
@@ -205,18 +173,18 @@ main(int argc, char* argv[])
 
   try {
     // NFD does not to forward Interests to the face it was received from.
-    // If the name server and its validator share same face,
+    // If the name server and its validator share the same face,
     // the validator cannot be forwarded to the name server itself
-    // For current, two faces are used here.
+    // For now, two faces are used here.
 
     // refs: https://redmine.named-data.net/issues/2206
-    // @TODO enhance validator to get the certificate from the local db if it has
+    // @TODO enhance validator to get the certificate from the local db if present
 
-    NdnsDaemon daemon(configFile, face, validatorFace);
+    ndn::ndns::NdnsDaemon daemon(configFile, face, validatorFace);
     face.processEvents();
   }
   catch (const std::exception& e) {
-    NDNS_LOG_FATAL("ERROR: " << e.what());
+    NDNS_LOG_FATAL(e.what());
     return 1;
   }
 
