@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2019, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -20,9 +20,6 @@
 #include "db-mgr.hpp"
 #include "logger.hpp"
 #include "clients/response.hpp"
-
-#include <iostream>
-#include <fstream>
 
 namespace ndn {
 namespace ndns {
@@ -58,33 +55,30 @@ CREATE UNIQUE INDEX rrsets_zone_id_label_type_version
 
 DbMgr::DbMgr(const std::string& dbFile/* = DEFAULT_CONFIG_PATH "/" "ndns.db"*/)
   : m_dbFile(dbFile)
-  , m_conn(0)
+  , m_conn(nullptr)
 {
   if (dbFile.empty())
     m_dbFile = DEFAULT_DATABASE_PATH "/" "ndns.db";
 
-  this->open();
+  open();
 
   NDNS_LOG_INFO("open database: " << m_dbFile);
 }
 
-
 DbMgr::~DbMgr()
 {
-  if (m_conn != 0) {
-    this->close();
-  }
+  close();
 }
 
 void
 DbMgr::open()
 {
-  int res = sqlite3_open_v2(m_dbFile.c_str(), &m_conn,
+  int res = sqlite3_open_v2(m_dbFile.data(), &m_conn,
                             SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE,
 #ifdef DISABLE_SQLITE3_FS_LOCKING
                             "unix-dotfile"
 #else
-                            0
+                            nullptr
 #endif
                             );
 
@@ -92,14 +86,15 @@ DbMgr::open()
     NDNS_LOG_FATAL("Cannot open the db file: " << m_dbFile);
     BOOST_THROW_EXCEPTION(ConnectError("Cannot open the db file: " + m_dbFile));
   }
+
   // ignore any errors from DB creation (command will fail for the existing database, which is ok)
-  sqlite3_exec(m_conn, NDNS_SCHEMA.c_str(), 0, 0, 0);
+  sqlite3_exec(m_conn, NDNS_SCHEMA.data(), nullptr, nullptr, nullptr);
 }
 
 void
 DbMgr::close()
 {
-  if (m_conn == 0)
+  if (m_conn == nullptr)
     return;
 
   int ret = sqlite3_close(m_conn);
@@ -107,7 +102,7 @@ DbMgr::close()
     NDNS_LOG_FATAL("Cannot close the db: " << m_dbFile);
   }
   else {
-    m_conn = 0;
+    m_conn = nullptr;
     NDNS_LOG_INFO("Close database: " << m_dbFile);
   }
 }
@@ -117,14 +112,14 @@ DbMgr::clearAllData()
 {
   const char* sql = "DELETE FROM zones; DELETE FROM rrsets;";
 
-  int rc = sqlite3_exec(m_conn, sql, 0, 0, 0); // sqlite3_step cannot execute multiple SQL statement
+  // sqlite3_step cannot execute multiple SQL statements
+  int rc = sqlite3_exec(m_conn, sql, nullptr, nullptr, nullptr);
   if (rc != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(ExecuteError(sql));
   }
 
   NDNS_LOG_INFO("clear all the data in the database: " << m_dbFile);
 }
-
 
 void
 DbMgr::saveName(const Name& name, sqlite3_stmt* stmt, int iCol, bool isStatic)
@@ -168,11 +163,10 @@ DbMgr::insert(Zone& zone)
 
   sqlite3_stmt* stmt;
   const char* sql = "INSERT INTO zones (name, ttl) VALUES (?, ?)";
-  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(PrepareError(sql));
   }
-
 
   saveName(zone.getName(), stmt, 1);
   sqlite3_bind_int(stmt,  2, zone.getTtl().count());
@@ -202,13 +196,13 @@ DbMgr::setZoneInfo(Zone& zone,
 
   sqlite3_stmt* stmt;
   const char* sql = "INSERT OR REPLACE INTO zone_info (zone_id, key, value) VALUES (?, ?, ?)";
-  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(PrepareError(sql));
   }
 
   sqlite3_bind_int(stmt,  1, zone.getId());
-  sqlite3_bind_text(stmt, 2, key.c_str(),  key.length(), SQLITE_STATIC);
+  sqlite3_bind_text(stmt, 2, key.data(),  key.length(), SQLITE_STATIC);
   sqlite3_bind_blob(stmt, 3, value.wire(), value.size(), SQLITE_STATIC);
 
   rc = sqlite3_step(stmt);
@@ -236,7 +230,7 @@ DbMgr::getZoneInfo(Zone& zone)
 
   sqlite3_stmt* stmt;
   const char* sql = "SELECT key, value FROM zone_info WHERE zone_id=?";
-  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(PrepareError(sql));
   }
@@ -253,13 +247,12 @@ DbMgr::getZoneInfo(Zone& zone)
   return rtn;
 }
 
-
 bool
 DbMgr::find(Zone& zone)
 {
   sqlite3_stmt* stmt;
   const char* sql = "SELECT id, ttl FROM zones WHERE name=?";
-  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(PrepareError(sql));
   }
@@ -284,7 +277,7 @@ DbMgr::listZones()
 {
   sqlite3_stmt* stmt;
   const char* sql = "SELECT id, name, ttl FROM zones";
-  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(PrepareError(sql));
   }
@@ -311,7 +304,7 @@ DbMgr::remove(Zone& zone)
 
   sqlite3_stmt* stmt;
   const char* sql = "DELETE FROM zones where id=?";
-  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(PrepareError(sql));
   }
@@ -329,7 +322,6 @@ DbMgr::remove(Zone& zone)
   zone = Zone();
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Rrset
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -340,7 +332,7 @@ DbMgr::insert(Rrset& rrset)
   if (rrset.getId() != 0)
     return;
 
-  if (rrset.getZone() == 0) {
+  if (rrset.getZone() == nullptr) {
     BOOST_THROW_EXCEPTION(RrsetError("Rrset has not been assigned to a zone"));
   }
 
@@ -353,7 +345,7 @@ DbMgr::insert(Rrset& rrset)
     "    VALUES (?, ?, ?, ?, ?, ?)";
 
   sqlite3_stmt* stmt;
-  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(PrepareError(sql));
   }
@@ -379,7 +371,7 @@ DbMgr::insert(Rrset& rrset)
 bool
 DbMgr::find(Rrset& rrset)
 {
-  if (rrset.getZone() == 0) {
+  if (rrset.getZone() == nullptr) {
     BOOST_THROW_EXCEPTION(RrsetError("Rrset has not been assigned to a zone"));
   }
 
@@ -394,8 +386,7 @@ DbMgr::find(Rrset& rrset)
   const char* sql =
     "SELECT id, ttl, version, data FROM rrsets"
     "    WHERE zone_id=? and label=? and type=?";
-  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
-
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(PrepareError(sql));
   }
@@ -424,7 +415,7 @@ DbMgr::find(Rrset& rrset)
 bool
 DbMgr::findLowerBound(Rrset& rrset)
 {
-  if (rrset.getZone() == 0) {
+  if (rrset.getZone() == nullptr) {
     BOOST_THROW_EXCEPTION(RrsetError("Rrset has not been assigned to a zone"));
   }
 
@@ -439,8 +430,7 @@ DbMgr::findLowerBound(Rrset& rrset)
   const char* sql =
     "SELECT id, ttl, version, data FROM rrsets"
     "    WHERE zone_id=? and label<? and type=? ORDER BY label DESC";
-  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
-
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(PrepareError(sql));
   }
@@ -480,7 +470,7 @@ DbMgr::findRrsets(Zone& zone)
   const char* sql = "SELECT id, ttl, version, data, label, type "
                     "FROM rrsets where zone_id=? ORDER BY label";
 
-  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(PrepareError(sql));
   }
@@ -516,8 +506,7 @@ DbMgr::removeRrsetsOfZoneByType(Zone& zone, const name::Component& type)
 
   sqlite3_stmt* stmt;
   const char* sql = "DELETE FROM rrsets WHERE zone_id = ? AND type = ?";
-  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
-
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(PrepareError(sql));
   }
@@ -541,8 +530,7 @@ DbMgr::remove(Rrset& rrset)
 
   sqlite3_stmt* stmt;
   const char* sql = "DELETE FROM rrsets WHERE id=?";
-  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
-
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(PrepareError(sql));
   }
@@ -567,14 +555,13 @@ DbMgr::update(Rrset& rrset)
     BOOST_THROW_EXCEPTION(RrsetError("Attempting to replace Rrset that has no assigned id"));
   }
 
-  if (rrset.getZone() == 0) {
+  if (rrset.getZone() == nullptr) {
     BOOST_THROW_EXCEPTION(RrsetError("Rrset has not been assigned to a zone"));
   }
 
   sqlite3_stmt* stmt;
   const char* sql = "UPDATE rrsets SET ttl=?, version=?, data=? WHERE id=?";
-  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, 0);
-
+  int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
     BOOST_THROW_EXCEPTION(PrepareError(sql));
   }

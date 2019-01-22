@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2019, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -41,8 +41,6 @@ public:                                         \
   }                                             \
 }
 
-
-
 /**
  * @brief Database Manager, provides CRUD operations on stored entities
  *
@@ -51,7 +49,6 @@ public:                                         \
 class DbMgr : noncopyable
 {
 public:
-
   /**
    * @brief The Database Status
    */
@@ -209,8 +206,6 @@ public: // Rrset manipulation
   void
   update(Rrset& rrset);
 
-  ////////////////////////////////
-  ////////getter and setter
 public:
   const std::string&
   getDbFile() const
