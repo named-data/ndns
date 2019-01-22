@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2019, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -17,9 +17,11 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mgmt/management-tool.hpp"
-#include "ndns-label.hpp"
 #include "logger.hpp"
+#include "ndns-label.hpp"
+#include "mgmt/management-tool.hpp"
+#include "util/util.hpp"
+
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <string>
@@ -30,19 +32,17 @@ main(int argc, char* argv[])
 {
   using std::string;
   using namespace ndn;
-  using namespace ndns;
 
   string zoneStr;
-  string db;
+  string db = ndns::getDefaultDatabaseFile();
   try {
     namespace po = boost::program_options;
     po::variables_map vm;
 
     po::options_description options("Generic Options");
     options.add_options()
-      ("help,h", "print help message")
-      ("db,b", po::value<std::string>(&db), "Set the path of NDNS server database. "
-        "Default: " DEFAULT_DATABASE_PATH "/ndns.db")
+      ("help,h",  "print this help message and exit")
+      ("db,b",    po::value<std::string>(&db)->default_value(db), "path to NDNS database file")
       ;
 
     po::positional_options_description postion;

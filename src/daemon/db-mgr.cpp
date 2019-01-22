@@ -20,6 +20,7 @@
 #include "db-mgr.hpp"
 #include "logger.hpp"
 #include "clients/response.hpp"
+#include "util/util.hpp"
 
 namespace ndn {
 namespace ndns {
@@ -53,12 +54,12 @@ CREATE UNIQUE INDEX rrsets_zone_id_label_type_version
   ON rrsets (zone_id, label, type, version);
 )VALUE";
 
-DbMgr::DbMgr(const std::string& dbFile/* = DEFAULT_CONFIG_PATH "/" "ndns.db"*/)
+DbMgr::DbMgr(const std::string& dbFile)
   : m_dbFile(dbFile)
   , m_conn(nullptr)
 {
-  if (dbFile.empty())
-    m_dbFile = DEFAULT_DATABASE_PATH "/" "ndns.db";
+  if (m_dbFile.empty())
+    m_dbFile = getDefaultDatabaseFile();
 
   open();
 

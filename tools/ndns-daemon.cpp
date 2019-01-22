@@ -17,11 +17,11 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "config.hpp"
 #include "logger.hpp"
 #include "daemon/config-file.hpp"
 #include "daemon/name-server.hpp"
 #include "util/cert-helper.hpp"
+#include "util/util.hpp"
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
@@ -62,7 +62,7 @@ public:
       BOOST_THROW_EXCEPTION(Error("zones section is empty"));
     }
 
-    std::string dbFile = DEFAULT_DATABASE_PATH "/" "ndns.db";
+    std::string dbFile = getDefaultDatabaseFile();
     auto item = section.find("dbFile");
     if (item != section.not_found()) {
       dbFile = item->second.get_value<std::string>();
@@ -70,7 +70,7 @@ public:
     NDNS_LOG_INFO("DbFile = " << dbFile);
     m_dbMgr = make_unique<DbMgr>(dbFile);
 
-    std::string validatorConfigFile = DEFAULT_CONFIG_PATH "/" "validator.conf";
+    std::string validatorConfigFile(NDNS_CONFDIR "/validator.conf");
     item = section.find("validatorConfigFile");
     if (item != section.not_found()) {
       validatorConfigFile = item->second.get_value<std::string>();
@@ -136,7 +136,7 @@ private:
 int
 main(int argc, char* argv[])
 {
-  std::string configFile(DEFAULT_CONFIG_PATH "/ndns.conf");
+  std::string configFile(NDNS_CONFDIR "/ndns.conf");
 
   namespace po = boost::program_options;
   po::options_description optsDesc("Options");

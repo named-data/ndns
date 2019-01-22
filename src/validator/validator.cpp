@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2019, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -29,7 +29,7 @@ namespace ndns {
 
 NDNS_LOG_INIT(Validator);
 
-std::string NdnsValidatorBuilder::VALIDATOR_CONF_FILE = DEFAULT_CONFIG_PATH "/" "validator.conf";
+std::string NdnsValidatorBuilder::VALIDATOR_CONF_FILE(NDNS_CONFDIR "/validator.conf");
 
 unique_ptr<security::v2::Validator>
 NdnsValidatorBuilder::create(Face& face,
@@ -41,7 +41,7 @@ NdnsValidatorBuilder::create(Face& face,
                                                         make_unique<CertificateFetcherNdnsCert>(face,
                                                                                                 nsCacheSize,
                                                                                                 startComponentIndex));
-  security::v2::ValidationPolicyConfig& policy = dynamic_cast<security::v2::ValidationPolicyConfig&>(validator->getPolicy());
+  auto& policy = dynamic_cast<security::v2::ValidationPolicyConfig&>(validator->getPolicy());
   policy.load(confFile);
   NDNS_LOG_TRACE("Validator loads configuration: " << confFile);
 

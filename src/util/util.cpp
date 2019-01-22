@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2019, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -18,15 +18,20 @@
  */
 
 #include "util.hpp"
+#include "config.hpp"
 
-#include <ndn-cxx/security/transform.hpp>
+#include <ndn-cxx/security/transform/base64-encode.hpp>
+#include <ndn-cxx/security/transform/buffer-source.hpp>
+#include <ndn-cxx/security/transform/stream-sink.hpp>
 
 namespace ndn {
 namespace ndns {
 
-using security::transform::base64Encode;
-using security::transform::streamSink;
-using security::transform::bufferSource;
+std::string
+getDefaultDatabaseFile()
+{
+  return NDNS_DEFAULT_DBFILE;
+}
 
 NdnsContentType
 toNdnsContentType(const std::string& str)
@@ -48,8 +53,12 @@ toNdnsContentType(const std::string& str)
 }
 
 void
-output(const Data& data, std::ostream& os, const bool isPretty)
+output(const Data& data, std::ostream& os, bool isPretty)
 {
+  using security::transform::base64Encode;
+  using security::transform::bufferSource;
+  using security::transform::streamSink;
+
   const Block& block = data.wireEncode();
   if (!isPretty) {
     bufferSource(block.wire(), block.size()) >> base64Encode() >> streamSink(os);

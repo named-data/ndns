@@ -1,10 +1,10 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
-VERSION='0.1.0'
-APPNAME="ndns"
-BUGREPORT = "http://redmine.named-data.net/projects/ndns"
-URL = "http://named-data.net/doc/ndns/"
-GIT_TAG_PREFIX = "ndns-"
+VERSION = '0.1.0'
+APPNAME = 'ndns'
+BUGREPORT = 'https://redmine.named-data.net/projects/ndns'
+URL = 'http://named-data.net/doc/ndns/'
+GIT_TAG_PREFIX = 'ndns-'
 
 from waflib import Logs, Utils, Context
 import os, subprocess
@@ -22,17 +22,14 @@ def configure(conf):
                'boost', 'default-compiler-flags', 'doxygen', 'sphinx_build',
                'sqlite3'])
 
+    conf.env['WITH_TESTS'] = conf.options.with_tests
+
     if 'PKG_CONFIG_PATH' not in os.environ:
         os.environ['PKG_CONFIG_PATH'] = Utils.subst_vars('${LIBDIR}/pkgconfig', conf.env)
-
     conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'],
                    uselib_store='NDN_CXX', mandatory=True)
 
     conf.check_sqlite3(mandatory=True)
-
-    if conf.options.with_tests:
-        conf.env['WITH_TESTS'] = True
-        conf.define('NDNS_HAVE_TESTS', 1)
 
     USED_BOOST_LIBS = ['system', 'filesystem', 'thread', 'log', 'log_setup']
     if conf.env['WITH_TESTS']:
@@ -46,10 +43,10 @@ def configure(conf):
 
     conf.load('sanitizers')
 
-    conf.define('DEFAULT_CONFIG_PATH', '%s/ndns' % conf.env['SYSCONFDIR'])
-    conf.define('DEFAULT_DATABASE_PATH', '%s/ndns' % conf.env['LOCALSTATEDIR'])
-
-    conf.write_config_header('src/config.hpp')
+    conf.define_cond('HAVE_TESTS', conf.env['WITH_TESTS'])
+    conf.define('CONFDIR', '%s/ndn/ndns' % conf.env['SYSCONFDIR'])
+    conf.define('DEFAULT_DBFILE', '%s/lib/ndn/ndns/ndns.db' % conf.env['LOCALSTATEDIR'])
+    conf.write_config_header('src/config.hpp', define_prefix='NDNS_')
 
 def build (bld):
     version(bld)
@@ -81,11 +78,10 @@ def build (bld):
         name='conf-samples',
         source=['validator.conf.sample.in', 'ndns.conf.sample.in'],
         target=['validator.conf.sample', 'ndns.conf.sample'],
-        install_path='${SYSCONFDIR}/ndns',
+        install_path='${SYSCONFDIR}/ndn/ndns',
         ANCHORPATH='anchors/root.cert',
-        RELATION='is-prefix-of',
-        DEFAULT_CONFIG_PATH='%s/ndns' % bld.env['SYSCONFDIR'],
-        DEFAULT_DATABASE_PATH='%s/ndns' % bld.env['LOCALSTATEDIR'])
+        CONFDIR='%s/ndn/ndns' % bld.env['SYSCONFDIR'],
+        DEFAULT_DBFILE='%s/lib/ndn/ndns/ndns.db' % bld.env['LOCALSTATEDIR'])
 
     if Utils.unversioned_sys_platform() == 'linux':
         bld(features='subst',

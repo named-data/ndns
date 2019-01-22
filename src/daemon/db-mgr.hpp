@@ -65,7 +65,7 @@ public:
 
 public:
   explicit
-  DbMgr(const std::string& dbFile = DEFAULT_DATABASE_PATH "/" "ndns.db");
+  DbMgr(const std::string& dbFile = "");
 
   ~DbMgr();
 

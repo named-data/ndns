@@ -2024,19 +2024,12 @@ INCLUDE_FILE_PATTERNS  =
 
 PREDEFINED             = DOXYGEN=1 \
                          NDNS_LOG_INIT(x)= \
-                         NDNS_LOG_INCLASS_DEFINE(a,b)= \
-                         NDNS_LOG_INCLASS_TEMPLATE_SPECIALIZATION_DEFINE(a,b,c)= \
-                         NDNS_LOG_INCLASS_2TEMPLATE_SPECIALIZATION_DEFINE(a,b,c,d)= \
-                         BOOST_STATIC_ASSERT(x)= \
                          BOOST_CONCEPT_ASSERT(x)= \
                          BOOST_CONCEPT_REQUIRES(x)= \
-                         DECL_OVERRIDE=override \
-                         NDNS_VIRTUAL_WITH_TESTS=virtual \
-                         NDNS_PUBLIC_WITH_TESTS_ELSE_PROTECTED=public \
-                         NDNS_PUBLIC_WITH_TESTS_ELSE_PRIVATE=public \
-                         NDNS_PROTECTED_WITH_TESTS_ELSE_PRIVATE=protected \
-                         DECL_CLASS_FINAL=final \
-                         DECL_FINAL=final
+                         NDNS_PUBLIC_WITH_TESTS_ELSE_PROTECTED=protected \
+                         NDNS_PUBLIC_WITH_TESTS_ELSE_PRIVATE=private \
+                         NDNS_PROTECTED_WITH_TESTS_ELSE_PRIVATE=private \
+                         NDNS_VIRTUAL_WITH_TESTS=
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then this
 # tag can be used to specify a list of macro names that should be expanded. The

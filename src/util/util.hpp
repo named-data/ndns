@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2019, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -21,10 +21,14 @@
 #define NDNS_UTIL_UTIL_HPP
 
 #include "ndns-enum.hpp"
+
 #include <ndn-cxx/data.hpp>
 
 namespace ndn {
 namespace ndns {
+
+std::string
+getDefaultDatabaseFile();
 
 NdnsContentType
 toNdnsContentType(const std::string& str);
@@ -36,7 +40,7 @@ toNdnsContentType(const std::string& str);
  * @param isPretty whether to use pretty way
  */
 void
-output(const Data& data, std::ostream& os, const bool isPretty);
+output(const Data& data, std::ostream& os, bool isPretty);
 
 } // namespace ndns
 } // namespace ndn

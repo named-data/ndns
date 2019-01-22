@@ -16,10 +16,7 @@ def build(bld):
         name='test-validator-conf',
         source='../validator.conf.sample.in',
         target=tmp_folder.make_node('validator.conf'),
-        use='validator-sample',
-        ANCHORPATH='\"anchors/root.cert\"',
-        RELATION='is-prefix-of',
-    )
+        ANCHORPATH='\"anchors/root.cert\"')
 
     bld.objects(
         target='unit-tests-main',

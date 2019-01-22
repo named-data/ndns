@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2019, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -17,11 +17,11 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mgmt/management-tool.hpp"
-#include "ndns-label.hpp"
 #include "logger.hpp"
-#include "util/util.hpp"
+#include "ndns-label.hpp"
 #include "daemon/rrset-factory.hpp"
+#include "mgmt/management-tool.hpp"
+#include "util/util.hpp"
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
@@ -37,13 +37,12 @@ main(int argc, char* argv[])
 {
   using std::string;
   using namespace ndn;
-  using namespace ndns;
 
   int ttlInt = -1;
   int versionInt = -1;
   string zoneStr;
   Name dsk;
-  string db;
+  string db = ndns::getDefaultDatabaseFile();
   string rrLabelStr;
   string rrTypeStr;
   std::vector<std::string> content;
@@ -57,9 +56,8 @@ main(int argc, char* argv[])
 
     po::options_description options("Generic Options");
     options.add_options()
-      ("help,h", "print help message")
-      ("db,b", po::value<std::string>(&db), "Set the path of NDNS server database. "
-       "Default: " DEFAULT_DATABASE_PATH "/ndns.db")
+      ("help,h",  "print this help message and exit")
+      ("db,b",    po::value<std::string>(&db)->default_value(db), "path to NDNS database file")
       ;
 
     po::options_description config("Record Options");
@@ -174,11 +172,11 @@ main(int argc, char* argv[])
       tool.addRrsetFromFile(zoneName, file, ttl, dsk, ioEncoding, needResign);
     }
     else {
-      RrsetFactory rrsetFactory(db, zoneName, keyChain, dsk);
+      ndns::RrsetFactory rrsetFactory(db, zoneName, keyChain, dsk);
       rrsetFactory.checkZoneKey();
-      Rrset rrset;
+      ndns::Rrset rrset;
 
-      if (type == label::NS_RR_TYPE) {
+      if (type == ndns::label::NS_RR_TYPE) {
         ndn::DelegationList delegations;
         for (const auto& i : content) {
           std::vector<string> data;
@@ -190,7 +188,7 @@ main(int argc, char* argv[])
         rrset = rrsetFactory.generateNsRrset(label,
                                              version, ttl, delegations);
       }
-      else if (type == label::TXT_RR_TYPE) {
+      else if (type == ndns::label::TXT_RR_TYPE) {
         rrset = rrsetFactory.generateTxtRrset(label,
                                               version, ttl, content);
       }

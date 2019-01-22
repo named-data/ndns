@@ -6,12 +6,12 @@ Pre-requisites
 
 ``sqlite3`` installed
 
-
 Create the database
 -------------------
 
-Set the attribute ``dbfile`` in the NDNS configuration file, e.g., ``${SYSCONFDIR}/ndn/ndns.conf`` (``/etc/ndn/ndns.conf``), to the desired path of the database file.
-By default, ``dbfile`` is assigned to ``${LOCALSTATEDIR}/lib/ndns/ndns.db`` (``/var/lib/ndns/ndns.db``).
+Set the attribute ``dbFile`` in the NDNS configuration file, e.g., ``${SYSCONFDIR}/ndn/ndns/ndns.conf``
+(``/etc/ndn/ndns/ndns.conf``), to the desired path of the database file. By default, ``dbFile`` is equal
+to ``${LOCALSTATEDIR}/lib/ndn/ndns/ndns.db`` (``/var/lib/ndn/ndns/ndns.db``).
 
 When NDNS started, an empty database will be automatically created.
 
