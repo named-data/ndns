@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2019, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -23,10 +23,7 @@
 #include "daemon/name-server.hpp"
 
 #include "test-common.hpp"
-#include "dummy-forwarder.hpp"
 #include "unit/database-test-data.hpp"
-
-#include <ndn-cxx/util/io.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -38,49 +35,46 @@ class ValidatorTestFixture : public DbTestData
 {
 public:
   ValidatorTestFixture()
-    : m_forwarder(m_io, m_keyChain)
-    , m_face(m_forwarder.addFace())
-    , m_validator(NdnsValidatorBuilder::create(m_face, 500, 0, TEST_CONFIG_PATH "/" "validator.conf"))
+    : m_validatorFace(m_io, m_keyChain, {true, true})
+    , m_validator(NdnsValidatorBuilder::create(m_validatorFace, 500, 0,
+                                               TEST_CONFIG_PATH "/validator.conf"))
   {
     // generate a random cert
     // check how does name-server test do
-    // initlize all servers
-    auto addServer = [&] (const Name& zoneName) {
-      Face& face = m_forwarder.addFace();
+    // initialize all servers
+    auto addServer = [this] (const Name& zoneName) {
+      m_serverFaces.push_back(make_unique<util::DummyClientFace>(m_io, m_keyChain,
+                                                                 util::DummyClientFace::Options{true, true}));
+      m_serverFaces.back()->linkTo(m_validatorFace);
+
       // validator is used only for check update signature
       // no updates tested here, so validator will not be used
       // passing m_validator is only for construct server
       Name certName = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain,
                                                                       Name(zoneName).append("NDNS"));
-      auto server = make_shared<NameServer>(zoneName, certName, face,
+      auto server = make_shared<NameServer>(zoneName, certName, *m_serverFaces.back(),
                                             m_session, m_keyChain, *m_validator);
-      m_servers.push_back(server);
+      m_servers.push_back(std::move(server));
     };
     addServer(m_testName);
     addServer(m_netName);
     addServer(m_ndnsimName);
+
     m_ndnsimCert = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain,
-                                                        Name(m_ndnsimName).append("NDNS"));
+                                                                   Name(m_ndnsimName).append("NDNS"));
     m_randomCert = m_keyChain.createIdentity("/random/identity").getDefaultKey()
-    .getDefaultCertificate().getName();
+                   .getDefaultCertificate().getName();
     advanceClocks(time::milliseconds(10), 1);
   }
 
-  ~ValidatorTestFixture()
-  {
-    m_face.getIoService().stop();
-    m_face.shutdown();
-  }
-
 public:
-  DummyForwarder m_forwarder;
-  ndn::Face& m_face;
+  util::DummyClientFace m_validatorFace;
   unique_ptr<security::v2::Validator> m_validator;
+  std::vector<unique_ptr<util::DummyClientFace>> m_serverFaces;
   std::vector<shared_ptr<ndns::NameServer>> m_servers;
   Name m_ndnsimCert;
   Name m_randomCert;
 };
-
 
 BOOST_FIXTURE_TEST_CASE(Basic, ValidatorTestFixture)
 {

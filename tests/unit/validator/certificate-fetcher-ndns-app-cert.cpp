@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2019, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -26,10 +26,8 @@
 #include "mgmt/management-tool.hpp"
 
 #include "test-common.hpp"
-#include "dummy-forwarder.hpp"
 #include "unit/database-test-data.hpp"
 
-#include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/security/v2/validation-policy-simple-hierarchy.hpp>
 
 namespace ndn {
@@ -38,8 +36,8 @@ namespace tests {
 
 BOOST_AUTO_TEST_SUITE(AppCertFetcher)
 
-unique_ptr<security::v2::Validator>
-CreateValidatorAppCert(Face& face)
+static unique_ptr<security::v2::Validator>
+makeValidatorAppCert(Face& face)
 {
   return make_unique<security::v2::Validator>(make_unique<::ndn::security::v2::ValidationPolicySimpleHierarchy>(),
                                               make_unique<CertificateFetcherAppCert>(face));
@@ -49,36 +47,33 @@ class AppCertFetcherFixture : public DbTestData
 {
 public:
   AppCertFetcherFixture()
-    : m_forwarder(m_io, m_keyChain)
-    , m_face(m_forwarder.addFace())
-    , m_validator(CreateValidatorAppCert(m_face))
+    : m_validatorFace(m_io, m_keyChain, {true, true})
+    , m_validator(makeValidatorAppCert(m_validatorFace))
   {
     // build the data and certificate for this test
     buildAppCertAndData();
 
-    auto validatorOnlyForConstructServer = NdnsValidatorBuilder::create(m_face, 10, 0, TEST_CONFIG_PATH "/" "validator.conf");
-    // initlize all servers
-    auto addServer = [&] (const Name& zoneName) {
-      Face& face = m_forwarder.addFace();
+    auto serverValidator = NdnsValidatorBuilder::create(m_validatorFace, 10, 0,
+                                                        TEST_CONFIG_PATH "/validator.conf");
+    // initialize all servers
+    auto addServer = [this, &serverValidator] (const Name& zoneName) {
+      m_serverFaces.push_back(make_unique<util::DummyClientFace>(m_io, m_keyChain,
+                                                                 util::DummyClientFace::Options{true, true}));
+      m_serverFaces.back()->linkTo(m_validatorFace);
+
       // validator is used only for check update signature
       // no updates tested here, so validator will not be used
       // passing m_validator is only for construct server
       Name certName = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain,
-                                                           Name(zoneName).append("NDNS"));
-      auto server = make_shared<NameServer>(zoneName, certName, face,
-                                            m_session, m_keyChain, *validatorOnlyForConstructServer);
-      m_servers.push_back(server);
+                                                                      Name(zoneName).append("NDNS"));
+      auto server = make_shared<NameServer>(zoneName, certName, *m_serverFaces.back(),
+                                            m_session, m_keyChain, *serverValidator);
+      m_servers.push_back(std::move(server));
     };
     addServer(m_testName);
     addServer(m_netName);
     addServer(m_ndnsimName);
     advanceClocks(time::milliseconds(10), 1);
-  }
-
-  ~AppCertFetcherFixture()
-  {
-    m_face.getIoService().stop();
-    m_face.shutdown();
   }
 
 private:
@@ -109,13 +104,12 @@ private:
   }
 
 public:
-  DummyForwarder m_forwarder;
-  ndn::Face& m_face;
+  util::DummyClientFace m_validatorFace;
   unique_ptr<security::v2::Validator> m_validator;
+  std::vector<unique_ptr<util::DummyClientFace>> m_serverFaces;
   std::vector<shared_ptr<ndns::NameServer>> m_servers;
   Data m_appCertSignedData;
 };
-
 
 BOOST_FIXTURE_TEST_CASE(Basic, AppCertFetcherFixture)
 {
