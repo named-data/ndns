@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2019, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -38,14 +38,14 @@ CertificateFetcherNdnsCert::CertificateFetcherNdnsCert(Face& face,
   : m_face(face)
   , m_nsCache(make_unique<InMemoryStorageFifo>(nsCacheSize))
   , m_startComponentIndex(startComponentIndex)
-{}
+{
+}
 
 void
 CertificateFetcherNdnsCert::doFetch(const shared_ptr<security::v2::CertificateRequest>& certRequest,
                                     const shared_ptr<security::v2::ValidationState>& state,
                                     const ValidationContinuation& continueValidation)
 {
-  using IterativeQueryTag = SimpleTag<shared_ptr<IterativeQueryController>, 1086>;
   const Name& key = certRequest->interest.getName();
   Name domain = calculateDomain(key);
   if (domain.size() == m_startComponentIndex) {
@@ -54,7 +54,7 @@ CertificateFetcherNdnsCert::doFetch(const shared_ptr<security::v2::CertificateRe
                    + " is globally routable because startComponentIndex="
                    + std::to_string(m_startComponentIndex),
                    certRequest, state, continueValidation);
-    return ;
+    return;
   }
 
   auto query = std::make_shared<IterativeQueryController>(domain,
@@ -124,13 +124,13 @@ CertificateFetcherNdnsCert::nsFailCallback(const std::string& errMsg,
   interestName.append(label::CERT_RR_TYPE);
   Interest interest(interestName);
   m_face.expressInterest(interest,
-                         [=] (const Interest& interest, const Data& data) {
+                         [=] (const Interest&, const Data& data) {
                            dataCallback(data, certRequest, state, continueValidation);
                          },
-                         [=] (const Interest& interest, const lp::Nack& nack) {
+                         [=] (const Interest&, const lp::Nack& nack) {
                            nackCallback(nack, certRequest, state, continueValidation);
                          },
-                         [=] (const Interest& interest) {
+                         [=] (const Interest&) {
                            timeoutCallback(certRequest, state, continueValidation);
                          });
 }
@@ -154,14 +154,17 @@ CertificateFetcherNdnsCert::dataCallback(const Data& data,
 {
   NDNS_LOG_DEBUG("Fetched certificate from network " << data.getName());
 
+  state->removeTag<IterativeQueryTag>();
+
   Certificate cert;
   try {
     cert = Certificate(data);
   }
   catch (const ndn::tlv::Error& e) {
-    return state->fail({security::v2::ValidationError::Code::MALFORMED_CERT, "Fetched a malformed certificate "
-                        "`" + data.getName().toUri() + "` (" + e.what() + ")"});
+    return state->fail({security::v2::ValidationError::Code::MALFORMED_CERT, "Fetched a malformed "
+                        "certificate `" + data.getName().toUri() + "` (" + e.what() + ")"});
   }
+
   continueValidation(cert, state);
 }
 
@@ -180,8 +183,9 @@ CertificateFetcherNdnsCert::nackCallback(const lp::Nack& nack,
     fetch(certRequest, state, continueValidation);
   }
   else {
-    state->fail({security::v2::ValidationError::Code::CANNOT_RETRIEVE_CERT, "Cannot fetch certificate after all "
-                 "retries `" + certRequest->interest.getName().toUri() + "`"});
+    state->removeTag<IterativeQueryTag>();
+    state->fail({security::v2::ValidationError::Code::CANNOT_RETRIEVE_CERT, "Cannot fetch certificate "
+                 "after all retries `" + certRequest->interest.getName().toUri() + "`"});
   }
 }
 
@@ -198,8 +202,9 @@ CertificateFetcherNdnsCert::timeoutCallback(const shared_ptr<security::v2::Certi
     fetch(certRequest, state, continueValidation);
   }
   else {
-    state->fail({security::v2::ValidationError::Code::CANNOT_RETRIEVE_CERT, "Cannot fetch certificate after all "
-                 "retries `" + certRequest->interest.getName().toUri() + "`"});
+    state->removeTag<IterativeQueryTag>();
+    state->fail({security::v2::ValidationError::Code::CANNOT_RETRIEVE_CERT, "Cannot fetch certificate "
+                 "after all retries `" + certRequest->interest.getName().toUri() + "`"});
   }
 }
 
