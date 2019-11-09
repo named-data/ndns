@@ -1,46 +1,45 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
+from waflib import Context, Logs, Utils
+import os, subprocess
+
 VERSION = '0.1.0'
 APPNAME = 'ndns'
 BUGREPORT = 'https://redmine.named-data.net/projects/ndns'
 URL = 'http://named-data.net/doc/ndns/'
 GIT_TAG_PREFIX = 'ndns-'
 
-from waflib import Logs, Utils, Context
-import os, subprocess
-
 def options(opt):
     opt.load(['compiler_cxx', 'gnu_dirs'])
-    opt.load(['boost', 'default-compiler-flags', 'doxygen', 'sphinx_build',
-              'sqlite3', 'sanitizers', 'coverage'], tooldir=['.waf-tools'])
+    opt.load(['default-compiler-flags', 'coverage', 'sanitizers', 'boost', 'sqlite3',
+              'doxygen', 'sphinx_build'],
+             tooldir=['.waf-tools'])
 
-    ropt = opt.add_option_group('NDNS Options')
-    ropt.add_option('--with-tests', action='store_true', default=False, help='build unit tests')
+    optgrp = opt.add_option_group('NDNS Options')
+    optgrp.add_option('--with-tests', action='store_true', default=False,
+                      help='Build unit tests')
 
 def configure(conf):
     conf.load(['compiler_cxx', 'gnu_dirs',
-               'boost', 'default-compiler-flags', 'doxygen', 'sphinx_build',
-               'sqlite3'])
+               'default-compiler-flags', 'boost', 'sqlite3',
+               'doxygen', 'sphinx_build'])
 
     conf.env['WITH_TESTS'] = conf.options.with_tests
 
-    if 'PKG_CONFIG_PATH' not in os.environ:
-        os.environ['PKG_CONFIG_PATH'] = Utils.subst_vars('${LIBDIR}/pkgconfig', conf.env)
-    conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'],
-                   uselib_store='NDN_CXX', mandatory=True)
+    conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'], uselib_store='NDN_CXX',
+                   pkg_config_path=os.environ.get('PKG_CONFIG_PATH', '%s/pkgconfig' % conf.env.LIBDIR))
 
-    conf.check_sqlite3(mandatory=True)
+    conf.check_sqlite3()
 
-    USED_BOOST_LIBS = ['system', 'filesystem', 'thread', 'log', 'log_setup']
+    USED_BOOST_LIBS = ['system', 'program_options', 'filesystem', 'thread', 'log']
     if conf.env['WITH_TESTS']:
         USED_BOOST_LIBS += ['unit_test_framework']
-    conf.check_boost(lib=USED_BOOST_LIBS, mandatory=True, mt=True)
+    conf.check_boost(lib=USED_BOOST_LIBS, mt=True)
 
     conf.check_compiler_flags()
 
     # Loading "late" to prevent tests from being compiled with profiling flags
     conf.load('coverage')
-
     conf.load('sanitizers')
 
     conf.define_cond('HAVE_TESTS', conf.env['WITH_TESTS'])
@@ -135,7 +134,8 @@ def sphinx(bld):
         config='docs/conf.py',
         outdir='docs',
         source=bld.path.ant_glob('docs/**/*.rst'),
-        VERSION=VERSION)
+        version=VERSION_BASE,
+        release=VERSION)
 
 def version(ctx):
     # don't execute more than once
