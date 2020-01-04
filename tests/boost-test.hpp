@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016,  Regents of the University of California,
+/*
+ * Copyright (c) 2014-2020,  Regents of the University of California,
  *                           Arizona Board of Regents,
  *                           Colorado State University,
  *                           University Pierre & Marie Curie, Sorbonne University,
@@ -31,9 +31,7 @@
 #pragma GCC system_header
 #pragma clang system_header
 
-#include <boost/test/test_tools.hpp>
+#define BOOST_TEST_DYN_LINK
 #include <boost/test/unit_test.hpp>
-#include <boost/concept_check.hpp>
-#include <boost/test/output_test_stream.hpp>
 
-#endif // NDN_TESTS_BOOST_TEST_HPP
+#endif // NDNS_TESTS_BOOST_TEST_HPP

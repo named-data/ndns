@@ -1,7 +1,5 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
-from waflib import Utils, Context
-
 top = '..'
 
 def build(bld):
@@ -12,7 +10,7 @@ def build(bld):
     config_path = 'TEST_CONFIG_PATH="%s"' % tmp_folder
     tmp_folder.make_node('anchors').mkdir()
 
-    bld(features="subst",
+    bld(features='subst',
         name='test-validator-conf',
         source='../validator.conf.sample.in',
         target=tmp_folder.make_node('validator.conf'),
@@ -21,7 +19,6 @@ def build(bld):
     bld.objects(
         target='unit-tests-main',
         source='main.cpp',
-        defines=['BOOST_TEST_MODULE=NDNS Unit Tests', config_path],
         use='ndns-objects')
 
     bld.program(

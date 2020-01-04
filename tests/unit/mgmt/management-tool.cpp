@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -18,21 +18,26 @@
  */
 
 #include "mgmt/management-tool.hpp"
-#include "test-common.hpp"
 #include "daemon/rrset-factory.hpp"
 #include "util/cert-helper.hpp"
 #include "ndns-enum.hpp"
 #include "ndns-label.hpp"
 #include "ndns-tlv.hpp"
+#include "test-common.hpp"
 
 #include <random>
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/range/adaptors.hpp>
+#if BOOST_VERSION >= 105900
+#include <boost/test/tools/output_test_stream.hpp>
+#else
+#include <boost/test/output_test_stream.hpp>
+#endif
 
+#include <ndn-cxx/security/transform.hpp>
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/util/regex.hpp>
-#include <ndn-cxx/security/transform.hpp>
 
 using boost::test_tools::output_test_stream;
 
