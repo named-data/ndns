@@ -47,7 +47,7 @@ NDNS_LOG_INIT(ManagementTool);
 using security::transform::base64Encode;
 using security::transform::streamSink;
 using security::transform::bufferSource;
-using security::v2::Certificate;
+using security::Certificate;
 using security::Identity;
 using security::Key;
 
@@ -213,7 +213,7 @@ void
 ManagementTool::exportCertificate(const Name& certName, const std::string& outFile)
 {
   // only search in local NDNS database
-  security::v2::Certificate cert;
+  security::Certificate cert;
   shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<NDNS>(<>+)<CERT><>");
   if (!regex->match(certName)) {
     BOOST_THROW_EXCEPTION(Error("Certificate name is illegal"));
@@ -229,7 +229,7 @@ ManagementTool::exportCertificate(const Name& certName, const std::string& outFi
   rrset.setLabel(label);
   rrset.setType(label::CERT_RR_TYPE);
   if (m_dbMgr.find(rrset)) {
-    cert = security::v2::Certificate(rrset.getData());
+    cert = security::Certificate(rrset.getData());
   }
   else {
     BOOST_THROW_EXCEPTION(Error("Cannot find the cert: " + certName.toUri()));
@@ -390,11 +390,11 @@ ManagementTool::addRrsetFromFile(const Name& zoneName,
   generateDoe(*rrset.getZone());
 }
 
-security::v2::Certificate
+security::Certificate
 ManagementTool::getZoneDkey(Zone& zone)
 {
   std::map<std::string, Block> zoneInfo = m_dbMgr.getZoneInfo(zone);
-  return security::v2::Certificate(zoneInfo["dkey"]);
+  return security::Certificate(zoneInfo["dkey"]);
 }
 
 void
@@ -502,7 +502,7 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
         ndn::util::IndentedStream istream(os, "; ");
 
         if (re.getRrType() == label::CERT_RR_TYPE) {
-          security::v2::Certificate cert(rrset.getData());
+          security::Certificate cert(rrset.getData());
           os << cert;
           // cert.printCertificate(istream);
         }

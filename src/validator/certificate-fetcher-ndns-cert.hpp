@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2017, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -22,7 +22,7 @@
 
 #include <ndn-cxx/face.hpp>
 #include <ndn-cxx/ims/in-memory-storage.hpp>
-#include <ndn-cxx/security/v2/certificate-fetcher.hpp>
+#include <ndn-cxx/security/certificate-fetcher.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -30,7 +30,7 @@ namespace ndns {
 /**
  * @brief Fetch NDNS-owned certificate by an iterative query process
  */
-class CertificateFetcherNdnsCert : public security::v2::CertificateFetcher
+class CertificateFetcherNdnsCert : public security::CertificateFetcher
 {
 public:
   explicit
@@ -46,8 +46,8 @@ public:
 
 protected:
   void
-  doFetch(const shared_ptr<security::v2::CertificateRequest>& certRequest,
-          const shared_ptr<security::v2::ValidationState>& state,
+  doFetch(const shared_ptr<security::CertificateRequest>& certRequest,
+          const shared_ptr<security::ValidationState>& state,
           const ValidationContinuation& continueValidation) override;
 
 private:
@@ -56,8 +56,8 @@ private:
    */
   void
   nsSuccessCallback(const Data& data,
-                    const shared_ptr<security::v2::CertificateRequest>& certRequest,
-                    const shared_ptr<security::v2::ValidationState>& state,
+                    const shared_ptr<security::CertificateRequest>& certRequest,
+                    const shared_ptr<security::ValidationState>& state,
                     const ValidationContinuation& continueValidation);
 
   /**
@@ -67,8 +67,8 @@ private:
    */
   void
   nsFailCallback(const std::string& errMsg,
-                 const shared_ptr<security::v2::CertificateRequest>& certRequest,
-                 const shared_ptr<security::v2::ValidationState>& state,
+                 const shared_ptr<security::CertificateRequest>& certRequest,
+                 const shared_ptr<security::ValidationState>& state,
                  const ValidationContinuation& continueValidation);
 
   /**
@@ -84,8 +84,8 @@ private:
    */
   void
   dataCallback(const Data& data,
-               const shared_ptr<security::v2::CertificateRequest>& certRequest,
-               const shared_ptr<security::v2::ValidationState>& state,
+               const shared_ptr<security::CertificateRequest>& certRequest,
+               const shared_ptr<security::ValidationState>& state,
                const ValidationContinuation& continueValidation);
   /**
    * @brief Callback invoked when interest for fetching certificate gets NACKed.
@@ -96,8 +96,8 @@ private:
    */
   void
   nackCallback(const lp::Nack& nack,
-               const shared_ptr<security::v2::CertificateRequest>& certRequest,
-               const shared_ptr<security::v2::ValidationState>& state,
+               const shared_ptr<security::CertificateRequest>& certRequest,
+               const shared_ptr<security::ValidationState>& state,
                const ValidationContinuation& continueValidation);
 
   /**
@@ -106,8 +106,8 @@ private:
    * It will retry if certRequest->m_nRetriesLeft > 0
    */
   void
-  timeoutCallback(const shared_ptr<security::v2::CertificateRequest>& certRequest,
-                  const shared_ptr<security::v2::ValidationState>& state,
+  timeoutCallback(const shared_ptr<security::CertificateRequest>& certRequest,
+                  const shared_ptr<security::ValidationState>& state,
                   const ValidationContinuation& continueValidation);
 protected:
   Face& m_face;

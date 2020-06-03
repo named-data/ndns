@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -130,7 +130,7 @@ main(int argc, char* argv[])
     KeyChain keyChain;
     ndn::ndns::ManagementTool tool(db, keyChain);
     ndn::ndns::Zone createdZone = tool.createZone(zone, parent, cacheTtl, certTtl, ksk, dsk, dkey);
-    ndn::security::v2::Certificate dkeyCert = tool.getZoneDkey(createdZone);
+    ndn::security::Certificate dkeyCert = tool.getZoneDkey(createdZone);
     NDNS_LOG_INFO("Generated DKEY " << dkeyCert.getName());
     ndn::io::save(dkeyCert, std::cout);
   }

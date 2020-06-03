@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -40,12 +40,12 @@ public:
   static Name
   getIdentityNameFromCert(const Name& certName);
 
-  static security::v2::Certificate
+  static security::Certificate
   getCertificate(const KeyChain& keyChain,
                  const Name& identity,
                  const Name& certName);
 
-  static security::v2::Certificate
+  static security::Certificate
   getCertificate(const KeyChain& keyChain,
                  const Name& certName);
 
@@ -55,7 +55,7 @@ public:
   static const Name&
   getDefaultCertificateNameOfIdentity(const KeyChain& keyChain, const Name& identityName);
 
-  static security::v2::Certificate
+  static security::Certificate
   createCertificate(KeyChain& keyChain,
                     const security::Key& key,
                     const security::Key& signingKey,

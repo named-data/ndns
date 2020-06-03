@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -203,7 +203,7 @@ public:
            const name::Component& type,
            std::ostream& os);
 
-  security::v2::Certificate
+  security::Certificate
   getZoneDkey(Zone& zone);
 
   /** @brief generates an output like DNS zone file. Reference:
@@ -228,9 +228,9 @@ private:
   /** @brief add CERT to the NDNS local database
    */
   void
-  addIdCert(Zone& zone, const ndn::security::v2::Certificate& cert,
+  addIdCert(Zone& zone, const ndn::security::Certificate& cert,
             const time::seconds& ttl,
-            const ndn::security::v2::Certificate& dskCertName);
+            const ndn::security::Certificate& dskCertName);
 
   /** @brief add zone to the NDNS local database
    */

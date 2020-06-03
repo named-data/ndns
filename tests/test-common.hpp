@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -43,10 +43,10 @@ namespace ndn {
 namespace ndns {
 namespace tests {
 
-using ndn::security::v2::KeyChain;
+using ndn::security::KeyChain;
 using ndn::security::Identity;
 using ndn::security::pib::Key;
-using ndn::security::v2::Certificate;
+using ndn::security::Certificate;
 
 /** \brief create an Interest
  *  \param name Interest name

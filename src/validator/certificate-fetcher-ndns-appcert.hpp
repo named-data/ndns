@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2017, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -21,7 +21,7 @@
 #define NDNS_VALIDATOR_CERTIFICATE_FETCHER_NDNS_APPCERT_HPP
 
 #include <ndn-cxx/ims/in-memory-storage.hpp>
-#include <ndn-cxx/security/v2/validator.hpp>
+#include <ndn-cxx/security/validator.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -31,7 +31,7 @@ namespace ndns {
  * By an iterative-query process, it will retrieve the record, execute authentications,
  * and de-encapsulate record to get application's certificate.
  */
-class CertificateFetcherAppCert : public security::v2::CertificateFetcher
+class CertificateFetcherAppCert : public security::CertificateFetcher
 {
 public:
   explicit
@@ -47,8 +47,8 @@ protected:
    * If validated, de-encapsulate and call continueValidation.
    */
   void
-  doFetch(const shared_ptr<security::v2::CertificateRequest>& certRequest,
-          const shared_ptr<security::v2::ValidationState>& state,
+  doFetch(const shared_ptr<security::CertificateRequest>& certRequest,
+          const shared_ptr<security::ValidationState>& state,
           const ValidationContinuation& continueValidation) override;
 
 private:
@@ -57,8 +57,8 @@ private:
    */
   void
   onQuerySuccessCallback(const Data& data,
-                         const shared_ptr<security::v2::CertificateRequest>& certRequest,
-                         const shared_ptr<security::v2::ValidationState>& state,
+                         const shared_ptr<security::CertificateRequest>& certRequest,
+                         const shared_ptr<security::ValidationState>& state,
                          const ValidationContinuation& continueValidation);
 
   /**
@@ -68,8 +68,8 @@ private:
    */
   void
   onQueryFailCallback(const std::string& errMsg,
-                      const shared_ptr<security::v2::CertificateRequest>& certRequest,
-                      const shared_ptr<security::v2::ValidationState>& state,
+                      const shared_ptr<security::CertificateRequest>& certRequest,
+                      const shared_ptr<security::ValidationState>& state,
                       const ValidationContinuation& continueValidation);
 
   /**
@@ -77,22 +77,22 @@ private:
    */
   void
   onValidationSuccessCallback(const Data& data,
-                              const shared_ptr<security::v2::CertificateRequest>& certRequest,
-                              const shared_ptr<security::v2::ValidationState>& state,
+                              const shared_ptr<security::CertificateRequest>& certRequest,
+                              const shared_ptr<security::ValidationState>& state,
                               const ValidationContinuation& continueValidation);
 
   /**
    * @brief Callback invoked when rrset validation failed
    */
   void
-  onValidationFailCallback(const security::v2::ValidationError& err,
-                           const shared_ptr<security::v2::CertificateRequest>& certRequest,
-                           const shared_ptr<security::v2::ValidationState>& state,
+  onValidationFailCallback(const security::ValidationError& err,
+                           const shared_ptr<security::CertificateRequest>& certRequest,
+                           const shared_ptr<security::ValidationState>& state,
                            const ValidationContinuation& continueValidation);
 
 private:
   Face& m_face;
-  unique_ptr<security::v2::Validator> m_validator;
+  unique_ptr<security::Validator> m_validator;
   InMemoryStorage* m_nsCache;
   size_t m_startComponentIndex;
 };

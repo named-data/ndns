@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -124,7 +124,7 @@ public:
 private:
   Face& m_face;
   Face& m_validatorFace;
-  unique_ptr<security::v2::Validator> m_validator;
+  unique_ptr<security::Validator> m_validator;
   unique_ptr<DbMgr> m_dbMgr;
   std::vector<shared_ptr<NameServer>> m_servers;
   KeyChain m_keyChain;

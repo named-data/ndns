@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -23,7 +23,7 @@
 #include "boost-test.hpp"
 #include "test-home-fixture.hpp"
 
-#include <ndn-cxx/security/v2/key-chain.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 
 #include <vector>
@@ -51,17 +51,17 @@ protected:
  * Test cases in the suite can use this fixture to create identities.  Identities,
  * certificates, and saved certificates are automatically removed during test teardown.
  */
-class IdentityManagementV2Fixture : public IdentityManagementBaseFixture
+class IdentityManagementFixture : public IdentityManagementBaseFixture
 {
 public:
-  IdentityManagementV2Fixture();
+  IdentityManagementFixture();
 
   /**
    * @brief Add identity @p identityName
    * @return name of the created self-signed certificate
    */
   security::Identity
-  addIdentity(const Name& identityName, const KeyParams& params = security::v2::KeyChain::getDefaultKeyParams());
+  addIdentity(const Name& identityName, const KeyParams& params = security::KeyChain::getDefaultKeyParams());
 
   /**
    *  @brief Save identity certificate to a file
@@ -83,19 +83,17 @@ public:
    */
   security::Identity
   addSubCertificate(const Name& subIdentityName, const security::Identity& issuer,
-                    const KeyParams& params = security::v2::KeyChain::getDefaultKeyParams());
+                    const KeyParams& params = security::KeyChain::getDefaultKeyParams());
 
   /**
    * @brief Add a self-signed certificate to @p key with issuer ID @p issuer
    */
-  security::v2::Certificate
+  security::Certificate
   addCertificate(const security::Key& key, const std::string& issuer);
 
 protected:
-  security::v2::KeyChain m_keyChain;
+  security::KeyChain m_keyChain;
 };
-
-using IdentityManagementFixture = IdentityManagementV2Fixture;
 
 } // namespace tests
 } // namespace ndns

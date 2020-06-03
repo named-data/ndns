@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -22,7 +22,7 @@
 #include "certificate-fetcher-ndns-cert.hpp"
 #include "logger.hpp"
 
-#include <ndn-cxx/security/v2/validation-policy-config.hpp>
+#include <ndn-cxx/security/validation-policy-config.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -31,17 +31,17 @@ NDNS_LOG_INIT(Validator);
 
 std::string NdnsValidatorBuilder::VALIDATOR_CONF_FILE(NDNS_CONFDIR "/validator.conf");
 
-unique_ptr<security::v2::Validator>
+unique_ptr<security::Validator>
 NdnsValidatorBuilder::create(Face& face,
                              size_t nsCacheSize,
                              size_t startComponentIndex,
                              const std::string& confFile)
 {
-  auto validator = make_unique<security::v2::Validator>(make_unique<security::v2::ValidationPolicyConfig>(),
-                                                        make_unique<CertificateFetcherNdnsCert>(face,
-                                                                                                nsCacheSize,
-                                                                                                startComponentIndex));
-  auto& policy = dynamic_cast<security::v2::ValidationPolicyConfig&>(validator->getPolicy());
+  auto validator = make_unique<security::Validator>(make_unique<security::ValidationPolicyConfig>(),
+                                                    make_unique<CertificateFetcherNdnsCert>(face,
+                                                                                            nsCacheSize,
+                                                                                            startComponentIndex));
+  auto& policy = dynamic_cast<security::ValidationPolicyConfig&>(validator->getPolicy());
   policy.load(confFile);
   NDNS_LOG_TRACE("Validator loads configuration: " << confFile);
 

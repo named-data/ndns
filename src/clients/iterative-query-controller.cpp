@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -32,7 +32,7 @@ IterativeQueryController::IterativeQueryController(const Name& dstLabel,
                                                    const QuerySucceedCallback& onSucceed,
                                                    const QueryFailCallback& onFail,
                                                    Face& face,
-                                                   security::v2::Validator* validator,
+                                                   security::Validator* validator,
                                                    ndn::InMemoryStorage* cache)
   : QueryController(dstLabel, rrType, interestLifetime, onSucceed, onFail, face)
   , m_validator(validator)
@@ -86,7 +86,7 @@ IterativeQueryController::onData(const ndn::Interest& interest, const Data& data
   else {
     m_validator->validate(*toBeValidatedData,
                           bind(&IterativeQueryController::onDataValidated, this, _1, contentType),
-                          [this] (const Data& data, const security::v2::ValidationError& err) {
+                          [this] (const Data& data, const security::ValidationError& err) {
                             NDNS_LOG_WARN("data: " << data.getName() << " fails verification");
                             this->abort();
                           }

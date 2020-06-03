@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -60,7 +60,7 @@ public:
   IterativeQueryController(const Name& dstLabel, const name::Component& rrType,
                            const time::milliseconds& interestLifetime,
                            const QuerySucceedCallback& onSucceed, const QueryFailCallback& onFail,
-                           Face& face, security::v2::Validator* validator = nullptr,
+                           Face& face, security::Validator* validator = nullptr,
                            ndn::InMemoryStorage* cache = nullptr);
 
   virtual void
@@ -138,7 +138,7 @@ private:
   isAbsentByDoe(const Data& data) const;
 
 protected:
-  security::v2::Validator* m_validator;
+  security::Validator* m_validator;
   /**
    * @brief current query step
    */

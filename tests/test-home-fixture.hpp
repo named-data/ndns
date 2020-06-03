@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -21,8 +21,6 @@
 #define NDNS_TESTS_TEST_HOME_FIXTURE_HPP
 
 #include "boost-test.hpp"
-
-#include <ndn-cxx/security/v2/key-chain.hpp>
 
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string.hpp>

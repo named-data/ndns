@@ -57,7 +57,7 @@ public:
 public:
   ndn::util::DummyClientFace face;
   const Name& zone;
-  unique_ptr<security::v2::Validator> validator;
+  unique_ptr<security::Validator> validator;
   ndns::NameServer server;
 };
 
@@ -370,7 +370,7 @@ public:
   ndn::util::DummyClientFace face;
   ndn::util::DummyClientFace validatorFace;
   const Name& zone;
-  unique_ptr<security::v2::Validator> validator;
+  unique_ptr<security::Validator> validator;
   ndns::NameServer server;
 };
 

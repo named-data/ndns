@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -170,7 +170,7 @@ private:
   }
 
   void
-  onDataValidationFailed(const Data& data, const security::v2::ValidationError& err)
+  onDataValidationFailed(const Data& data, const security::ValidationError& err)
   {
     NDNS_LOG_INFO("final data does not pass verification");
     m_hasError = true;
@@ -205,7 +205,7 @@ private:
 
   Face m_face;
 
-  unique_ptr<security::v2::Validator> m_validator;
+  unique_ptr<security::Validator> m_validator;
   bool m_shouldValidateIntermediate;
   std::unique_ptr<QueryController> m_ctr;
 

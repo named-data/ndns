@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -28,7 +28,7 @@
 #include "test-common.hpp"
 #include "unit/database-test-data.hpp"
 
-#include <ndn-cxx/security/v2/validation-policy-simple-hierarchy.hpp>
+#include <ndn-cxx/security/validation-policy-simple-hierarchy.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -36,11 +36,11 @@ namespace tests {
 
 BOOST_AUTO_TEST_SUITE(AppCertFetcher)
 
-static unique_ptr<security::v2::Validator>
+static unique_ptr<security::Validator>
 makeValidatorAppCert(Face& face)
 {
-  return make_unique<security::v2::Validator>(make_unique<::ndn::security::v2::ValidationPolicySimpleHierarchy>(),
-                                              make_unique<CertificateFetcherAppCert>(face));
+  return make_unique<security::Validator>(make_unique<::ndn::security::ValidationPolicySimpleHierarchy>(),
+                                          make_unique<CertificateFetcherAppCert>(face));
 }
 
 class AppCertFetcherFixture : public DbTestData
@@ -105,7 +105,7 @@ private:
 
 public:
   util::DummyClientFace m_validatorFace;
-  unique_ptr<security::v2::Validator> m_validator;
+  unique_ptr<security::Validator> m_validator;
   std::vector<unique_ptr<util::DummyClientFace>> m_serverFaces;
   std::vector<shared_ptr<ndns::NameServer>> m_servers;
   Data m_appCertSignedData;
@@ -119,7 +119,7 @@ BOOST_FIXTURE_TEST_CASE(Basic, AppCertFetcherFixture)
                          hasValidated = true;
                          BOOST_CHECK(true);
                        },
-                       [&] (const Data& data, const security::v2::ValidationError& str) {
+                       [&] (const Data& data, const security::ValidationError& str) {
                          hasValidated = true;
                          BOOST_CHECK(false);
                        });

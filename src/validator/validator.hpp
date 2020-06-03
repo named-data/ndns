@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -23,7 +23,7 @@
 #include "config.hpp"
 
 #include <ndn-cxx/data.hpp>
-#include <ndn-cxx/security/v2/validator.hpp>
+#include <ndn-cxx/security/validator.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -33,7 +33,7 @@ class NdnsValidatorBuilder
 public:
   static std::string VALIDATOR_CONF_FILE;
 
-  static unique_ptr<security::v2::Validator>
+  static unique_ptr<security::Validator>
   create(Face& face,
          size_t nsCacheSize = 500,
          size_t startComponentIndex = 0,

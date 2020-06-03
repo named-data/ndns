@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -39,7 +39,7 @@ CertHelper::doesIdentityExist(const KeyChain& keyChain, const Name& identityName
   }
 }
 
-security::v2::Certificate
+security::Certificate
 CertHelper::getCertificate(const KeyChain& keyChain,
                            const Name& identity,
                            const Name& certName)
@@ -67,7 +67,7 @@ CertHelper::getIdentityNameFromCert(const Name& certName)
   BOOST_THROW_EXCEPTION(std::runtime_error(certName.toUri() + " is not a legal cert name"));
 }
 
-security::v2::Certificate
+security::Certificate
 CertHelper::getCertificate(const KeyChain& keyChain,
                            const Name& certName)
 {
@@ -89,7 +89,7 @@ CertHelper::getDefaultCertificateNameOfIdentity(const KeyChain& keyChain, const 
                                             .getName();
 }
 
-security::v2::Certificate
+security::Certificate
 CertHelper::createCertificate(KeyChain& keyChain,
                               const security::Key& key,
                               const security::Key& signingKey,
@@ -100,7 +100,7 @@ CertHelper::createCertificate(KeyChain& keyChain,
   certificateName
     .append(issuer)
     .appendVersion();
-  security::v2::Certificate certificate;
+  security::Certificate certificate;
   certificate.setName(certificateName);
 
   // set metainfo

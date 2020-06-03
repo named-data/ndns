@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -69,7 +69,7 @@ public:
 
 public:
   util::DummyClientFace m_validatorFace;
-  unique_ptr<security::v2::Validator> m_validator;
+  unique_ptr<security::Validator> m_validator;
   std::vector<unique_ptr<util::DummyClientFace>> m_serverFaces;
   std::vector<shared_ptr<ndns::NameServer>> m_servers;
   Name m_ndnsimCert;
@@ -99,7 +99,7 @@ BOOST_FIXTURE_TEST_CASE(Basic, ValidatorTestFixture)
                           hasValidated = true;
                           BOOST_CHECK(true);
                         },
-                        [&] (const Data& data, const security::v2::ValidationError& str) {
+                        [&] (const Data& data, const security::ValidationError& str) {
                           hasValidated = true;
                           BOOST_CHECK(false);
                         });
@@ -125,7 +125,7 @@ BOOST_FIXTURE_TEST_CASE(Basic, ValidatorTestFixture)
                           hasValidated = true;
                           BOOST_CHECK(false);
                         },
-                        [&] (const Data& data, const security::v2::ValidationError& str) {
+                        [&] (const Data& data, const security::ValidationError& str) {
                           hasValidated = true;
                           BOOST_CHECK(true);
                         });
@@ -151,7 +151,7 @@ BOOST_FIXTURE_TEST_CASE(Basic, ValidatorTestFixture)
                           hasValidated = true;
                           BOOST_CHECK(false);
                         },
-                        [&] (const Data& data, const security::v2::ValidationError& str) {
+                        [&] (const Data& data, const security::ValidationError& str) {
                           hasValidated = true;
                           BOOST_CHECK(true);
                         });

@@ -20,15 +20,13 @@
 #include "identity-management-fixture.hpp"
 
 #include <ndn-cxx/util/io.hpp>
-#include <ndn-cxx/security/v2/additional-description.hpp>
+#include <ndn-cxx/security/additional-description.hpp>
 
 #include <boost/filesystem.hpp>
 
 namespace ndn {
 namespace ndns {
 namespace tests {
-
-namespace v2 = security::v2;
 
 IdentityManagementBaseFixture::~IdentityManagementBaseFixture()
 {
@@ -51,13 +49,13 @@ IdentityManagementBaseFixture::saveCertToFile(const Data& obj, const std::string
   }
 }
 
-IdentityManagementV2Fixture::IdentityManagementV2Fixture()
+IdentityManagementFixture::IdentityManagementFixture()
   : m_keyChain("pib-memory:", "tpm-memory:")
 {
 }
 
 security::Identity
-IdentityManagementV2Fixture::addIdentity(const Name& identityName, const KeyParams& params)
+IdentityManagementFixture::addIdentity(const Name& identityName, const KeyParams& params)
 {
   auto identity = m_keyChain.createIdentity(identityName, params);
   m_identities.insert(identityName);
@@ -65,7 +63,7 @@ IdentityManagementV2Fixture::addIdentity(const Name& identityName, const KeyPara
 }
 
 bool
-IdentityManagementV2Fixture::saveIdentityCertificate(const security::Identity& identity,
+IdentityManagementFixture::saveIdentityCertificate(const security::Identity& identity,
                                                      const std::string& filename)
 {
   try {
@@ -78,12 +76,12 @@ IdentityManagementV2Fixture::saveIdentityCertificate(const security::Identity& i
 }
 
 security::Identity
-IdentityManagementV2Fixture::addSubCertificate(const Name& subIdentityName,
+IdentityManagementFixture::addSubCertificate(const Name& subIdentityName,
                                                const security::Identity& issuer, const KeyParams& params)
 {
   auto subIdentity = addIdentity(subIdentityName, params);
 
-  v2::Certificate request = subIdentity.getDefaultKey().getDefaultCertificate();
+  security::Certificate request = subIdentity.getDefaultKey().getDefaultCertificate();
 
   request.setName(request.getKeyName().append("parent").appendVersion());
 
@@ -91,7 +89,7 @@ IdentityManagementV2Fixture::addSubCertificate(const Name& subIdentityName,
   info.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
                                                   time::system_clock::now() + time::days(7300)));
 
-  v2::AdditionalDescription description;
+  security::AdditionalDescription description;
   description.set("type", "sub-certificate");
   info.addCustomTlv(description.wireEncode());
 
@@ -101,14 +99,14 @@ IdentityManagementV2Fixture::addSubCertificate(const Name& subIdentityName,
   return subIdentity;
 }
 
-v2::Certificate
-IdentityManagementV2Fixture::addCertificate(const security::Key& key, const std::string& issuer)
+security::Certificate
+IdentityManagementFixture::addCertificate(const security::Key& key, const std::string& issuer)
 {
   Name certificateName = key.getName();
   certificateName
     .append(issuer)
     .appendVersion();
-  v2::Certificate certificate;
+  security::Certificate certificate;
   certificate.setName(certificateName);
 
   // set metainfo
@@ -126,7 +124,6 @@ IdentityManagementV2Fixture::addCertificate(const security::Key& key, const std:
   m_keyChain.sign(certificate, signingByKey(key).setSignatureInfo(info));
   return certificate;
 }
-
 
 } // namespace tests
 } // namespace ndns

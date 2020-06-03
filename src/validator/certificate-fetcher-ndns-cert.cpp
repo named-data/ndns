@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -28,7 +28,7 @@
 namespace ndn {
 namespace ndns {
 
-using security::v2::Certificate;
+using security::Certificate;
 
 NDNS_LOG_INIT(CertificateFetcherNdnsCert);
 
@@ -42,8 +42,8 @@ CertificateFetcherNdnsCert::CertificateFetcherNdnsCert(Face& face,
 }
 
 void
-CertificateFetcherNdnsCert::doFetch(const shared_ptr<security::v2::CertificateRequest>& certRequest,
-                                    const shared_ptr<security::v2::ValidationState>& state,
+CertificateFetcherNdnsCert::doFetch(const shared_ptr<security::CertificateRequest>& certRequest,
+                                    const shared_ptr<security::ValidationState>& state,
                                     const ValidationContinuation& continueValidation)
 {
   const Name& key = certRequest->interest.getName();
@@ -77,8 +77,8 @@ CertificateFetcherNdnsCert::doFetch(const shared_ptr<security::v2::CertificateRe
 
 void
 CertificateFetcherNdnsCert::nsSuccessCallback(const Data& data,
-                                              const shared_ptr<security::v2::CertificateRequest>& certRequest,
-                                              const shared_ptr<security::v2::ValidationState>& state,
+                                              const shared_ptr<security::CertificateRequest>& certRequest,
+                                              const shared_ptr<security::ValidationState>& state,
                                               const ValidationContinuation& continueValidation)
 {
   Name interestName(certRequest->interest.getName());
@@ -113,8 +113,8 @@ CertificateFetcherNdnsCert::nsSuccessCallback(const Data& data,
 
 void
 CertificateFetcherNdnsCert::nsFailCallback(const std::string& errMsg,
-                                           const shared_ptr<security::v2::CertificateRequest>& certRequest,
-                                           const shared_ptr<security::v2::ValidationState>& state,
+                                           const shared_ptr<security::CertificateRequest>& certRequest,
+                                           const shared_ptr<security::ValidationState>& state,
                                            const ValidationContinuation& continueValidation)
 {
   NDNS_LOG_WARN("Cannot fetch link due to " +
@@ -148,8 +148,8 @@ CertificateFetcherNdnsCert::calculateDomain(const Name& key)
 
 void
 CertificateFetcherNdnsCert::dataCallback(const Data& data,
-                                         const shared_ptr<security::v2::CertificateRequest>& certRequest,
-                                         const shared_ptr<security::v2::ValidationState>& state,
+                                         const shared_ptr<security::CertificateRequest>& certRequest,
+                                         const shared_ptr<security::ValidationState>& state,
                                          const ValidationContinuation& continueValidation)
 {
   NDNS_LOG_DEBUG("Fetched certificate from network " << data.getName());
@@ -161,7 +161,7 @@ CertificateFetcherNdnsCert::dataCallback(const Data& data,
     cert = Certificate(data);
   }
   catch (const ndn::tlv::Error& e) {
-    return state->fail({security::v2::ValidationError::Code::MALFORMED_CERT, "Fetched a malformed "
+    return state->fail({security::ValidationError::Code::MALFORMED_CERT, "Fetched a malformed "
                         "certificate `" + data.getName().toUri() + "` (" + e.what() + ")"});
   }
 
@@ -170,8 +170,8 @@ CertificateFetcherNdnsCert::dataCallback(const Data& data,
 
 void
 CertificateFetcherNdnsCert::nackCallback(const lp::Nack& nack,
-                                         const shared_ptr<security::v2::CertificateRequest>& certRequest,
-                                         const shared_ptr<security::v2::ValidationState>& state,
+                                         const shared_ptr<security::CertificateRequest>& certRequest,
+                                         const shared_ptr<security::ValidationState>& state,
                                          const ValidationContinuation& continueValidation)
 {
   NDNS_LOG_DEBUG("NACK (" << nack.getReason() <<  ") while fetching certificate "
@@ -184,14 +184,14 @@ CertificateFetcherNdnsCert::nackCallback(const lp::Nack& nack,
   }
   else {
     state->removeTag<IterativeQueryTag>();
-    state->fail({security::v2::ValidationError::Code::CANNOT_RETRIEVE_CERT, "Cannot fetch certificate "
+    state->fail({security::ValidationError::Code::CANNOT_RETRIEVE_CERT, "Cannot fetch certificate "
                  "after all retries `" + certRequest->interest.getName().toUri() + "`"});
   }
 }
 
 void
-CertificateFetcherNdnsCert::timeoutCallback(const shared_ptr<security::v2::CertificateRequest>& certRequest,
-                                            const shared_ptr<security::v2::ValidationState>& state,
+CertificateFetcherNdnsCert::timeoutCallback(const shared_ptr<security::CertificateRequest>& certRequest,
+                                            const shared_ptr<security::ValidationState>& state,
                                             const ValidationContinuation& continueValidation)
 {
   NDNS_LOG_DEBUG("Timeout while fetching certificate " << certRequest->interest.getName()
@@ -203,7 +203,7 @@ CertificateFetcherNdnsCert::timeoutCallback(const shared_ptr<security::v2::Certi
   }
   else {
     state->removeTag<IterativeQueryTag>();
-    state->fail({security::v2::ValidationError::Code::CANNOT_RETRIEVE_CERT, "Cannot fetch certificate "
+    state->fail({security::ValidationError::Code::CANNOT_RETRIEVE_CERT, "Cannot fetch certificate "
                  "after all retries `" + certRequest->interest.getName().toUri() + "`"});
   }
 }

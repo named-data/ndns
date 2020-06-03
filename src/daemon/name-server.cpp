@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -30,7 +30,7 @@ NDNS_LOG_INIT(NameServer);
 const time::milliseconds NAME_SERVER_DEFAULT_CONTENT_FRESHNESS(4000);
 
 NameServer::NameServer(const Name& zoneName, const Name& certName, Face& face, DbMgr& dbMgr,
-                       KeyChain& keyChain, security::v2::Validator& validator)
+                       KeyChain& keyChain, security::Validator& validator)
   : m_zone(zoneName)
   , m_dbMgr(dbMgr)
   , m_ndnsPrefix(zoneName)
@@ -133,7 +133,7 @@ NameServer::handleUpdate(const Name& prefix, const Interest& interest, const lab
     }
     m_validator.validate(*data,
                          bind(&NameServer::doUpdate, this, interest.shared_from_this(), data),
-                         [] (const Data& data, const security::v2::ValidationError& msg) {
+                         [] (const Data& data, const security::ValidationError& msg) {
                            NDNS_LOG_WARN("Ignoring update that did not pass the verification. "
                                          << "Check the root certificate");
                          });

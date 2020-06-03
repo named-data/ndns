@@ -161,7 +161,7 @@ private:
   }
 
   void
-  onDataValidationFailed(const Data&, const security::v2::ValidationError&)
+  onDataValidationFailed(const Data&, const security::ValidationError&)
   {
     NDNS_LOG_INFO("data does not pass verification");
     m_hasError = true;
@@ -187,7 +187,7 @@ private:
   time::milliseconds m_interestLifetime;
 
   Face& m_face;
-  unique_ptr<security::v2::Validator> m_validator;
+  unique_ptr<security::Validator> m_validator;
   KeyChain m_keyChain;
 
   shared_ptr<Data> m_update;

@@ -96,7 +96,8 @@ def build (bld):
             outdir='docs/manpages',
             source=bld.path.ant_glob('docs/manpages/**/*.rst'),
             install_path='${MANDIR}',
-            VERSION=VERSION)
+            version=VERSION_BASE,
+            release=VERSION)
 
 def docs(bld):
     from waflib import Options
