@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -447,7 +447,7 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
       os << "; rrset=" << rrset.getLabel().toUri()
          << " type=" << rrset.getType().toUri()
          << " version=" << rrset.getVersion().toUri()
-         << " signed-by=" << data.getSignature().getKeyLocator().getName().toUri()
+         << " signed-by=" << data.getKeyLocator()->getName().toUri()
          << std::endl;
     }
 
@@ -494,7 +494,7 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
       os.width();
       os << "; content-type=" << re.getContentType()
          << " version=" << rrset.getVersion().toUri()
-         << " signed-by=" << data.getSignature().getKeyLocator().getName().toUri();
+         << " signed-by=" << data.getKeyLocator()->getName().toUri();
       os << std::endl;
 
       if (printRaw && (re.getContentType() == NDNS_BLOB

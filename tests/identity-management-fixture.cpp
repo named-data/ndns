@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -93,7 +93,7 @@ IdentityManagementV2Fixture::addSubCertificate(const Name& subIdentityName,
 
   v2::AdditionalDescription description;
   description.set("type", "sub-certificate");
-  info.appendTypeSpecificTlv(description.wireEncode());
+  info.addCustomTlv(description.wireEncode());
 
   m_keyChain.sign(request, signingByIdentity(issuer).setSignatureInfo(info));
   m_keyChain.setDefaultCertificate(subIdentity.getDefaultKey(), request);

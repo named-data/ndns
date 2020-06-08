@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -285,7 +285,7 @@ BOOST_AUTO_TEST_CASE(UpdateValidatorCannotFetchCert)
   m_keyChain.setDefaultCertificate(dsk, dskCert);
 
   NDNS_LOG_TRACE("KeyChain: add cert: " << dskCert.getName() << ". KeyLocator: "
-                 << dskCert.getSignature().getKeyLocator().getName());
+                 << dskCert.getKeyLocator()->getName());
 
   Rrset rrset(&m_test);
   Name label = dskCert.getName().getPrefix(-2).getSubName(m_test.getName().size() + 1);
@@ -324,7 +324,7 @@ BOOST_AUTO_TEST_CASE(UpdateValidatorCannotFetchCert)
   bool hasDataBack = false;
 
   // no data back, since the Update cannot pass verification
-  face.onSendData.connectSingleShot([&] (const Data& data) {
+  face.onSendData.connectSingleShot([&] (const Data&) {
     hasDataBack = true;
     BOOST_FAIL("UNEXPECTED");
   });

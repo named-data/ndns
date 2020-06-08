@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -68,9 +68,7 @@ public:
                   << "start to update RR at Zone = " << this->m_zone
                   << " new RR is: " << m_update->getName()
                   <<" =================== ");
-
-    NDNS_LOG_INFO("new RR is signed by: "
-                  << m_update->getSignature().getKeyLocator().getName());
+    NDNS_LOG_INFO("new RR is signed by: " << m_update->getKeyLocator()->getName());
 
     Interest interest = this->makeUpdateInterest();
     NDNS_LOG_TRACE("[* <- *] send Update: " << m_update->getName().toUri());
@@ -89,7 +87,7 @@ public:
 
 private:
   void
-  onData(const Interest& interest, const Data& data)
+  onData(const Interest&, const Data& data)
   {
     NDNS_LOG_INFO("get response of Update");
     int ret = -1;
@@ -106,9 +104,8 @@ private:
 
     NDNS_LOG_INFO("to verify the response");
     m_validator->validate(data,
-                         bind(&NdnsUpdate::onDataValidated, this, _1),
-                         bind(&NdnsUpdate::onDataValidationFailed, this, _1, _2)
-                         );
+                          bind(&NdnsUpdate::onDataValidated, this, _1),
+                          bind(&NdnsUpdate::onDataValidationFailed, this, _1, _2));
   }
 
   std::tuple<int, std::string>
@@ -120,7 +117,7 @@ private:
     blk.parse();
     Block block = blk.blockFromValue();
     block.parse();
-    Block::element_const_iterator val = block.elements_begin();
+    auto val = block.elements_begin();
     for (; val != block.elements_end(); ++val) {
       if (val->type() == ndns::tlv::UpdateReturnCode) { // the first must be return code
         ret = readNonNegativeInteger(*val);
@@ -149,22 +146,22 @@ private:
 
 private:
   void
-  onTimeout(const ndn::Interest& interest)
+  onTimeout(const ndn::Interest&)
   {
-    NDNS_LOG_TRACE("Update timeouts");
+    NDNS_LOG_TRACE("Update timeout");
     m_hasError = true;
     this->stop();
   }
 
   void
-  onDataValidated(const Data& data)
+  onDataValidated(const Data&)
   {
     NDNS_LOG_INFO("data pass verification");
     this->stop();
   }
 
   void
-  onDataValidationFailed(const Data& data, const security::v2::ValidationError& str)
+  onDataValidationFailed(const Data&, const security::v2::ValidationError&)
   {
     NDNS_LOG_INFO("data does not pass verification");
     m_hasError = true;
@@ -172,7 +169,6 @@ private:
   }
 
 public:
-
   void
   setInterestLifetime(const time::milliseconds& interestLifetime)
   {

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -26,7 +26,7 @@ namespace ndns {
 Response::Response()
   : m_contentType(NDNS_BLOB)
   , m_freshnessPeriod(DEFAULT_RR_FRESHNESS_PERIOD)
-  , m_appContent(makeBinaryBlock(ndn::tlv::Content, reinterpret_cast<const uint8_t*>(0), 0))
+  , m_appContent(makeEmptyBlock(ndn::tlv::Content))
 {
 }
 
@@ -35,12 +35,12 @@ Response::Response(const Name& zone, const name::Component& queryType)
   , m_queryType(queryType)
   , m_contentType(NDNS_BLOB)
   , m_freshnessPeriod(DEFAULT_RR_FRESHNESS_PERIOD)
-  , m_appContent(makeBinaryBlock(ndn::tlv::Content, reinterpret_cast<const uint8_t*>(0), 0))
+  , m_appContent(makeEmptyBlock(ndn::tlv::Content))
 {
 }
 
 template<encoding::Tag T>
-inline size_t
+size_t
 Response::wireEncode(EncodingImpl<T>& block) const
 {
   if (m_contentType == NDNS_BLOB || m_contentType == NDNS_KEY) {
@@ -52,8 +52,7 @@ Response::wireEncode(EncodingImpl<T>& block) const
   //              Block*
 
   size_t totalLength = 0;
-  for (std::vector<Block>::const_reverse_iterator iter = m_rrs.rbegin();
-       iter != m_rrs.rend(); ++iter) {
+  for (auto iter = m_rrs.rbegin(); iter != m_rrs.rend(); ++iter) {
     totalLength += block.prependBlock(*iter);
   }
 
@@ -176,7 +175,7 @@ Response::addRr(const std::string& rr)
 bool
 Response::removeRr(const Block& rr)
 {
-  for (std::vector<Block>::iterator iter = m_rrs.begin(); iter != m_rrs.end(); ++iter) {
+  for (auto iter = m_rrs.begin(); iter != m_rrs.end(); ++iter) {
     if (*iter == rr) {
       m_rrs.erase(iter);
       return true;
@@ -207,14 +206,13 @@ Response::operator==(const Response& other) const
               getRrType() == other.getRrType() && getVersion() == other.getVersion() &&
               getContentType() == other.getContentType());
 
-  if (tmp == false)
-    return tmp;
+  if (!tmp)
+    return false;
 
-  if (m_contentType == NDNS_BLOB || m_contentType == NDNS_KEY) {
-    return tmp && (getAppContent() == other.getAppContent());
-  }
+  if (m_contentType == NDNS_BLOB || m_contentType == NDNS_KEY)
+    return getAppContent() == other.getAppContent();
   else
-    return tmp && getRrs() == other.getRrs();
+    return getRrs() == other.getRrs();
 }
 
 std::ostream&
@@ -229,15 +227,16 @@ operator<<(std::ostream& os, const Response& response)
      << " NdnsContentType=" << response.getContentType();
   if (response.getContentType() == NDNS_BLOB
       || response.getContentType() == NDNS_KEY) {
-    if (response.getAppContent().empty())
-      os << " appContent=NULL";
-    else
+    if (response.getAppContent().isValid())
       os << " appContentSize=" << response.getAppContent().size();
+    else
+      os << " appContent=NULL";
   }
   else {
     os << " rrs.size=" << response.getRrs().size();
   }
   return os;
 }
+
 } // namespace ndns
 } // namespace ndn
