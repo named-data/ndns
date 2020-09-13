@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2021, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -81,6 +81,7 @@ CertificateFetcherNdnsCert::nsSuccessCallback(const Data& data,
   Name interestName(certRequest->interest.getName());
   interestName.append(label::CERT_RR_TYPE);
   Interest interest(interestName);
+  interest.setCanBePrefix(true);
 
   if (data.getContentType() == NDNS_LINK) {
     Link link(data.wireEncode());
@@ -120,6 +121,7 @@ CertificateFetcherNdnsCert::nsFailCallback(const std::string& errMsg,
   Name interestName(certRequest->interest.getName());
   interestName.append(label::CERT_RR_TYPE);
   Interest interest(interestName);
+  interest.setCanBePrefix(true);
   m_face.expressInterest(interest,
                          [=] (const Interest&, const Data& data) {
                            dataCallback(data, certRequest, state, continueValidation);
