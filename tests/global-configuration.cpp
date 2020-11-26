@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -17,16 +17,18 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "test-common.hpp"
+#include "boost-test.hpp"
+
+#include <boost/filesystem.hpp>
+#include <stdlib.h>
 
 namespace ndn {
-namespace ndns {
 namespace tests {
 
-class GlobalConfigurationFixture : boost::noncopyable
+class GlobalConfiguration
 {
 public:
-  GlobalConfigurationFixture()
+  GlobalConfiguration()
   {
     if (getenv("HOME") != nullptr) {
       m_home = getenv("HOME");
@@ -38,25 +40,25 @@ public:
       m_tpm = getenv("NDN_CLIENT_TPM");
     }
 
-    boost::filesystem::path dir(TEST_CONFIG_PATH);
-    dir /= "test-home";
-    setenv("HOME", dir.generic_string().c_str(), 1);
+    auto testHome = boost::filesystem::path(UNIT_TESTS_TMPDIR) / "test-home";
+    setenv("HOME", testHome.c_str(), 1);
+
+    boost::filesystem::create_directories(testHome);
 
     setenv("NDN_CLIENT_PIB", "pib-sqlite3", 1);
     setenv("NDN_CLIENT_TPM", "tpm-file", 1);
-    boost::filesystem::create_directories(dir);
   }
 
-  ~GlobalConfigurationFixture()
+  ~GlobalConfiguration() noexcept
   {
     if (!m_home.empty()) {
-      setenv("HOME", m_home.c_str(), 1);
+      setenv("HOME", m_home.data(), 1);
     }
     if (!m_pib.empty()) {
-      setenv("NDN_CLIENT_PIB", m_home.c_str(), 1);
+      setenv("NDN_CLIENT_PIB", m_home.data(), 1);
     }
     if (!m_tpm.empty()) {
-      setenv("NDN_CLIENT_TPM", m_home.c_str(), 1);
+      setenv("NDN_CLIENT_TPM", m_home.data(), 1);
     }
   }
 
@@ -66,11 +68,13 @@ private:
   std::string m_tpm;
 };
 
-BOOST_GLOBAL_FIXTURE(GlobalConfigurationFixture)
-#if (BOOST_VERSION >= 105900)
-;
-#endif // BOOST_VERSION >= 105900
+#if BOOST_VERSION >= 106500
+BOOST_TEST_GLOBAL_CONFIGURATION(GlobalConfiguration);
+#elif BOOST_VERSION >= 105900
+BOOST_GLOBAL_FIXTURE(GlobalConfiguration);
+#else
+BOOST_GLOBAL_FIXTURE(GlobalConfiguration)
+#endif
 
 } // namespace tests
-} // namespace ndns
 } // namespace ndn

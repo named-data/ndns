@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016,  Regents of the University of California,
+/*
+ * Copyright (c) 2014-2020,  Regents of the University of California,
  *                           Arizona Board of Regents,
  *                           Colorado State University,
  *                           University Pierre & Marie Curie, Sorbonne University,
@@ -24,59 +24,39 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "test-common.hpp"
+#ifndef NDNS_TESTS_IO_FIXTURE_HPP
+#define NDNS_TESTS_IO_FIXTURE_HPP
+
+#include "clock-fixture.hpp"
+
+#include <boost/asio/io_service.hpp>
 
 namespace ndn {
 namespace ndns {
 namespace tests {
 
-BaseFixture::BaseFixture()
+class IoFixture : public ClockFixture
 {
-}
-
-UnitTestTimeFixture::UnitTestTimeFixture()
-  : steadyClock(make_shared<time::UnitTestSteadyClock>())
-  , systemClock(make_shared<time::UnitTestSystemClock>())
-{
-  time::setCustomClocks(steadyClock, systemClock);
-}
-
-UnitTestTimeFixture::~UnitTestTimeFixture()
-{
-  time::setCustomClocks(nullptr, nullptr);
-}
-
-void
-UnitTestTimeFixture::advanceClocks(const time::nanoseconds& tick, size_t nTicks)
-{
-  this->advanceClocks(tick, tick * nTicks);
-}
-
-void
-UnitTestTimeFixture::advanceClocks(const time::nanoseconds& tick, const time::nanoseconds& total)
-{
-  BOOST_ASSERT(tick > time::nanoseconds::zero());
-  BOOST_ASSERT(total >= time::nanoseconds::zero());
-
-  time::nanoseconds remaining = total;
-  while (remaining > time::nanoseconds::zero()) {
-    if (remaining >= tick) {
-      steadyClock->advance(tick);
-      systemClock->advance(tick);
-      remaining -= tick;
-    }
-    else {
-      steadyClock->advance(remaining);
-      systemClock->advance(remaining);
-      remaining = time::nanoseconds::zero();
-    }
-
-    if (m_io.stopped())
+private:
+  void
+  afterTick() final
+  {
+    if (m_io.stopped()) {
+#if BOOST_VERSION >= 106600
+      m_io.restart();
+#else
       m_io.reset();
+#endif
+    }
     m_io.poll();
   }
-}
+
+protected:
+  boost::asio::io_service m_io;
+};
 
 } // namespace tests
 } // namespace ndns
 } // namespace ndn
+
+#endif // NDNS_TESTS_IO_FIXTURE_HPP

@@ -17,18 +17,20 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "validator/validator.hpp"
 #include "validator/certificate-fetcher-ndns-appcert.hpp"
+
 #include "ndns-label.hpp"
-#include "util/cert-helper.hpp"
 #include "daemon/name-server.hpp"
 #include "daemon/rrset-factory.hpp"
 #include "mgmt/management-tool.hpp"
+#include "util/cert-helper.hpp"
+#include "validator/validator.hpp"
 
-#include "test-common.hpp"
+#include "boost-test.hpp"
 #include "unit/database-test-data.hpp"
 
 #include <ndn-cxx/security/validation-policy-simple-hierarchy.hpp>
+#include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -39,7 +41,7 @@ BOOST_AUTO_TEST_SUITE(AppCertFetcher)
 static unique_ptr<security::Validator>
 makeValidatorAppCert(Face& face)
 {
-  return make_unique<security::Validator>(make_unique<::ndn::security::ValidationPolicySimpleHierarchy>(),
+  return make_unique<security::Validator>(make_unique<security::ValidationPolicySimpleHierarchy>(),
                                           make_unique<CertificateFetcherAppCert>(face));
 }
 
@@ -54,7 +56,7 @@ public:
     buildAppCertAndData();
 
     auto serverValidator = NdnsValidatorBuilder::create(m_validatorFace, 10, 0,
-                                                        TEST_CONFIG_PATH "/validator.conf");
+                                                        UNIT_TESTS_TMPDIR "/validator.conf");
     // initialize all servers
     auto addServer = [this, &serverValidator] (const Name& zoneName) {
       m_serverFaces.push_back(make_unique<util::DummyClientFace>(m_io, m_keyChain,
@@ -81,7 +83,7 @@ private:
   buildAppCertAndData()
   {
     // create NDNS-stored certificate and the signed data
-    Identity ndnsimIdentity = addIdentity(m_ndnsimName);
+    Identity ndnsimIdentity = m_keyChain.createIdentity(m_ndnsimName);
     Key randomKey = m_keyChain.createKey(ndnsimIdentity);
     Certificate ndnsStoredAppCert = randomKey.getDefaultCertificate();
     RrsetFactory rf(TEST_DATABASE.string(), m_ndnsimName, m_keyChain,

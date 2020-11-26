@@ -20,8 +20,10 @@
 #include "clients/iterative-query-controller.hpp"
 #include "daemon/name-server.hpp"
 
-#include "test-common.hpp"
+#include "boost-test.hpp"
 #include "unit/database-test-data.hpp"
+
+#include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -128,7 +130,6 @@ BOOST_FIXTURE_TEST_CASE(Basic, QueryControllerFixture)
       }
     }
   }
-
 }
 
 BOOST_AUTO_TEST_SUITE_END()

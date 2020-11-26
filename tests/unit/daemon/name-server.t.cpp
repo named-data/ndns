@@ -18,13 +18,16 @@
  */
 
 #include "daemon/name-server.hpp"
-#include "daemon/db-mgr.hpp"
-#include "clients/response.hpp"
-#include "clients/query.hpp"
 
-#include "test-common.hpp"
+#include "clients/query.hpp"
+#include "clients/response.hpp"
+#include "daemon/db-mgr.hpp"
+#include "logger.hpp"
+
+#include "boost-test.hpp"
 #include "unit/database-test-data.hpp"
 
+#include <ndn-cxx/util/dummy-client-face.hpp>
 #include <ndn-cxx/util/regex.hpp>
 
 namespace ndn {

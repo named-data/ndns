@@ -23,7 +23,9 @@
 #include "ndns-enum.hpp"
 #include "ndns-label.hpp"
 #include "ndns-tlv.hpp"
-#include "test-common.hpp"
+
+#include "boost-test.hpp"
+#include "key-chain-fixture.hpp"
 
 #include <random>
 
@@ -39,22 +41,22 @@
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/util/regex.hpp>
 
-using boost::test_tools::output_test_stream;
-
 namespace ndn {
 namespace ndns {
 namespace tests {
 
-static const boost::filesystem::path TEST_DATABASE = TEST_CONFIG_PATH "/management_tool.db";
-static const boost::filesystem::path TEST_CERTDIR = TEST_CONFIG_PATH "/management_tool_certs";
-static const Name FAKE_ROOT("/fake-root/123456789");
+using boost::test_tools::output_test_stream;
+
+const auto TEST_DATABASE = boost::filesystem::path(UNIT_TESTS_TMPDIR) / "management_tool.db";
+const auto TEST_CERTDIR = boost::filesystem::path(UNIT_TESTS_TMPDIR) / "management_tool_certs";
+const Name FAKE_ROOT("/fake-root/123456789");
 
 /**
  * @brief Recursive copy a directory using Boost Filesystem
  *
  * Based on from http://stackoverflow.com/q/8593608/2150331
  */
-void
+static void
 copyDir(const boost::filesystem::path& source, const boost::filesystem::path& destination)
 {
   namespace fs = boost::filesystem;
@@ -79,16 +81,17 @@ public:
     if (std::getenv("HOME"))
       m_origHome = std::getenv("HOME");
 
-    setenv("HOME", TEST_CONFIG_PATH "/tests/unit/mgmt/", 1);
-    boost::filesystem::remove_all(TEST_CONFIG_PATH "/tests/unit/mgmt/");
-    boost::filesystem::create_directories(TEST_CONFIG_PATH "/tests/unit/mgmt");
-    copyDir("tests/unit/mgmt/.ndn", TEST_CONFIG_PATH "/tests/unit/mgmt/.ndn");
+    auto p = boost::filesystem::path(UNIT_TESTS_TMPDIR) / "tests" / "unit" / "mgmt";
+    setenv("HOME", p.c_str(), 1);
+    boost::filesystem::remove_all(p);
+    boost::filesystem::create_directories(p);
+    copyDir("tests/unit/mgmt/.ndn", p / ".ndn");
   }
 
   ~TestHome()
   {
     if (!m_origHome.empty())
-      setenv("HOME", m_origHome.c_str(), 1);
+      setenv("HOME", m_origHome.data(), 1);
     else
       unsetenv("HOME");
   }
@@ -97,18 +100,13 @@ protected:
   std::string m_origHome;
 };
 
-
-class ManagementToolFixture : public TestHome, public IdentityManagementFixture
+class ManagementToolFixture : public TestHome, public KeyChainFixture
 {
 public:
   class Error : public std::runtime_error
   {
   public:
-    explicit
-    Error(const std::string& what)
-      : std::runtime_error(what)
-    {
-    }
+    using std::runtime_error::runtime_error;
   };
 
   class PreviousStateCleaner
@@ -126,7 +124,7 @@ public:
     , m_dbMgr(TEST_DATABASE.string().c_str())
   {
     boost::filesystem::create_directory(TEST_CERTDIR);
-    Identity root = addIdentity("NDNS");
+    Identity root = m_keyChain.createIdentity("NDNS");
     Key ksk = root.getDefaultKey();
     m_keyChain.deleteCertificate(ksk, ksk.getDefaultCertificate().getName());
     Certificate kskCert = CertHelper::createCertificate(m_keyChain, ksk, ksk, "CERT");
@@ -140,7 +138,7 @@ public:
     m_keyChain.addCertificate(dsk, dskCert);
     rootDsk = dskCert.getName();
 
-    Identity other = addIdentity("/ndns-test/NDNS");
+    Identity other = m_keyChain.createIdentity("/ndns-test/NDNS");
     Key otherKskKey = other.getDefaultKey();
     m_keyChain.deleteCertificate(otherKskKey, otherKskKey.getDefaultCertificate().getName());
     Certificate otherKskCert = CertHelper::createCertificate(m_keyChain, otherKskKey, otherKskKey, "CERT");
@@ -287,7 +285,7 @@ BOOST_FIXTURE_TEST_SUITE(ManagementTool, ManagementToolFixture)
 //   Name rootDsk = generateCerts(ROOT_ZONE);
 //   generateCerts("/ndns-test", rootDsk);
 
-//   copyDir(TEST_CONFIG_PATH "/tests/unit/mgmt/.ndn", "/tmp/.ndn");
+//   copyDir(UNIT_TESTS_TMPDIR "/tests/unit/mgmt/.ndn", "/tmp/.ndn");
 //   std::cout << "Manually copy contents of /tmp/.ndn into tests/unit/mgmt/.ndn" << std::endl;
 // }
 
@@ -503,25 +501,25 @@ BOOST_AUTO_TEST_CASE(ZoneCreatePreconditions)
                                       time::seconds(1), time::days(1), "/com/ndnsim"),
                                       ndns::ManagementTool::Error);
 
-  Identity id = addIdentity("/net/ndnsim/NDNS");
+  Identity id = m_keyChain.createIdentity("/net/ndnsim/NDNS");
   Certificate cert = id.getDefaultKey().getDefaultCertificate();
   BOOST_CHECK_NO_THROW(m_tool.createZone("/net/ndnsim", "/net",
                                          time::seconds(1), time::days(1), cert.getName()));
 
-  id = addIdentity("/com/ndnsim/NDNS");
+  id = m_keyChain.createIdentity("/com/ndnsim/NDNS");
   cert = id.getDefaultKey().getDefaultCertificate();
 
   BOOST_CHECK_THROW(m_tool.createZone("/net/ndnsim", "/net",
                                       time::seconds(1), time::days(1), cert.getName()),
                     ndns::ManagementTool::Error);
 
-  id = addIdentity("/net/ndnsim/www/NDNS");
+  id = m_keyChain.createIdentity("/net/ndnsim/www/NDNS");
   cert = id.getDefaultKey().getDefaultCertificate();
   BOOST_CHECK_THROW(m_tool.createZone("/net/ndnsim", "/net",
                                       time::seconds(1), time::days(1), cert.getName()),
                     ndns::ManagementTool::Error);
 
-  id = addIdentity("/net/ndnsim/NDNS");
+  id = m_keyChain.createIdentity("/net/ndnsim/NDNS");
   cert = id.getDefaultKey().getDefaultCertificate();
   m_keyChain.deleteCertificate(id.getDefaultKey(), cert.getName());
   BOOST_CHECK_THROW(m_tool.createZone("/net/ndnsim", "/net",

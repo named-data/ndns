@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -19,13 +19,14 @@
 
 #include "clients/response.hpp"
 
-#include "test-common.hpp"
+#include "boost-test.hpp"
+#include "key-chain-fixture.hpp"
 
 namespace ndn {
 namespace ndns {
 namespace tests {
 
-BOOST_FIXTURE_TEST_SUITE(Response, IdentityManagementFixture)
+BOOST_FIXTURE_TEST_SUITE(Response, KeyChainFixture)
 
 BOOST_AUTO_TEST_CASE(Basic)
 {

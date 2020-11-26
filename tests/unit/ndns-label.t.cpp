@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014-2016, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -19,7 +19,9 @@
 
 #include "ndns-label.hpp"
 
-#include "test-common.hpp"
+#include "boost-test.hpp"
+
+#include <ndn-cxx/data.hpp>
 
 namespace ndn {
 namespace ndns {

@@ -19,11 +19,13 @@
 
 #include "validator/validator.hpp"
 #include "ndns-label.hpp"
-#include "util/cert-helper.hpp"
 #include "daemon/name-server.hpp"
+#include "util/cert-helper.hpp"
 
-#include "test-common.hpp"
+#include "boost-test.hpp"
 #include "unit/database-test-data.hpp"
+
+#include <ndn-cxx/util/dummy-client-face.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -37,7 +39,7 @@ public:
   ValidatorTestFixture()
     : m_validatorFace(m_io, m_keyChain, {true, true})
     , m_validator(NdnsValidatorBuilder::create(m_validatorFace, 500, 0,
-                                               TEST_CONFIG_PATH "/validator.conf"))
+                                               UNIT_TESTS_TMPDIR "/validator.conf"))
   {
     // generate a random cert
     // check how does name-server test do

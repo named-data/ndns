@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -25,13 +25,14 @@
 #include "clients/query.hpp"
 #include "validator/validator.hpp"
 
-#include "test-common.hpp"
+#include "io-fixture.hpp"
+#include "key-chain-fixture.hpp"
 
 namespace ndn {
 namespace ndns {
 namespace tests {
 
-class DbTestData : public IdentityManagementFixture, public UnitTestTimeFixture
+class DbTestData : public IoFixture, public KeyChainFixture
 {
 public:
   static const boost::filesystem::path TEST_DATABASE;
@@ -41,7 +42,7 @@ public:
 
   DbTestData();
 
-  ~DbTestData();
+  ~DbTestData() override;
 
 private:
   void

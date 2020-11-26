@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2017, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -19,10 +19,10 @@
 
 #include "clients/query.hpp"
 
-#include "test-common.hpp"
+#include "boost-test.hpp"
+#include "key-chain-fixture.hpp"
 
 #include <boost/lexical_cast.hpp>
-#include <string>
 
 namespace ndn {
 namespace ndns {
@@ -30,9 +30,9 @@ namespace tests {
 
 BOOST_AUTO_TEST_SUITE(Query)
 
-BOOST_FIXTURE_TEST_CASE(TestCase, IdentityManagementFixture)
+BOOST_FIXTURE_TEST_CASE(TestCase, KeyChainFixture)
 {
-  security::Identity certIdentity = addIdentity("/cert/name");
+  auto certIdentity = m_keyChain.createIdentity("/cert/name");
   Name zone("/net");
   name::Component qType = ndns::label::NDNS_ITERATIVE_QUERY;
   ndns::Query q(zone, qType);
@@ -77,7 +77,7 @@ BOOST_FIXTURE_TEST_CASE(TestCase, IdentityManagementFixture)
   BOOST_CHECK_EQUAL(q5.fromInterest(zone, interest), true);
   BOOST_CHECK_EQUAL(q4, q5);
   BOOST_CHECK_NE(q2, q4);
- }
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 

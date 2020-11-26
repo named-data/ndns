@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -18,9 +18,12 @@
  */
 
 #include "daemon/db-mgr.hpp"
-#include "test-common.hpp"
+#include "logger.hpp"
+
+#include "boost-test.hpp"
 
 #include <algorithm>
+#include <boost/filesystem.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -30,7 +33,7 @@ NDNS_LOG_INIT(DbMgrTest);
 
 BOOST_AUTO_TEST_SUITE(DbMgr)
 
-static const boost::filesystem::path TEST_DATABASE2 = TEST_CONFIG_PATH "/" "test-ndns.db";
+const auto TEST_DATABASE2 = boost::filesystem::path(UNIT_TESTS_TMPDIR) / "test-ndns.db";
 
 class DbMgrFixture
 {
@@ -43,15 +46,13 @@ public:
   ~DbMgrFixture()
   {
     session.close();
-    boost::filesystem::remove(TEST_DATABASE2);
     NDNS_LOG_INFO("remove database " << TEST_DATABASE2);
+    boost::filesystem::remove(TEST_DATABASE2);
   }
 
 public:
   ndns::DbMgr session;
 };
-
-
 
 BOOST_FIXTURE_TEST_CASE(Zones, DbMgrFixture)
 {

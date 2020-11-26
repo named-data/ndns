@@ -24,5 +24,40 @@
  * NDNS, e.g., in COPYING.md file.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define BOOST_TEST_MODULE NDNS
-#include "boost-test.hpp"
+#include "clock-fixture.hpp"
+
+namespace ndn {
+namespace ndns {
+namespace tests {
+
+ClockFixture::ClockFixture()
+  : m_steadyClock(make_shared<time::UnitTestSteadyClock>())
+  , m_systemClock(make_shared<time::UnitTestSystemClock>())
+{
+  time::setCustomClocks(m_steadyClock, m_systemClock);
+}
+
+ClockFixture::~ClockFixture()
+{
+  time::setCustomClocks(nullptr, nullptr);
+}
+
+void
+ClockFixture::advanceClocks(time::nanoseconds tick, time::nanoseconds total)
+{
+  BOOST_ASSERT(tick > time::nanoseconds::zero());
+  BOOST_ASSERT(total >= time::nanoseconds::zero());
+
+  while (total > time::nanoseconds::zero()) {
+    auto t = std::min(tick, total);
+    m_steadyClock->advance(t);
+    m_systemClock->advance(t);
+    total -= t;
+
+    afterTick();
+  }
+}
+
+} // namespace tests
+} // namespace ndns
+} // namespace ndn

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -19,9 +19,12 @@
 
 #include "database-test-data.hpp"
 #include "daemon/rrset-factory.hpp"
-#include "util/cert-helper.hpp"
 #include "mgmt/management-tool.hpp"
+#include "util/cert-helper.hpp"
+
 #include <ndn-cxx/security/verification-helpers.hpp>
+
+namespace fs = boost::filesystem;
 
 namespace ndn {
 namespace ndns {
@@ -29,17 +32,15 @@ namespace tests {
 
 NDNS_LOG_INIT(TestFakeData);
 
-const boost::filesystem::path DbTestData::TEST_DATABASE = TEST_CONFIG_PATH "/" "test-ndns.db";
+const fs::path DbTestData::TEST_DATABASE = fs::path(UNIT_TESTS_TMPDIR) / "test-ndns.db";
 const Name DbTestData::TEST_IDENTITY_NAME("/test19");
-const boost::filesystem::path DbTestData::TEST_CERT =
-  TEST_CONFIG_PATH "/" "anchors/root.cert";
-const boost::filesystem::path DbTestData::TEST_DKEY_CERT =
-  TEST_CONFIG_PATH "/" "dkey.cert";
+const fs::path DbTestData::TEST_CERT = fs::path(UNIT_TESTS_TMPDIR) / "anchors" / "root.cert";
+const fs::path DbTestData::TEST_DKEY_CERT = fs::path(UNIT_TESTS_TMPDIR) / "dkey.cert";
 
 DbTestData::PreviousStateCleaner::PreviousStateCleaner()
 {
-  boost::filesystem::remove(TEST_DATABASE);
-  boost::filesystem::remove(TEST_CERT);
+  fs::remove(TEST_DATABASE);
+  fs::remove(TEST_CERT);
 }
 
 DbTestData::DbTestData()
@@ -50,20 +51,16 @@ DbTestData::DbTestData()
 {
   NDNS_LOG_TRACE("start creating test data");
 
-  ndns::NdnsValidatorBuilder::VALIDATOR_CONF_FILE = TEST_CONFIG_PATH "/" "validator.conf";
+  NdnsValidatorBuilder::VALIDATOR_CONF_FILE = (fs::path(UNIT_TESTS_TMPDIR) / "validator.conf").string();
 
   ManagementTool tool(TEST_DATABASE.string(), m_keyChain);
   // this is how DKEY is added to parent zone in real world.
-  auto addDkeyCertToParent = [&tool](Zone& dkeyFrom, Zone& dkeyTo)->void{
+  auto addDkeyCertToParent = [&tool] (Zone& dkeyFrom, Zone& dkeyTo) {
     Certificate dkeyCert;
     dkeyCert = tool.getZoneDkey(dkeyFrom);
-    ndn::io::save(dkeyCert, TEST_DKEY_CERT.string());
-    tool.addRrsetFromFile(dkeyTo.getName(),
-                          TEST_DKEY_CERT.string(),
-                          DEFAULT_RR_TTL,
-                          DEFAULT_CERT,
-                          ndn::io::BASE64,
-                          true);
+    io::save(dkeyCert, TEST_DKEY_CERT.string());
+    tool.addRrsetFromFile(dkeyTo.getName(), TEST_DKEY_CERT.string(),
+                          DEFAULT_RR_TTL, DEFAULT_CERT, io::BASE64, true);
   };
 
   Name testName(m_testName);
@@ -85,16 +82,15 @@ DbTestData::DbTestData()
   m_certName = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain, identityName);
   m_cert = CertHelper::getCertificate(m_keyChain, identityName, m_certName);
 
-  ndn::io::save(m_cert, TEST_CERT.string());
+  io::save(m_cert, TEST_CERT.string());
   NDNS_LOG_INFO("save test root cert " << m_certName << " to: " << TEST_CERT.string());
 
-  BOOST_CHECK_GT(m_certName.size(), 0);
+  BOOST_ASSERT(m_certName.size() > 0);
   NDNS_LOG_TRACE("test certName: " << m_certName);
 
   int certificateIndex = 0;
-  function<void(const Name&,Zone&,const name::Component&)> addQueryRrset =
-    [this, &certificateIndex] (const Name& label, Zone& zone,
-                               const name::Component& type) {
+  auto addQueryRrset = [this, &certificateIndex] (const Name& label, Zone& zone,
+                                                  const name::Component& type) {
     const time::seconds ttl(3000 + 100 * certificateIndex);
     const name::Component version = name::Component::fromVersion(100 + 1000 * certificateIndex);
     name::Component qType(label::NDNS_ITERATIVE_QUERY);
@@ -140,7 +136,7 @@ DbTestData::addRrset(Zone& zone, const Name& label, const name::Component& type,
                   m_keyChain, m_certName);
   rf.onlyCheckZone();
   if (type == label::NS_RR_TYPE) {
-    ndn::DelegationList ds;
+    DelegationList ds;
     ds.insert(1, "xx");
     rrset = rf.generateNsRrset(label, version.toVersion(), ttl, ds);
     if (contentType != NDNS_AUTH) {
@@ -157,8 +153,7 @@ DbTestData::addRrset(Zone& zone, const Name& label, const name::Component& type,
                                  m_cert);
   }
 
-  shared_ptr<Data> data = make_shared<Data>(rrset.getData());
-
+  auto data = make_shared<Data>(rrset.getData());
   security::verifySignature(*data, m_cert);
 
   ManagementTool tool(TEST_DATABASE.string(), m_keyChain);

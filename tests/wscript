@@ -1,19 +1,17 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
-
 top = '..'
 
 def build(bld):
-    if not bld.env['WITH_TESTS']:
+    if not bld.env.WITH_TESTS:
         return
 
-    tmp_folder = bld.bldnode.make_node('tmp-files')
-    config_path = 'TEST_CONFIG_PATH="%s"' % tmp_folder
-    tmp_folder.make_node('anchors').mkdir()
+    tmpdir = bld.bldnode.make_node('tmp-files')
+    tmpdir.make_node('anchors').mkdir()
 
     bld(features='subst',
         name='test-validator-conf',
         source='../validator.conf.sample.in',
-        target=tmp_folder.make_node('validator.conf'),
+        target=tmpdir.make_node('validator.conf'),
         ANCHORPATH='\"anchors/root.cert\"')
 
     bld.objects(
@@ -21,11 +19,12 @@ def build(bld):
         source='main.cpp',
         use='ndns-objects')
 
+    tmpdir_define = 'UNIT_TESTS_TMPDIR="%s"' % tmpdir
     bld.program(
         target='../unit-tests',
         name='unit-tests',
         source=bld.path.ant_glob('**/*.cpp', excl=['main.cpp']),
         use='ndns-objects unit-tests-main',
-        includes='../src .',
-        install_path=None,
-        defines=[config_path])
+        includes='.',
+        defines=[tmpdir_define],
+        install_path=None)

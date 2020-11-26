@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -18,11 +18,13 @@
  */
 
 #include "daemon/rrset-factory.hpp"
-
-#include "test-common.hpp"
 #include "mgmt/management-tool.hpp"
 
+#include "boost-test.hpp"
+#include "key-chain-fixture.hpp"
+
 #include <boost/lexical_cast.hpp>
+
 #include <ndn-cxx/security/verification-helpers.hpp>
 
 namespace ndn {
@@ -31,15 +33,16 @@ namespace tests {
 
 NDNS_LOG_INIT(RrsetFactoryTest);
 
-class RrsetFactoryFixture : public IdentityManagementFixture
+const auto TEST_DATABASE2 = boost::filesystem::path(UNIT_TESTS_TMPDIR) / "test-ndns.db";
+const auto TEST_CERT = boost::filesystem::path(UNIT_TESTS_TMPDIR) / "anchors" / "root.cert";
+
+class RrsetFactoryFixture : public KeyChainFixture
 {
 public:
   RrsetFactoryFixture()
-    : TEST_DATABASE2(TEST_CONFIG_PATH "/" "test-ndns.db"),
-      TEST_IDENTITY_NAME("/rrest/factory"),
-      TEST_CERT(TEST_CONFIG_PATH "/" "anchors/root.cert"),
-      m_session(TEST_DATABASE2.string()),
-      m_zoneName(TEST_IDENTITY_NAME)
+    : TEST_IDENTITY_NAME("/rrest/factory")
+    , m_session(TEST_DATABASE2.string())
+    , m_zoneName(TEST_IDENTITY_NAME)
   {
     Zone zone1;
     zone1.setName(m_zoneName);
@@ -48,12 +51,12 @@ public:
 
     Name identityName = Name(TEST_IDENTITY_NAME).append("NDNS");
 
-    m_identity = this->addIdentity(identityName);
+    m_identity = m_keyChain.createIdentity(identityName);
     m_cert = m_identity.getDefaultKey().getDefaultCertificate();
     m_certName = m_cert.getName();
-    saveIdentityCertificate(m_identity, TEST_CERT.string());
+    saveIdentityCert(m_identity, TEST_CERT.string());
 
-    NDNS_LOG_INFO("save test root cert " << m_certName << " to: " << TEST_CERT.string());
+    NDNS_LOG_INFO("save test root cert " << m_certName << " to: " << TEST_CERT);
     BOOST_CHECK_GT(m_certName.size(), 0);
     NDNS_LOG_TRACE("test certName: " << m_certName);
   }
@@ -61,15 +64,13 @@ public:
   ~RrsetFactoryFixture()
   {
     m_session.close();
-    boost::filesystem::remove(TEST_DATABASE2);
     NDNS_LOG_INFO("remove database " << TEST_DATABASE2);
+    boost::filesystem::remove(TEST_DATABASE2);
     boost::filesystem::remove(TEST_CERT);
   }
 
 public:
-  const boost::filesystem::path TEST_DATABASE2;
   const Name TEST_IDENTITY_NAME;
-  const boost::filesystem::path TEST_CERT;
   ndns::DbMgr m_session;
   Name m_zoneName;
   Name m_certName;

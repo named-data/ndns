@@ -20,11 +20,12 @@
 #ifndef NDNS_TESTS_TEST_HOME_FIXTURE_HPP
 #define NDNS_TESTS_TEST_HOME_FIXTURE_HPP
 
-#include "boost-test.hpp"
-
-#include <boost/filesystem.hpp>
-#include <boost/algorithm/string.hpp>
+#include <cstdlib>
 #include <fstream>
+#include <initializer_list>
+
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/filesystem.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -43,11 +44,11 @@ public:
   PibDirFixture()
     : m_pibDir(Path().PATH)
   {
-    if (getenv("NDN_CLIENT_PIB") != nullptr) {
-      m_oldPib = getenv("NDN_CLIENT_PIB");
+    if (std::getenv("NDN_CLIENT_PIB") != nullptr) {
+      m_oldPib = std::getenv("NDN_CLIENT_PIB");
     }
-    if (getenv("NDN_CLIENT_TPM") != nullptr) {
-      m_oldTpm = getenv("NDN_CLIENT_TPM");
+    if (std::getenv("NDN_CLIENT_TPM") != nullptr) {
+      m_oldTpm = std::getenv("NDN_CLIENT_TPM");
     }
 
     /// @todo Consider change to an in-memory PIB/TPM
@@ -58,14 +59,14 @@ public:
   ~PibDirFixture()
   {
     if (!m_oldPib.empty()) {
-      setenv("NDN_CLIENT_PIB", m_oldPib.c_str(), true);
+      setenv("NDN_CLIENT_PIB", m_oldPib.data(), true);
     }
     else {
       unsetenv("NDN_CLIENT_PIB");
     }
 
     if (!m_oldTpm.empty()) {
-      setenv("NDN_CLIENT_TPM", m_oldTpm.c_str(), true);
+      setenv("NDN_CLIENT_TPM", m_oldTpm.data(), true);
     }
     else {
       unsetenv("NDN_CLIENT_TPM");
@@ -91,7 +92,7 @@ class TestHomeFixture : public PibDirFixture<Path>
 public:
   TestHomeFixture()
   {
-    setenv("TEST_HOME", this->m_pibDir.c_str(), true);
+    setenv("TEST_HOME", this->m_pibDir.data(), true);
   }
 
   ~TestHomeFixture()
@@ -100,7 +101,7 @@ public:
   }
 
   void
-  createClientConf(std::initializer_list<std::string> lines)
+  createClientConf(std::initializer_list<std::string> lines) const
   {
     boost::filesystem::create_directories(boost::filesystem::path(this->m_pibDir) / ".ndn");
     std::ofstream of((boost::filesystem::path(this->m_pibDir) / ".ndn" / "client.conf").c_str());
