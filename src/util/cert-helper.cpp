@@ -52,7 +52,7 @@ CertHelper::getCertificate(const KeyChain& keyChain,
       }
     }
   }
-  BOOST_THROW_EXCEPTION(std::runtime_error(certName.toUri() + " does not exist"));
+  NDN_THROW(std::runtime_error(certName.toUri() + " does not exist"));
 }
 
 Name
@@ -64,7 +64,7 @@ CertHelper::getIdentityNameFromCert(const Name& certName)
       return certName.getPrefix(i);
     }
   }
-  BOOST_THROW_EXCEPTION(std::runtime_error(certName.toUri() + " is not a legal cert name"));
+  NDN_THROW(std::runtime_error(certName.toUri() + " is not a legal cert name"));
 }
 
 security::Certificate

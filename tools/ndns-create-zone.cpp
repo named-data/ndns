@@ -23,8 +23,8 @@
 #include "util/util.hpp"
 
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
-#include <string>
+
+#include <iostream>
 
 NDNS_LOG_INIT(NdnsCreateZone);
 

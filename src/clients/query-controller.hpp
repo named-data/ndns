@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -20,14 +20,13 @@
 #ifndef NDNS_CLIENTS_QUERY_CONTROLLER_HPP
 #define NDNS_CLIENTS_QUERY_CONTROLLER_HPP
 
+#include "common.hpp"
 #include "query.hpp"
 #include "response.hpp"
 
 #include <ndn-cxx/data.hpp>
 #include <ndn-cxx/interest.hpp>
-#include <ndn-cxx/name.hpp>
 #include <ndn-cxx/face.hpp>
-
 
 namespace ndn {
 namespace ndns {
@@ -48,7 +47,7 @@ typedef function<void(uint32_t errCode, const std::string& errMsg)> QueryFailCal
  * @brief a Query Controller interface
  *
  */
-class QueryController : noncopyable
+class QueryController : boost::noncopyable
 {
 public:
   QueryController(const Name& dstLabel, const name::Component& rrType,

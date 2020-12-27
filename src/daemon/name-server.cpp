@@ -44,7 +44,7 @@ NameServer::NameServer(const Name& zoneName, const Name& certName, Face& face, D
 
   if (m_zone.getId() == 0) {
     NDNS_LOG_FATAL("m_zone does not exist: " << zoneName);
-    BOOST_THROW_EXCEPTION(Error("Zone " + zoneName.toUri() + " does not exist in the database"));
+    NDN_THROW(Error("Zone " + zoneName.toUri() + " does not exist in the database"));
   }
 
   m_ndnsPrefix.append(ndns::label::NDNS_ITERATIVE_QUERY);
@@ -101,7 +101,7 @@ NameServer::handleQuery(const Name& prefix, const Interest& interest, const labe
     doe.setType(label::DOE_RR_TYPE);
     if (!m_dbMgr.findLowerBound(doe)) {
         NDNS_LOG_FATAL("fail to find DoE record of zone:" + m_zone.getName().toUri());
-        BOOST_THROW_EXCEPTION(std::runtime_error("fail to find DoE record of zone:" + m_zone.getName().toUri()));
+        NDN_THROW(std::runtime_error("fail to find DoE record of zone:" + m_zone.getName().toUri()));
     }
 
     answer->setContent(doe.getData());
@@ -133,9 +133,9 @@ NameServer::handleUpdate(const Name& prefix, const Interest& interest, const lab
     }
     m_validator.validate(*data,
                          bind(&NameServer::doUpdate, this, interest.shared_from_this(), data),
-                         [] (const Data& data, const security::ValidationError& msg) {
+                         [] (const Data&, const security::ValidationError&) {
                            NDNS_LOG_WARN("Ignoring update that did not pass the verification. "
-                                         << "Check the root certificate");
+                                         "Check the root certificate");
                          });
   }
 }
@@ -144,8 +144,8 @@ void
 NameServer::onRegisterFailed(const ndn::Name& prefix, const std::string& reason)
 {
   NDNS_LOG_FATAL("fail to register prefix=" << prefix << ". Due to: " << reason);
-  BOOST_THROW_EXCEPTION(Error("zone " + m_zone.getName().toUri() + " register prefix: " +
-                              prefix.toUri() + " fails. due to: " + reason));
+  NDN_THROW(Error("zone " + m_zone.getName().toUri() + " register prefix: " +
+                  prefix.toUri() + " fails. due to: " + reason));
 }
 
 void

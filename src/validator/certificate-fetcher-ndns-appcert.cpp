@@ -45,21 +45,19 @@ CertificateFetcherAppCert::doFetch(const shared_ptr<security::CertificateRequest
                                    const ValidationContinuation& continueValidation)
 {
   const Name& key = certRequest->interest.getName();
-  auto query = make_shared<IterativeQueryController>(key,
-                                                     label::APPCERT_RR_TYPE,
-                                                     certRequest->interest.getInterestLifetime(),
-                                                     [=] (const Data& data, const Response& response) {
-                                                       onQuerySuccessCallback(data, certRequest, state, continueValidation);
-                                                     },
-                                                     [=] (uint32_t errCode, const std::string& errMsg) {
-                                                       onQueryFailCallback(errMsg, certRequest, state, continueValidation);
-                                                     },
-                                                     m_face,
-                                                     nullptr,
-                                                     m_nsCache);
+  auto query = std::make_shared<IterativeQueryController>(key, label::APPCERT_RR_TYPE,
+    certRequest->interest.getInterestLifetime(),
+    [=] (const Data& data, const Response&) {
+      onQuerySuccessCallback(data, certRequest, state, continueValidation);
+    },
+    [=] (uint32_t errCode, const std::string& errMsg) {
+      onQueryFailCallback(errMsg, certRequest, state, continueValidation);
+    },
+    m_face, nullptr, m_nsCache);
   query->setStartComponentIndex(m_startComponentIndex);
   query->start();
-  state->setTag(make_shared<IterativeQueryTag>(query));
+
+  state->setTag(std::make_shared<IterativeQueryTag>(query));
 }
 
 void

@@ -18,6 +18,7 @@
  */
 
 #include "mgmt/management-tool.hpp"
+
 #include "daemon/rrset-factory.hpp"
 #include "util/cert-helper.hpp"
 #include "ndns-enum.hpp"
@@ -26,8 +27,6 @@
 
 #include "boost-test.hpp"
 #include "key-chain-fixture.hpp"
-
-#include <random>
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/range/adaptors.hpp>
@@ -39,7 +38,10 @@
 
 #include <ndn-cxx/security/transform.hpp>
 #include <ndn-cxx/util/io.hpp>
+#include <ndn-cxx/util/random.hpp>
 #include <ndn-cxx/util/regex.hpp>
+
+#include <iostream>
 
 namespace ndn {
 namespace ndns {
@@ -157,10 +159,6 @@ public:
     rootDkey = rootDkeyCert.getName();
   }
 
-  ~ManagementToolFixture()
-  {
-  }
-
   std::vector<Certificate>
   getCerts(const Name& zoneName)
   {
@@ -181,7 +179,7 @@ public:
     rrset.setType(type);
 
     if (!m_dbMgr.find(rrset))
-      BOOST_THROW_EXCEPTION(Error("Record not found"));
+      NDN_THROW(Error("Record not found"));
     else
       return rrset;
   }
@@ -206,7 +204,7 @@ public:
         }
       }
     }
-    BOOST_THROW_EXCEPTION(Error("Certificate not found in keyChain"));
+    NDN_THROW(Error("Certificate not found in keyChain"));
     return rtn;
   }
 
@@ -295,28 +293,26 @@ BOOST_AUTO_TEST_CASE(SqliteLabelOrder)
   // this unit test make sure that our label::isSmallerInLabelOrder
   // is the same as the ordering of BLOB in SQLite
 
-  std::random_device seed;
-  std::mt19937 gen(seed());
-
-  auto genRandomString = [&] (int length) -> std::string {
-    std::string charset =
-    "0123456789"
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    "abcdefghijklmnopqrstuvwxyz";
+  auto genRandomString = [] (size_t length) {
+    static const std::string charset = "0123456789"
+                                       "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                       "abcdefghijklmnopqrstuvwxyz";
     std::uniform_int_distribution<size_t> dist(0, charset.size() - 1);
 
     std::string str(length, 0);
-    std::generate_n(str.begin(), length, [&] { return charset[dist(gen)];} );
+    std::generate_n(str.begin(), length,
+                    [&] { return charset[dist(random::getRandomNumberEngine())]; });
     return str;
   };
 
-  auto genRandomLabel = [&]() -> Name {
+  auto genRandomLabel = [&] {
     std::uniform_int_distribution<size_t> numberOfLabelsDist(1, 5);
     std::uniform_int_distribution<size_t> labelSizeDist(1, 10);
+
     Name nm;
-    size_t length = numberOfLabelsDist(gen);
+    size_t length = numberOfLabelsDist(random::getRandomNumberEngine());
     for (size_t i = 0; i < length; i++) {
-      nm.append(genRandomString(labelSizeDist(gen)));
+      nm.append(genRandomString(labelSizeDist(random::getRandomNumberEngine())));
     }
     return nm;
   };

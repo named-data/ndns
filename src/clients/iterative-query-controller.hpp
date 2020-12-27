@@ -21,17 +21,12 @@
 #define NDNS_CLIENTS_ITERATIVE_QUERY_CONTROLLER_HPP
 
 #include "ndns-enum.hpp"
-#include "common.hpp"
-#include "query.hpp"
 #include "query-controller.hpp"
 #include "response.hpp"
 #include "validator/validator.hpp"
 
-#include <ndn-cxx/data.hpp>
-#include <ndn-cxx/interest.hpp>
-#include <ndn-cxx/link.hpp>
-#include <ndn-cxx/name.hpp>
 #include <ndn-cxx/ims/in-memory-storage.hpp>
+#include <ndn-cxx/link.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -63,15 +58,15 @@ public:
                            Face& face, security::Validator* validator = nullptr,
                            ndn::InMemoryStorage* cache = nullptr);
 
-  virtual void
-  start();
+  void
+  start() override;
 
   /**
    * @brief return false if the current status is not QUEYR_STEP_QUERY_NS
    * or QUERY_STEP_QUERY_RR
    */
-  virtual bool
-  hasEnded();
+  bool
+  hasEnded() override;
 
 NDNS_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
   void
@@ -110,7 +105,7 @@ NDNS_PUBLIC_WITH_TESTS_ELSE_PRIVATE:
 
 public:
   void
-  setStartComponentIndex(size_t finished)
+  setStartComponentIndex(size_t finished) override
   {
     m_nFinishedComps = finished;
   }

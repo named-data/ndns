@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -35,10 +35,8 @@
 #endif
 
 #include <ndn-cxx/name.hpp>
+#include <ndn-cxx/util/exception.hpp>
 
-#include <functional>
-#include <map>
 #include <boost/noncopyable.hpp>
-#include <boost/property_tree/ptree.hpp>
 
 #endif // NDNS_COMMON_HPP

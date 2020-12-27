@@ -27,8 +27,9 @@
 #include <ndn-cxx/security/key-chain.hpp>
 
 #include <boost/asio/io_service.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
+
+#include <iostream>
 
 NDNS_LOG_INIT(NdnsDaemon);
 
@@ -40,7 +41,7 @@ namespace ndns {
  * @note NdnsDaemon allows multiple name servers hosted by the same daemon, and they
  * share same KeyChain, DbMgr, Validator and Face
  */
-class NdnsDaemon : noncopyable
+class NdnsDaemon : boost::noncopyable
 {
 public:
   DEFINE_ERROR(Error, std::runtime_error);
@@ -59,7 +60,7 @@ public:
   processZonesSection(const ndn::ndns::ConfigSection& section)
   {
     if (section.begin() == section.end()) {
-      BOOST_THROW_EXCEPTION(Error("zones section is empty"));
+      NDN_THROW(Error("zones section is empty"));
     }
 
     std::string dbFile = getDefaultDatabaseFile();
@@ -87,7 +88,7 @@ public:
         }
         catch (const std::exception&) {
           NDNS_LOG_ERROR("Required `name' attribute missing in `zone' section");
-          BOOST_THROW_EXCEPTION(Error("Required `name' attribute missing in `zone' section"));
+          NDN_THROW(Error("Required `name' attribute missing in `zone' section"));
         }
         try {
           cert = option.second.get<Name>("cert");
@@ -104,14 +105,14 @@ public:
           }
           catch (const std::exception& e) {
             NDNS_LOG_ERROR("Identity " << name << " does not have a default certificate: " << e.what());
-            BOOST_THROW_EXCEPTION(Error("identity does not have default certificate"));
+            NDN_THROW(Error("identity does not have default certificate"));
           }
         }
         else {
           try {
             CertHelper::getCertificate(m_keyChain, name, cert);
           } catch (const std::exception&) {
-            BOOST_THROW_EXCEPTION(Error("Certificate `" + cert.toUri() + "` does not exist in the KeyChain"));
+            NDN_THROW(Error("Certificate `" + cert.toUri() + "` does not exist in the KeyChain"));
           }
         }
         NDNS_LOG_TRACE("name = " << name << " cert = " << cert);

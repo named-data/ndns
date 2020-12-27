@@ -57,22 +57,19 @@ CertificateFetcherNdnsCert::doFetch(const shared_ptr<security::CertificateReques
     return;
   }
 
-  auto query = std::make_shared<IterativeQueryController>(domain,
-                                                          label::NS_RR_TYPE,
-                                                          certRequest->interest.getInterestLifetime(),
-                                                          [=] (const Data& data, const Response& response) {
-                                                            nsSuccessCallback(data, certRequest, state, continueValidation);
-                                                          },
-                                                          [=] (uint32_t errCode, const std::string& errMsg) {
-                                                            nsFailCallback(errMsg, certRequest, state, continueValidation);
-                                                          },
-                                                          m_face,
-                                                          nullptr,
-                                                          m_nsCache.get());
+  auto query = std::make_shared<IterativeQueryController>(domain, label::NS_RR_TYPE,
+    certRequest->interest.getInterestLifetime(),
+    [=] (const Data& data, const Response&) {
+      nsSuccessCallback(data, certRequest, state, continueValidation);
+    },
+    [=] (uint32_t errCode, const std::string& errMsg) {
+      nsFailCallback(errMsg, certRequest, state, continueValidation);
+    },
+    m_face, nullptr, m_nsCache.get());
   query->setStartComponentIndex(m_startComponentIndex);
   query->start();
-  auto queryTag = make_shared<IterativeQueryTag>(query);
-  state->setTag(queryTag);
+
+  state->setTag(std::make_shared<IterativeQueryTag>(query));
 }
 
 void
@@ -100,13 +97,13 @@ CertificateFetcherNdnsCert::nsSuccessCallback(const Data& data,
   }
 
   m_face.expressInterest(interest,
-                         [=] (const Interest& interest, const Data& data) {
+                         [=] (const Interest&, const Data& data) {
                            dataCallback(data, certRequest, state, continueValidation);
                          },
-                         [=] (const Interest& interest, const lp::Nack& nack) {
+                         [=] (const Interest&, const lp::Nack& nack) {
                            nackCallback(nack, certRequest, state, continueValidation);
                          },
-                         [=] (const Interest& interest) {
+                         [=] (const Interest&) {
                            timeoutCallback(certRequest, state, continueValidation);
                          });
 }
@@ -143,7 +140,7 @@ CertificateFetcherNdnsCert::calculateDomain(const Name& key)
       return key.getPrefix(i);
     }
   }
-  BOOST_THROW_EXCEPTION(std::runtime_error(key.toUri() + " is not a legal NDNS certificate name"));
+  NDN_THROW(std::runtime_error(key.toUri() + " is not a legal NDNS certificate name"));
 }
 
 void

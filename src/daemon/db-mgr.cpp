@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2019, Regents of the University of California.
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -85,7 +85,7 @@ DbMgr::open()
 
   if (res != SQLITE_OK) {
     NDNS_LOG_FATAL("Cannot open the db file: " << m_dbFile);
-    BOOST_THROW_EXCEPTION(ConnectError("Cannot open the db file: " + m_dbFile));
+    NDN_THROW(ConnectError("Cannot open the db file: " + m_dbFile));
   }
 
   // ignore any errors from DB creation (command will fail for the existing database, which is ok)
@@ -116,7 +116,7 @@ DbMgr::clearAllData()
   // sqlite3_step cannot execute multiple SQL statements
   int rc = sqlite3_exec(m_conn, sql, nullptr, nullptr, nullptr);
   if (rc != SQLITE_OK) {
-    BOOST_THROW_EXCEPTION(ExecuteError(sql));
+    NDN_THROW(ExecuteError(sql));
   }
 
   NDNS_LOG_INFO("clear all the data in the database: " << m_dbFile);
@@ -142,7 +142,7 @@ DbMgr::restoreName(sqlite3_stmt* stmt, int iCol)
     name::Component component;
     std::tie(hasDecodingSucceeded, component) = Block::fromBuffer(buffer, nBytesLeft);
     if (!hasDecodingSucceeded) {
-      BOOST_THROW_EXCEPTION(Error("Error while decoding name from the database"));
+      NDN_THROW(Error("Error while decoding name from the database"));
     }
     name.append(component);
     buffer += component.size();
@@ -166,7 +166,7 @@ DbMgr::insert(Zone& zone)
   const char* sql = "INSERT INTO zones (name, ttl) VALUES (?, ?)";
   int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
-    BOOST_THROW_EXCEPTION(PrepareError(sql));
+    NDN_THROW(PrepareError(sql));
   }
 
   saveName(zone.getName(), stmt, 1);
@@ -175,7 +175,7 @@ DbMgr::insert(Zone& zone)
   rc = sqlite3_step(stmt);
   if (rc != SQLITE_DONE) {
     sqlite3_finalize(stmt);
-    BOOST_THROW_EXCEPTION(ExecuteError(sql));
+    NDN_THROW(ExecuteError(sql));
   }
 
   zone.setId(sqlite3_last_insert_rowid(m_conn));
@@ -188,18 +188,18 @@ DbMgr::setZoneInfo(Zone& zone,
                    const Block& value)
 {
   if (zone.getId() == 0) {
-    BOOST_THROW_EXCEPTION(Error("zone has not been initialized"));
+    NDN_THROW(Error("zone has not been initialized"));
   }
 
   if (key.length() > 10) {
-    BOOST_THROW_EXCEPTION(Error("key length should not exceed 10"));
+    NDN_THROW(Error("key length should not exceed 10"));
   }
 
   sqlite3_stmt* stmt;
   const char* sql = "INSERT OR REPLACE INTO zone_info (zone_id, key, value) VALUES (?, ?, ?)";
   int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
-    BOOST_THROW_EXCEPTION(PrepareError(sql));
+    NDN_THROW(PrepareError(sql));
   }
 
   sqlite3_bind_int(stmt,  1, zone.getId());
@@ -209,7 +209,7 @@ DbMgr::setZoneInfo(Zone& zone,
   rc = sqlite3_step(stmt);
   if (rc != SQLITE_DONE) {
     sqlite3_finalize(stmt);
-    BOOST_THROW_EXCEPTION(ExecuteError(sql));
+    NDN_THROW(ExecuteError(sql));
   }
 
   sqlite3_finalize(stmt);
@@ -226,14 +226,14 @@ DbMgr::getZoneInfo(Zone& zone)
   }
 
   if (zone.getId() == 0) {
-    BOOST_THROW_EXCEPTION(Error("zone has not been initialized"));
+    NDN_THROW(Error("zone has not been initialized"));
   }
 
   sqlite3_stmt* stmt;
   const char* sql = "SELECT key, value FROM zone_info WHERE zone_id=?";
   int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
-    BOOST_THROW_EXCEPTION(PrepareError(sql));
+    NDN_THROW(PrepareError(sql));
   }
 
   sqlite3_bind_int(stmt, 1, zone.getId());
@@ -255,7 +255,7 @@ DbMgr::find(Zone& zone)
   const char* sql = "SELECT id, ttl FROM zones WHERE name=?";
   int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
-    BOOST_THROW_EXCEPTION(PrepareError(sql));
+    NDN_THROW(PrepareError(sql));
   }
 
   saveName(zone.getName(), stmt, 1);
@@ -280,7 +280,7 @@ DbMgr::listZones()
   const char* sql = "SELECT id, name, ttl FROM zones";
   int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
-    BOOST_THROW_EXCEPTION(PrepareError(sql));
+    NDN_THROW(PrepareError(sql));
   }
 
   std::vector<Zone> vec;
@@ -307,7 +307,7 @@ DbMgr::remove(Zone& zone)
   const char* sql = "DELETE FROM zones where id=?";
   int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
-    BOOST_THROW_EXCEPTION(PrepareError(sql));
+    NDN_THROW(PrepareError(sql));
   }
 
   sqlite3_bind_int64(stmt, 1, zone.getId());
@@ -315,7 +315,7 @@ DbMgr::remove(Zone& zone)
   rc = sqlite3_step(stmt);
   if (rc != SQLITE_DONE) {
     sqlite3_finalize(stmt);
-    BOOST_THROW_EXCEPTION(ExecuteError(sql));
+    NDN_THROW(ExecuteError(sql));
   }
 
   sqlite3_finalize(stmt);
@@ -334,7 +334,7 @@ DbMgr::insert(Rrset& rrset)
     return;
 
   if (rrset.getZone() == nullptr) {
-    BOOST_THROW_EXCEPTION(RrsetError("Rrset has not been assigned to a zone"));
+    NDN_THROW(RrsetError("Rrset has not been assigned to a zone"));
   }
 
   if (rrset.getZone()->getId() == 0) {
@@ -348,7 +348,7 @@ DbMgr::insert(Rrset& rrset)
   sqlite3_stmt* stmt;
   int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
-    BOOST_THROW_EXCEPTION(PrepareError(sql));
+    NDN_THROW(PrepareError(sql));
   }
 
   sqlite3_bind_int64(stmt, 1, rrset.getZone()->getId());
@@ -362,7 +362,7 @@ DbMgr::insert(Rrset& rrset)
   rc = sqlite3_step(stmt);
   if (rc != SQLITE_DONE) {
     sqlite3_finalize(stmt);
-    BOOST_THROW_EXCEPTION(ExecuteError(sql));
+    NDN_THROW(ExecuteError(sql));
   }
 
   rrset.setId(sqlite3_last_insert_rowid(m_conn));
@@ -373,7 +373,7 @@ bool
 DbMgr::find(Rrset& rrset)
 {
   if (rrset.getZone() == nullptr) {
-    BOOST_THROW_EXCEPTION(RrsetError("Rrset has not been assigned to a zone"));
+    NDN_THROW(RrsetError("Rrset has not been assigned to a zone"));
   }
 
   if (rrset.getZone()->getId() == 0) {
@@ -389,7 +389,7 @@ DbMgr::find(Rrset& rrset)
     "    WHERE zone_id=? and label=? and type=?";
   int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
-    BOOST_THROW_EXCEPTION(PrepareError(sql));
+    NDN_THROW(PrepareError(sql));
   }
 
   sqlite3_bind_int64(stmt, 1, rrset.getZone()->getId());
@@ -417,7 +417,7 @@ bool
 DbMgr::findLowerBound(Rrset& rrset)
 {
   if (rrset.getZone() == nullptr) {
-    BOOST_THROW_EXCEPTION(RrsetError("Rrset has not been assigned to a zone"));
+    NDN_THROW(RrsetError("Rrset has not been assigned to a zone"));
   }
 
   if (rrset.getZone()->getId() == 0) {
@@ -433,7 +433,7 @@ DbMgr::findLowerBound(Rrset& rrset)
     "    WHERE zone_id=? and label<? and type=? ORDER BY label DESC";
   int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
-    BOOST_THROW_EXCEPTION(PrepareError(sql));
+    NDN_THROW(PrepareError(sql));
   }
 
   sqlite3_bind_int64(stmt, 1, rrset.getZone()->getId());
@@ -464,7 +464,7 @@ DbMgr::findRrsets(Zone& zone)
     find(zone);
 
   if (zone.getId() == 0)
-    BOOST_THROW_EXCEPTION(RrsetError("Attempting to find all the rrsets with a zone does not in the database"));
+    NDN_THROW(RrsetError("Attempting to find all the rrsets with a zone does not in the database"));
 
   std::vector<Rrset> vec;
   sqlite3_stmt* stmt;
@@ -473,7 +473,7 @@ DbMgr::findRrsets(Zone& zone)
 
   int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
-    BOOST_THROW_EXCEPTION(PrepareError(sql));
+    NDN_THROW(PrepareError(sql));
   }
   sqlite3_bind_int64(stmt, 1, zone.getId());
 
@@ -503,13 +503,13 @@ DbMgr::removeRrsetsOfZoneByType(Zone& zone, const name::Component& type)
     find(zone);
 
   if (zone.getId() == 0)
-    BOOST_THROW_EXCEPTION(RrsetError("Attempting to find all the rrsets with a zone does not in the database"));
+    NDN_THROW(RrsetError("Attempting to find all the rrsets with a zone does not in the database"));
 
   sqlite3_stmt* stmt;
   const char* sql = "DELETE FROM rrsets WHERE zone_id = ? AND type = ?";
   int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
-    BOOST_THROW_EXCEPTION(PrepareError(sql));
+    NDN_THROW(PrepareError(sql));
   }
 
   sqlite3_bind_int64(stmt, 1, zone.getId());
@@ -518,7 +518,7 @@ DbMgr::removeRrsetsOfZoneByType(Zone& zone, const name::Component& type)
   rc = sqlite3_step(stmt);
   if (rc != SQLITE_DONE) {
     sqlite3_finalize(stmt);
-    BOOST_THROW_EXCEPTION(ExecuteError(sql));
+    NDN_THROW(ExecuteError(sql));
   }
   sqlite3_finalize(stmt);
 }
@@ -527,13 +527,13 @@ void
 DbMgr::remove(Rrset& rrset)
 {
   if (rrset.getId() == 0)
-    BOOST_THROW_EXCEPTION(RrsetError("Attempting to remove Rrset that has no assigned id"));
+    NDN_THROW(RrsetError("Attempting to remove Rrset that has no assigned id"));
 
   sqlite3_stmt* stmt;
   const char* sql = "DELETE FROM rrsets WHERE id=?";
   int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
-    BOOST_THROW_EXCEPTION(PrepareError(sql));
+    NDN_THROW(PrepareError(sql));
   }
 
   sqlite3_bind_int64(stmt, 1, rrset.getId());
@@ -541,7 +541,7 @@ DbMgr::remove(Rrset& rrset)
   rc = sqlite3_step(stmt);
   if (rc != SQLITE_DONE) {
     sqlite3_finalize(stmt);
-    BOOST_THROW_EXCEPTION(ExecuteError(sql));
+    NDN_THROW(ExecuteError(sql));
   }
 
   sqlite3_finalize(stmt);
@@ -553,18 +553,18 @@ void
 DbMgr::update(Rrset& rrset)
 {
   if (rrset.getId() == 0) {
-    BOOST_THROW_EXCEPTION(RrsetError("Attempting to replace Rrset that has no assigned id"));
+    NDN_THROW(RrsetError("Attempting to replace Rrset that has no assigned id"));
   }
 
   if (rrset.getZone() == nullptr) {
-    BOOST_THROW_EXCEPTION(RrsetError("Rrset has not been assigned to a zone"));
+    NDN_THROW(RrsetError("Rrset has not been assigned to a zone"));
   }
 
   sqlite3_stmt* stmt;
   const char* sql = "UPDATE rrsets SET ttl=?, version=?, data=? WHERE id=?";
   int rc = sqlite3_prepare_v2(m_conn, sql, -1, &stmt, nullptr);
   if (rc != SQLITE_OK) {
-    BOOST_THROW_EXCEPTION(PrepareError(sql));
+    NDN_THROW(PrepareError(sql));
   }
 
   sqlite3_bind_int64(stmt, 1, rrset.getTtl().count());

@@ -35,12 +35,11 @@
 #include <ndn-cxx/util/regex.hpp>
 #include <ndn-cxx/encoding/block.hpp>
 #include <ndn-cxx/encoding/block-helpers.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/program_options.hpp>
-#include <boost/asio.hpp>
-#include <boost/filesystem.hpp>
 
-#include <string>
+#include <boost/asio/io_service.hpp>
+#include <boost/program_options.hpp>
+
+#include <iostream>
 #include <tuple>
 
 namespace ndn {
@@ -48,7 +47,7 @@ namespace ndns {
 
 NDNS_LOG_INIT(NdnsUpdate);
 
-class NdnsUpdate : noncopyable
+class NdnsUpdate : boost::noncopyable
 {
 public:
   NdnsUpdate(const Name& zone, const shared_ptr<Data>& update, Face& face)

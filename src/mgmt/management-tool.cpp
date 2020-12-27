@@ -23,8 +23,8 @@
 #include "ndns-tlv.hpp"
 #include "util/cert-helper.hpp"
 
-#include <string>
 #include <iomanip>
+#include <iostream>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -72,31 +72,31 @@ ManagementTool::createZone(const Name& zoneName,
   //check preconditions
   Zone zone(zoneName, cacheTtl);
   if (m_dbMgr.find(zone)) {
-    BOOST_THROW_EXCEPTION(Error(zoneName.toUri() + " is already presented in the NDNS db"));
+    NDN_THROW(Error(zoneName.toUri() + " is already present in the NDNS db"));
   }
 
   if (!isRoot && parentZoneName.equals(zoneName)) {
-    BOOST_THROW_EXCEPTION(Error("Parent zone name can not be the zone itself"));
+    NDN_THROW(Error("Parent zone name can not be the zone itself"));
   }
 
   if (!isRoot && !parentZoneName.isPrefixOf(zoneName)) {
-    BOOST_THROW_EXCEPTION(Error(parentZoneName.toUri() + " is not a prefix of " + zoneName.toUri()));
+    NDN_THROW(Error(parentZoneName.toUri() + " is not a prefix of " + zoneName.toUri()));
   }
 
   // if dsk is provided, there is no need to check ksk
   if (dskCertName != DEFAULT_CERT) {
     if (!matchCertificate(dskCertName, zoneIdentityName)) {
-      BOOST_THROW_EXCEPTION(Error("Cannot verify DSK certificate"));
+      NDN_THROW(Error("Cannot verify DSK certificate"));
     }
   }
   else if (kskCertName != DEFAULT_CERT) {
     if (!matchCertificate(kskCertName, zoneIdentityName)) {
-      BOOST_THROW_EXCEPTION(Error("Cannot verify KSK certificate"));
+      NDN_THROW(Error("Cannot verify KSK certificate"));
     }
   }
 
   if (dkeyCertName == DEFAULT_CERT && isRoot) {
-    BOOST_THROW_EXCEPTION(Error("Cannot generate dkey for root zone"));
+    NDN_THROW(Error("Cannot generate dkey for root zone"));
   }
 
   // Generate a parentZone's identity to generate a D-Key.
@@ -196,7 +196,7 @@ ManagementTool::deleteZone(const Name& zoneName)
   //check pre-conditions
   Zone zone(zoneName);
   if (!m_dbMgr.find(zone)) {
-    BOOST_THROW_EXCEPTION(Error(zoneName.toUri() + " is not presented in the NDNS db"));
+    NDN_THROW(Error(zoneName.toUri() + " is not present in the NDNS db"));
   }
 
   //first remove all rrsets of this zone from local ndns database
@@ -216,7 +216,7 @@ ManagementTool::exportCertificate(const Name& certName, const std::string& outFi
   security::Certificate cert;
   shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<NDNS>(<>+)<CERT><>");
   if (!regex->match(certName)) {
-    BOOST_THROW_EXCEPTION(Error("Certificate name is illegal"));
+    NDN_THROW(Error("Certificate name is illegal"));
     return;
   }
 
@@ -232,7 +232,7 @@ ManagementTool::exportCertificate(const Name& certName, const std::string& outFi
     cert = security::Certificate(rrset.getData());
   }
   else {
-    BOOST_THROW_EXCEPTION(Error("Cannot find the cert: " + certName.toUri()));
+    NDN_THROW(Error("Cannot find the cert: " + certName.toUri()));
   }
 
   if (outFile == DEFAULT_IO) {
@@ -260,7 +260,7 @@ ManagementTool::addMultiLevelLabelRrset(Rrset& rrset,
     if (m_dbMgr.find(prefixNsRr)) {
       Data data(prefixNsRr.getData());
       if (data.getContentType() == NDNS_LINK) {
-        BOOST_THROW_EXCEPTION(Error("Cannot override " + boost::lexical_cast<std::string>(prefixNsRr) + " (NDNS_LINK)"));
+        NDN_THROW(Error("Cannot override " + boost::lexical_cast<std::string>(prefixNsRr) + " (NDNS_LINK)"));
       }
     }
   }
@@ -270,7 +270,7 @@ ManagementTool::addMultiLevelLabelRrset(Rrset& rrset,
     Rrset rrsetCopy = rrset;
     if (m_dbMgr.find(rrsetCopy)) {
       if (Data(rrsetCopy.getData()).getContentType() == NDNS_AUTH) {
-        BOOST_THROW_EXCEPTION(Error("Cannot override " + boost::lexical_cast<std::string>(rrsetCopy) + " (NDNS_AUTH)"));
+        NDN_THROW(Error("Cannot override " + boost::lexical_cast<std::string>(rrsetCopy) + " (NDNS_AUTH)"));
       }
     }
   }
@@ -305,7 +305,7 @@ ManagementTool::addRrset(Rrset& rrset)
   rrsetCopy.setType(label::NS_RR_TYPE);
   if (m_dbMgr.find(rrsetCopy)) {
     if (Data(rrsetCopy.getData()).getContentType() == NDNS_AUTH) {
-      BOOST_THROW_EXCEPTION(Error("Can not add this Rrset: it overrides a NDNS_AUTH record"));
+      NDN_THROW(Error("Can not add this Rrset: it overrides a NDNS_AUTH record"));
     }
   }
 
@@ -327,7 +327,7 @@ ManagementTool::addRrsetFromFile(const Name& zoneName,
   Zone zone(zoneName);
   Name zoneIdentityName = Name(zoneName).append(label::NDNS_ITERATIVE_QUERY);
   if (!m_dbMgr.find(zone)) {
-    BOOST_THROW_EXCEPTION(Error(zoneName.toUri() + " is not presented in the NDNS db"));
+    NDN_THROW(Error(zoneName.toUri() + " is not present in the NDNS db"));
   }
 
   Name dskName;
@@ -338,14 +338,14 @@ ManagementTool::addRrsetFromFile(const Name& zoneName,
   }
   else {
     if (!matchCertificate(dskCertName, zoneIdentityName)) {
-      BOOST_THROW_EXCEPTION(Error("Cannot verify certificate"));
+      NDN_THROW(Error("Cannot verify certificate"));
     }
   }
 
   if (inFile != DEFAULT_IO) {
     boost::filesystem::path dir = boost::filesystem::path(inFile);
     if (!boost::filesystem::exists(dir) || boost::filesystem::is_directory(dir)) {
-      BOOST_THROW_EXCEPTION(Error("Data: " + inFile + " does not exist"));
+      NDN_THROW(Error("Data: " + inFile + " does not exist"));
     }
   }
 
@@ -357,7 +357,7 @@ ManagementTool::addRrsetFromFile(const Name& zoneName,
     data = ndn::io::load<ndn::Data>(inFile, encoding);
 
   if (data == nullptr) {
-    BOOST_THROW_EXCEPTION(Error("input does not contain a valid Data packet"));
+    NDN_THROW(Error("input does not contain a valid Data packet"));
   }
 
   if (needResign) {
@@ -402,7 +402,7 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
 {
   Zone zone(zoneName);
   if (!m_dbMgr.find(zone)) {
-    BOOST_THROW_EXCEPTION(Error("Zone " + zoneName.toUri() + " is not found in the database"));
+    NDN_THROW(Error("Zone " + zoneName.toUri() + " is not found in the database"));
   }
 
   //first output the zone name
@@ -593,8 +593,8 @@ ManagementTool::addIdCert(Zone& zone, const Certificate& cert,
   rrsetKey.setData(cert.wireEncode());
 
   if (m_dbMgr.find(rrsetKey)) {
-    BOOST_THROW_EXCEPTION(Error("CERT with label=" + label.toUri() +
-                                " is already presented in local NDNS databse"));
+    NDN_THROW(Error("CERT with label=" + label.toUri() +
+                    " is already present in local NDNS database"));
   }
 
   m_dbMgr.insert(rrsetKey);
@@ -606,8 +606,8 @@ void
 ManagementTool::addZone(Zone& zone)
 {
   if (m_dbMgr.find(zone)) {
-    BOOST_THROW_EXCEPTION(Error("Zone with Name=" + zone.getName().toUri() +
-                                " is already presented in local NDNS databse"));
+    NDN_THROW(Error("Zone with Name=" + zone.getName().toUri() +
+                    " is already present in local NDNS database"));
   }
   NDNS_LOG_INFO("Add zone with Name: " << zone.getName().toUri());
   m_dbMgr.insert(zone);
@@ -644,12 +644,10 @@ ManagementTool::checkRrsetVersion(const Rrset& rrset)
   if (m_dbMgr.find(originalRrset)) {
     // update only if rrset has a newer version
     if (originalRrset.getVersion() == rrset.getVersion()) {
-      BOOST_THROW_EXCEPTION(Error("Duplicate: "
-                                  + boost::lexical_cast<std::string>(originalRrset)));
+      NDN_THROW(Error("Duplicate: " + boost::lexical_cast<std::string>(originalRrset)));
     }
     else if (originalRrset.getVersion() > rrset.getVersion()) {
-      BOOST_THROW_EXCEPTION(Error("Newer version exists: "
-                                  + boost::lexical_cast<std::string>(originalRrset)));
+      NDN_THROW(Error("Newer version exists: " + boost::lexical_cast<std::string>(originalRrset)));
     }
 
     m_dbMgr.remove(originalRrset);
@@ -661,7 +659,7 @@ ManagementTool::generateDoe(Zone& zone)
 {
   // check zone existence
   if (!m_dbMgr.find(zone)) {
-    BOOST_THROW_EXCEPTION(Error(zone.getName().toUri() + " is not presented in the NDNS db"));
+    NDN_THROW(Error(zone.getName().toUri() + " is not present in the NDNS db"));
   }
 
   // remove all the Doe records

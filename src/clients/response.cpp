@@ -97,7 +97,7 @@ Response::wireDecodeDoe(const Block& wire)
 {
   wire.parse();
   if (wire.elements().size() != 2) {
-    BOOST_THROW_EXCEPTION(Error("Unexpected number of components while decoding DOE record"));
+    NDN_THROW(Error("Unexpected number of elements while decoding DOE record"));
   }
   return std::make_pair(Name(wire.elements().front()), Name(wire.elements().back()));
 }

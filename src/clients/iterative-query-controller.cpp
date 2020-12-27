@@ -19,7 +19,8 @@
 
 #include "iterative-query-controller.hpp"
 #include "logger.hpp"
-#include <iostream>
+
+#include <sstream>
 
 namespace ndn {
 namespace ndns {
@@ -113,7 +114,7 @@ IterativeQueryController::onDataValidated(const Data& data, NdnsContentType cont
         oss << "In onDataValidated, absence of record can not be infered from DoE.";
         oss << " Last query:" << m_lastLabelType << " ";
         oss << *this;
-        BOOST_THROW_EXCEPTION(std::runtime_error(oss.str()));
+        NDN_THROW(std::runtime_error(oss.str()));
       }
     }
     else if (contentType == NDNS_LINK) {
@@ -255,8 +256,7 @@ IterativeQueryController::makeLatestInterest()
     std::ostringstream oss;
     oss << *this;
     NDNS_LOG_WARN("unexpected state: " << oss.str());
-    BOOST_THROW_EXCEPTION(std::runtime_error("call makeLatestInterest() unexpected: "
-                                             + oss.str()));
+    NDN_THROW(std::runtime_error("call makeLatestInterest() unexpected: " + oss.str()));
   }
 
   m_lastLabelType = Name(query.getRrLabel()).append(query.getRrType());

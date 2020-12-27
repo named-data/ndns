@@ -26,14 +26,12 @@
 #include "ndns-label.hpp"
 #include "ndns-tlv.hpp"
 #include "validator/validator.hpp"
-#include "common.hpp"
 
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/face.hpp>
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include <boost/noncopyable.hpp>
 
 #include <sstream>
 #include <stdexcept>
@@ -46,7 +44,7 @@ namespace ndns {
  *
  * The authoritative name server handles NDNS query and update.
  */
-class NameServer : noncopyable
+class NameServer : boost::noncopyable
 {
   DEFINE_ERROR(Error, std::runtime_error);
 

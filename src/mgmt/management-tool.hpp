@@ -20,7 +20,6 @@
 #ifndef NDNS_MGMT_MANAGEMENT_TOOL_HPP
 #define NDNS_MGMT_MANAGEMENT_TOOL_HPP
 
-#include "config.hpp"
 #include "ndns-enum.hpp"
 #include "clients/response.hpp"
 #include "daemon/db-mgr.hpp"
@@ -49,7 +48,7 @@ static constexpr uint64_t VERSION_USE_UNIX_TIMESTAMP = std::numeric_limits<uint6
  * @brief provides management tools to the NDNS system, such as zone creation, zone delegation, DSK
  * generation and root zone creation.
  */
-class ManagementTool : noncopyable
+class ManagementTool : boost::noncopyable
 {
 public:
   /** @brief Represents an error might be thrown during runtime
@@ -57,10 +56,7 @@ public:
   class Error : public std::runtime_error
   {
   public:
-    explicit
-    Error(const std::string& what) : std::runtime_error(what)
-    {
-    }
+    using std::runtime_error::runtime_error;
   };
 
   /**

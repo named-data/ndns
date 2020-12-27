@@ -25,17 +25,14 @@
 #include "validator/validator.hpp"
 #include "util/util.hpp"
 
-#include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/face.hpp>
-#include <boost/program_options.hpp>
-#include <boost/asio.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/noncopyable.hpp>
+#include <ndn-cxx/security/key-chain.hpp>
 
-#include <iostream>
-#include <memory>
-#include <string>
+#include <boost/asio/io_service.hpp>
+#include <boost/program_options.hpp>
+
 #include <fstream>
+#include <iostream>
 
 NDNS_LOG_INIT(Dig);
 

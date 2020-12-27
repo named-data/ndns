@@ -52,7 +52,7 @@ RrsetFactory::checkZoneKey()
   Name zoneIdentityName = Name(m_zone.getName()).append(label::NDNS_ITERATIVE_QUERY);
   if (m_dskCertName != DEFAULT_CERT &&
       !matchCertificate(m_dskCertName, zoneIdentityName)) {
-    BOOST_THROW_EXCEPTION(Error("Cannot verify certificate"));
+    NDN_THROW(Error("Cannot verify certificate"));
   }
 }
 
@@ -67,7 +67,7 @@ RrsetFactory::onlyCheckZone()
   DbMgr dbMgr(m_dbFile);
   const Name& zoneName = m_zone.getName();
   if (!dbMgr.find(m_zone)) {
-    BOOST_THROW_EXCEPTION(Error(zoneName.toUri() + " is not presented in the NDNS db"));
+    NDN_THROW(Error(zoneName.toUri() + " is not presented in the NDNS db"));
   }
 }
 
@@ -120,7 +120,7 @@ RrsetFactory::generateNsRrset(const Name& label,
                               const ndn::DelegationList& delegations)
 {
   if (!m_checked) {
-    BOOST_THROW_EXCEPTION(Error("You have to call checkZoneKey before call generate functions"));
+    NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
   }
 
   if (ttl == DEFAULT_RR_TTL)
@@ -147,7 +147,7 @@ RrsetFactory::generateTxtRrset(const Name& label,
                                const std::vector<std::string>& strings)
 {
   if (!m_checked) {
-    BOOST_THROW_EXCEPTION(Error("You have to call checkZoneKey before call generate functions"));
+    NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
   }
 
   if (ttl == DEFAULT_RR_TTL)
@@ -181,7 +181,7 @@ RrsetFactory::generateCertRrset(const Name& label,
                                 const ndn::security::Certificate& cert)
 {
   if (!m_checked) {
-    BOOST_THROW_EXCEPTION(Error("You have to call checkZoneKey before call generate functions"));
+    NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
   }
 
   if (ttl == DEFAULT_RR_TTL)
@@ -207,7 +207,7 @@ RrsetFactory::generateAuthRrset(const Name& label,
                                 time::seconds ttl)
 {
   if (!m_checked) {
-    BOOST_THROW_EXCEPTION(Error("You have to call checkZoneKey before call generate functions"));
+    NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
   }
 
   if (ttl == DEFAULT_RR_TTL)
@@ -234,7 +234,7 @@ RrsetFactory::generateDoeRrset(const Name& label,
                                const Name& upperLabel)
 {
   if (!m_checked) {
-    BOOST_THROW_EXCEPTION(Error("You have to call checkZoneKey before call generate functions"));
+    NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
   }
 
   if (ttl == DEFAULT_RR_TTL)

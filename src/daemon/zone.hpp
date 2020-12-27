@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
-/**
- * Copyright (c) 2014, Regents of the University of California.
+/*
+ * Copyright (c) 2014-2020, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -20,9 +20,7 @@
 #ifndef NDNS_DAEMON_ZONE_HPP
 #define NDNS_DAEMON_ZONE_HPP
 
-#include <ndn-cxx/name.hpp>
-
-#include <iostream>
+#include "common.hpp"
 
 namespace ndn {
 namespace ndns {
@@ -32,8 +30,8 @@ namespace ndns {
  * @see http://en.wikipedia.org/wiki/DNS_zone
  * @see http://irl.cs.ucla.edu/data/files/theses/afanasyev-thesis.pdf
  *
- * The class is copyable, since it may be assigned to another Zone instance
- *  when resolving Response or Query from database
+ * This class is copyable, since it may be assigned to another Zone instance
+ * when resolving Response or Query from database
  */
 class Zone
 {

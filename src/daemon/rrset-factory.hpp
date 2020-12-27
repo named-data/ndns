@@ -20,7 +20,6 @@
 #ifndef NDNS_DAEMON_RRSET_FACTORY_HPP
 #define NDNS_DAEMON_RRSET_FACTORY_HPP
 
-#include "common.hpp"
 #include "rrset.hpp"
 #include "logger.hpp"
 #include "daemon/db-mgr.hpp"
@@ -29,9 +28,7 @@
 #include <ndn-cxx/link.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 
-#include <vector>
-#include <string>
-#include <boost/filesystem.hpp>
+#include <boost/filesystem/path.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -44,10 +41,7 @@ public:
   class Error : public std::runtime_error
   {
   public:
-    explicit
-    Error(const std::string& what) : std::runtime_error(what)
-    {
-    }
+    using std::runtime_error::runtime_error;
   };
 
 public:
@@ -138,4 +132,3 @@ private:
 } // namespace ndn
 
 #endif // NDNS_DAEMON_RRSET_FACTORY_HPP
-
