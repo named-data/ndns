@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2021, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -123,10 +123,10 @@ BOOST_AUTO_TEST_CASE(GenerateNsRrset)
   BOOST_CHECK_EQUAL(*rrset.getZone(), zone);
   BOOST_CHECK_EQUAL(rrset.getLabel(), label);
   BOOST_CHECK_EQUAL(rrset.getType(), type);
-  BOOST_CHECK_EQUAL(rrset.getVersion().toVersion(), version);
+  BOOST_CHECK_EQUAL(rrset.getVersion(), Name::Component::fromVersion(version));
   BOOST_CHECK_EQUAL(rrset.getTtl(), ttl);
 
-  const Name linkName("/rrest/factory/NDNS/nstest/NS/%FD%04%D2");
+  const auto linkName = Name("/rrest/factory/NDNS/nstest/NS").appendVersion(version);
   Link link;
   BOOST_CHECK_NO_THROW(link.wireDecode(rrset.getData()));
 
@@ -134,8 +134,7 @@ BOOST_AUTO_TEST_CASE(GenerateNsRrset)
   BOOST_CHECK_EQUAL(link.getContentType(), NDNS_LINK);
   BOOST_CHECK(link.getDelegationList() == delegations);
 
-  // BOOST_CHECK_EQUAL(Validator::verifySignature(link, m_cert.getPublicKeyInfo()), true);
-  security::verifySignature(link, m_cert);
+  BOOST_CHECK(security::verifySignature(link, m_cert));
 }
 
 BOOST_AUTO_TEST_CASE(GenerateTxtRrset)
@@ -167,7 +166,7 @@ BOOST_AUTO_TEST_CASE(GenerateTxtRrset)
   BOOST_CHECK_EQUAL(*rrset.getZone(), zone);
   BOOST_CHECK_EQUAL(rrset.getLabel(), label);
   BOOST_CHECK_EQUAL(rrset.getType(), type);
-  BOOST_CHECK_EQUAL(rrset.getVersion().toVersion(), version);
+  BOOST_CHECK_EQUAL(rrset.getVersion(), Name::Component::fromVersion(version));
   BOOST_CHECK_EQUAL(rrset.getTtl(), ttl);
 
   Name dataName = m_zoneName.append(label::NDNS_ITERATIVE_QUERY)
@@ -183,9 +182,7 @@ BOOST_AUTO_TEST_CASE(GenerateTxtRrset)
 
   BOOST_CHECK(txts == RrsetFactory::wireDecodeTxt(data.getContent()));
 
-  // shared_ptr<IdentityCertificate> cert = m_keyChain.getCertificate(m_certName);
-  // BOOST_CHECK(Validator::verifySignature(data, cert->getPublicKeyInfo()));
-  security::verifySignature(data, m_cert);
+  BOOST_CHECK(security::verifySignature(data, m_cert));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

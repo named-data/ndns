@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2021, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE(Ostream)
   boost::test_tools::output_test_stream os;
   os << rrset;
   BOOST_CHECK(os.is_equal("Rrset: Id=1 Zone=(Zone: Id=0 Name=/test)"
-                          " Label=/www/1 Type=NS Version=%FD%01"));
+                          " Label=/www/1 Type=NS Version=v=1"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

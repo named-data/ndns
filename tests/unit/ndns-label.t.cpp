@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2021, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -35,7 +35,7 @@ BOOST_AUTO_TEST_CASE(MatchInterest)
   Name zone("/net/ndnsim");
 
   Interest interest1("/net/ndnsim/NDNS/www/dsk-111/NS");
-  Interest interest2("/net/ndnsim/NDNS/www/dsk-111/NS/%FD%00");
+  Interest interest2(Name("/net/ndnsim/NDNS/www/dsk-111/NS").appendVersion(0));
 
   MatchResult re;
   BOOST_CHECK_EQUAL(matchName(interest1, zone, re), true);
@@ -46,7 +46,7 @@ BOOST_AUTO_TEST_CASE(MatchInterest)
   BOOST_CHECK_EQUAL(matchName(interest2, zone, re), true);
   BOOST_CHECK_EQUAL(re.rrLabel, Name("/www/dsk-111"));
   BOOST_CHECK_EQUAL(re.rrType, name::Component("NS"));
-  BOOST_CHECK_EQUAL(re.version, name::Component::fromEscapedString("%FD%00"));
+  BOOST_CHECK_EQUAL(re.version, name::Component::fromVersion(0));
 }
 
 BOOST_AUTO_TEST_CASE(MatchData)
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(MatchData)
   using namespace label;
   Name zone("/net/ndnsim");
 
-  Data data1("/net/ndnsim/NDNS/www/dsk-111/NS/%FD%00");
+  Data data1(Name("/net/ndnsim/NDNS/www/dsk-111/NS").appendVersion(0));
 
   MatchResult re;
   BOOST_CHECK_EQUAL(matchName(data1, zone, re), true);
