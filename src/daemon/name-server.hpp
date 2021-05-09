@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2021, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -29,9 +29,6 @@
 
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/face.hpp>
-
-#include <boost/asio.hpp>
-#include <boost/bind.hpp>
 
 #include <sstream>
 #include <stdexcept>
