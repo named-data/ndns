@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2021, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -27,32 +27,35 @@ namespace ndns {
 
 NDNS_LOG_INIT(DbMgr);
 
-static const std::string NDNS_SCHEMA = R"VALUE(
+static const std::string NDNS_SCHEMA = R"SQL(
 CREATE TABLE IF NOT EXISTS zones (
   id    INTEGER NOT NULL PRIMARY KEY,
-  name  blob NOT NULL UNIQUE,
-  ttl   integer(10) NOT NULL);
+  name  BLOB NOT NULL UNIQUE,
+  ttl   INTEGER NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS zone_info (
-  zone_id  INTEGER NOT NULL,
-  key      VARCHAR(10) NOT NULL,
-  value    blob NOT NULL,
-  PRIMARY KEY (zone_id, key),
-  FOREIGN KEY(zone_id) REFERENCES zones(id) ON UPDATE Cascade ON DELETE Cascade);
+  zone_id INTEGER NOT NULL,
+  key     TEXT NOT NULL,
+  value   BLOB NOT NULL,
+  PRIMARY KEY(zone_id, key),
+  FOREIGN KEY(zone_id) REFERENCES zones(id) ON UPDATE CASCADE ON DELETE CASCADE
+);
 
 CREATE TABLE IF NOT EXISTS rrsets (
   id      INTEGER NOT NULL PRIMARY KEY,
-  zone_id integer(10) NOT NULL,
-  label   blob NOT NULL,
-  type    blob NOT NULL,
-  version blob NOT NULL,
-  ttl     integer(10) NOT NULL,
-  data    blob NOT NULL,
-  FOREIGN KEY(zone_id) REFERENCES zones(id) ON UPDATE Cascade ON DELETE Cascade);
+  zone_id INTEGER NOT NULL,
+  label   BLOB NOT NULL,
+  type    BLOB NOT NULL,
+  version BLOB NOT NULL,
+  ttl     INTEGER NOT NULL,
+  data    BLOB NOT NULL,
+  FOREIGN KEY(zone_id) REFERENCES zones(id) ON UPDATE CASCADE ON DELETE CASCADE
+);
 
 CREATE UNIQUE INDEX rrsets_zone_id_label_type_version
-  ON rrsets (zone_id, label, type, version);
-)VALUE";
+  ON rrsets(zone_id, label, type, version);
+)SQL";
 
 DbMgr::DbMgr(const std::string& dbFile)
   : m_dbFile(dbFile)
@@ -125,8 +128,15 @@ DbMgr::clearAllData()
 void
 DbMgr::saveName(const Name& name, sqlite3_stmt* stmt, int iCol, bool isStatic)
 {
-  const Block& wire = name.wireEncode();
-  sqlite3_bind_blob(stmt, iCol, wire.value(), wire.value_size(), isStatic ? SQLITE_STATIC : SQLITE_TRANSIENT);
+  static const uint8_t dummy = 0;
+  const auto& wire = name.wireEncode();
+  const auto* ptr = wire.value();
+  if (ptr == nullptr) {
+    // if value() returns nullptr (i.e., value_size() == 0), pass a non-null dummy
+    // pointer instead; we cannot bind nullptr because the column may be "NOT NULL"
+    ptr = &dummy;
+  }
+  sqlite3_bind_blob(stmt, iCol, ptr, wire.value_size(), isStatic ? SQLITE_STATIC : SQLITE_TRANSIENT);
 }
 
 Name
