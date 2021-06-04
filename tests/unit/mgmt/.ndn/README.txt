@@ -8,7 +8,7 @@ into this folder.
 
 The following keys are currently pre-configured:
 
-$ HOME=tests/unit/mgmt ndnsec-ls-identity -C
+$ HOME=tests/unit/mgmt ndnsec list -c
   /
   +->  /ksk-1416974006376
        +->  /KEY/ksk-1416974006376/CERT/%FD%00%00%01I%EA%3Bx%BD
