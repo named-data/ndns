@@ -18,10 +18,10 @@ NDNS Documentation
    ndns-db-manage
    manpages
 
-**Additional documentation**
+Additional Documentation
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 * `API documentation (doxygen) <doxygen/annotated.html>`_
-
 * `Addressing Operational Challenges in Named Data Networking Through NDNS Distributed
   Database <http://lasr.cs.ucla.edu/afanasyev/data/files/Afanasyev/afanasyev-phd-thesis.pdf>`_
   (PhD Thesis, outlining purpose and overall design of the NDNS system)
@@ -29,7 +29,7 @@ NDNS Documentation
 Downloading
 -----------
 
-* `Source code GitHub git repository <https://github.com/named-data/NDNS>`_.
+* `Source code git repository <https://github.com/named-data/NDNS>`_
 
 License
 -------

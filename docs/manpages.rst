@@ -1,8 +1,8 @@
-.. _Manpages:
-
-Manpages
-========
+Man pages
+=========
 
 .. toctree::
-   manpages/ndns-daemon
+   :glob:
    :maxdepth: 1
+
+   manpages/*

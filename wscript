@@ -11,7 +11,8 @@ GIT_TAG_PREFIX = 'ndns-'
 
 def options(opt):
     opt.load(['compiler_cxx', 'gnu_dirs'])
-    opt.load(['default-compiler-flags', 'coverage', 'sanitizers', 'boost', 'sqlite3',
+    opt.load(['default-compiler-flags',
+              'coverage', 'sanitizers', 'boost', 'sqlite3',
               'doxygen', 'sphinx_build'],
              tooldir=['.waf-tools'])
 
@@ -24,17 +25,19 @@ def configure(conf):
                'default-compiler-flags', 'boost', 'sqlite3',
                'doxygen', 'sphinx_build'])
 
-    conf.env['WITH_TESTS'] = conf.options.with_tests
+    conf.env.WITH_TESTS = conf.options.with_tests
+
+    conf.find_program('dot', var='DOT', mandatory=False)
 
     conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'], uselib_store='NDN_CXX',
                    pkg_config_path=os.environ.get('PKG_CONFIG_PATH', '%s/pkgconfig' % conf.env.LIBDIR))
 
     conf.check_sqlite3()
 
-    USED_BOOST_LIBS = ['system', 'program_options', 'filesystem', 'thread', 'log']
-    if conf.env['WITH_TESTS']:
-        USED_BOOST_LIBS += ['unit_test_framework']
-    conf.check_boost(lib=USED_BOOST_LIBS, mt=True)
+    boost_libs = ['system', 'program_options', 'filesystem', 'thread', 'log']
+    if conf.env.WITH_TESTS:
+        boost_libs.append('unit_test_framework')
+    conf.check_boost(lib=boost_libs, mt=True)
 
     conf.check_compiler_flags()
 
@@ -42,12 +45,12 @@ def configure(conf):
     conf.load('coverage')
     conf.load('sanitizers')
 
-    conf.define_cond('HAVE_TESTS', conf.env['WITH_TESTS'])
-    conf.define('CONFDIR', '%s/ndn/ndns' % conf.env['SYSCONFDIR'])
-    conf.define('DEFAULT_DBFILE', '%s/lib/ndn/ndns/ndns.db' % conf.env['LOCALSTATEDIR'])
+    conf.define_cond('HAVE_TESTS', conf.env.WITH_TESTS)
+    conf.define('CONFDIR', '%s/ndn/ndns' % conf.env.SYSCONFDIR)
+    conf.define('DEFAULT_DBFILE', '%s/lib/ndn/ndns/ndns.db' % conf.env.LOCALSTATEDIR)
     conf.write_config_header('src/config.hpp', define_prefix='NDNS_')
 
-def build (bld):
+def build(bld):
     version(bld)
 
     bld(features='subst',
@@ -70,8 +73,8 @@ def build (bld):
         includes='src',
         export_includes='src')
 
-    bld.recurse('tests')
     bld.recurse('tools')
+    bld.recurse('tests')
 
     bld(features='subst',
         name='conf-samples',
@@ -79,8 +82,8 @@ def build (bld):
         target=['validator.conf.sample', 'ndns.conf.sample'],
         install_path='${SYSCONFDIR}/ndn/ndns',
         ANCHORPATH='anchors/root.cert',
-        CONFDIR='%s/ndn/ndns' % bld.env['SYSCONFDIR'],
-        DEFAULT_DBFILE='%s/lib/ndn/ndns/ndns.db' % bld.env['LOCALSTATEDIR'])
+        CONFDIR='%s/ndn/ndns' % bld.env.SYSCONFDIR,
+        DEFAULT_DBFILE='%s/lib/ndn/ndns/ndns.db' % bld.env.LOCALSTATEDIR)
 
     if Utils.unversioned_sys_platform() == 'linux':
         bld(features='subst',
@@ -94,7 +97,7 @@ def build (bld):
             builder='man',
             config='docs/conf.py',
             outdir='docs/manpages',
-            source=bld.path.ant_glob('docs/manpages/**/*.rst'),
+            source=bld.path.ant_glob('docs/manpages/*.rst'),
             install_path='${MANDIR}',
             version=VERSION_BASE,
             release=VERSION)
@@ -116,6 +119,7 @@ def doxygen(bld):
         target=['docs/doxygen.conf',
                 'docs/named_data_theme/named_data_footer-with-analytics.html'],
         VERSION=VERSION,
+        HAVE_DOT='YES' if bld.env.DOT else 'NO',
         HTML_FOOTER='../build/docs/named_data_theme/named_data_footer-with-analytics.html' \
                         if os.getenv('GOOGLE_ANALYTICS', None) \
                         else '../docs/named_data_theme/named_data_footer.html',

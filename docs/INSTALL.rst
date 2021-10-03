@@ -1,7 +1,5 @@
-.. _NDNS Installation Instructions:
-
-NDNS Installation Instructions
-==============================
+Installation Instructions
+=========================
 
 Prerequisites
 -------------
