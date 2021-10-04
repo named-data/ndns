@@ -3,11 +3,6 @@ set -ex
 
 # Prepare environment
 rm -rf ~/.ndn
-
-if has OSX $NODE_LABELS; then
-    security unlock-keychain -p named-data
-fi
-
 ndnsec key-gen "/tmp/jenkins/$NODE_NAME" | ndnsec cert-install -
 
 # https://github.com/google/sanitizers/wiki/AddressSanitizerFlags

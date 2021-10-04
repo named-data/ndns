@@ -1,7 +1,8 @@
 # NDNS: Domain Name Service for Named Data Networking
 
-![Language](https://img.shields.io/badge/C%2B%2B-14-blue.svg)
-[![Build Status](https://travis-ci.org/named-data/ndns.svg?branch=master)](https://travis-ci.org/named-data/ndns)
+[![CI](https://github.com/named-data/ndns/actions/workflows/ci.yml/badge.svg)](https://github.com/named-data/ndns/actions/workflows/ci.yml)
+[![Docs](https://github.com/named-data/ndns/actions/workflows/docs.yml/badge.svg)](https://github.com/named-data/ndns/actions/workflows/docs.yml)
+![Language](https://img.shields.io/badge/C%2B%2B-14-blue)
 
 **NDNS** is a completely distributed database system that largely mimics the structure of
 the DNS system in today's Internet but operates within the NDN architecture. Although the
