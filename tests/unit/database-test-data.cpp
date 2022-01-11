@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -136,9 +136,7 @@ DbTestData::addRrset(Zone& zone, const Name& label, const name::Component& type,
                   m_keyChain, m_certName);
   rf.onlyCheckZone();
   if (type == label::NS_RR_TYPE) {
-    DelegationList ds;
-    ds.insert(1, "xx");
-    rrset = rf.generateNsRrset(label, version.toVersion(), ttl, ds);
+    rrset = rf.generateNsRrset(label, version.toVersion(), ttl, {"/xx"});
     if (contentType != NDNS_AUTH) {
       // do not add AUTH packet to link
       m_links.push_back(Link(rrset.getData()));

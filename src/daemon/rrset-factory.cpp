@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -117,7 +117,7 @@ Rrset
 RrsetFactory::generateNsRrset(const Name& label,
                               uint64_t version,
                               time::seconds ttl,
-                              const ndn::DelegationList& delegations)
+                              std::vector<Name> delegations)
 {
   if (!m_checked) {
     NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
@@ -131,7 +131,7 @@ RrsetFactory::generateNsRrset(const Name& label,
   Rrset& rrset = rrsetAndName.first;
 
   Link link(name);
-  link.setDelegationList(delegations);
+  link.setDelegationList(std::move(delegations));
 
   setContentType(link, NDNS_LINK, ttl);
   sign(link);

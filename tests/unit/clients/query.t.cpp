@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -48,16 +48,20 @@ BOOST_FIXTURE_TEST_CASE(TestCase, KeyChainFixture)
 
   auto link = make_shared<Link>("/ndn/link/NDNS/test/NS");
   for (int i = 1; i <= 5; i++) {
-    link->addDelegation(i, std::string("/link/") + to_string(i));
+    link->addDelegation(std::string("/link/") + to_string(i));
   }
   // link has to be signed first, then wireDecode
   m_keyChain.sign(*link, security::signingByIdentity(certIdentity));
 
-  q.setDelegationListFromLink(*link);
-  BOOST_CHECK_EQUAL(q.getDelegationList(), link->getDelegationList());
+  q.setForwardingHintFromLink(*link);
+  BOOST_CHECK_EQUAL_COLLECTIONS(
+    q.getForwardingHint().begin(), q.getForwardingHint().end(),
+    link->getDelegationList().begin(), link->getDelegationList().end());
 
   Interest interest = q.toInterest();
-  BOOST_CHECK_EQUAL(interest.getForwardingHint(), link->getDelegationList());
+  BOOST_CHECK_EQUAL_COLLECTIONS(
+    interest.getForwardingHint().begin(), interest.getForwardingHint().end(),
+    link->getDelegationList().begin(), link->getDelegationList().end());
 
   ndns::Query q2(zone, qType);
   BOOST_CHECK_EQUAL(q2.fromInterest(zone, interest), true);

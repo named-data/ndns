@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -60,7 +60,7 @@ public:
   fromInterest(const Name& zone, const Interest& interest);
 
   void
-  setDelegationListFromLink(const Link& link);
+  setForwardingHintFromLink(const Link& link);
 
   bool
   operator==(const Query& other) const
@@ -170,21 +170,21 @@ public:
   }
 
   /**
-   * @brief set link object
+   * @brief set ForwardingHint
    */
   void
-  setDelegationList(const DelegationList& delegations)
+  setForwardingHint(std::vector<Name> forwardingHint)
   {
-    m_delegationList = delegations;
+    m_forwardingHint = std::move(forwardingHint);
   }
 
   /**
-   * @brief get Link object
+   * @brief get ForwardingHint
    */
-  const DelegationList&
-  getDelegationList() const
+  span<const Name>
+  getForwardingHint() const
   {
-    return m_delegationList;
+    return m_forwardingHint;
   }
 
 private:
@@ -193,7 +193,7 @@ private:
   Name m_rrLabel;
   name::Component m_rrType;
   time::milliseconds m_interestLifetime;
-  DelegationList m_delegationList;
+  std::vector<Name> m_forwardingHint;
 };
 
 std::ostream&

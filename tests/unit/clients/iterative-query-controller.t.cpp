@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -126,7 +126,9 @@ BOOST_FIXTURE_TEST_CASE(Basic, QueryControllerFixture)
     if (i > 0) {
       BOOST_CHECK_EQUAL(!interestRx[i].getForwardingHint().empty(), true);
       if (!interestRx[i].getForwardingHint().empty()) {
-        BOOST_CHECK_EQUAL(interestRx[i].getForwardingHint(), m_links[i - 1].getDelegationList());
+        BOOST_CHECK_EQUAL_COLLECTIONS(
+          interestRx[i].getForwardingHint().begin(), interestRx[i].getForwardingHint().end(),
+          m_links[i - 1].getDelegationList().begin(), m_links[i - 1].getDelegationList().end());
       }
     }
   }

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -177,16 +177,13 @@ main(int argc, char* argv[])
       ndns::Rrset rrset;
 
       if (type == ndns::label::NS_RR_TYPE) {
-        ndn::DelegationList delegations;
+        std::vector<Name> delegations;
         for (const auto& i : content) {
-          std::vector<string> data;
-          boost::split(data, i, boost::is_any_of(","));
-          uint64_t priority = boost::lexical_cast<uint64_t>(data[0]);
-          delegations.insert(priority, Name(data[1]));
+          delegations.emplace_back(i);
         }
 
         rrset = rrsetFactory.generateNsRrset(label,
-                                             version, ttl, delegations);
+                                             version, ttl, std::move(delegations));
       }
       else if (type == ndns::label::TXT_RR_TYPE) {
         rrset = rrsetFactory.generateTxtRrset(label,

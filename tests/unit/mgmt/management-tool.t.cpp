@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -631,7 +631,7 @@ BOOST_AUTO_TEST_CASE(AddRrset)
 
   RrsetFactory rf(TEST_DATABASE, zoneName, m_keyChain, DEFAULT_CERT);
   rf.checkZoneKey();
-  Rrset rrset1 = rf.generateNsRrset("/l1", 7654, ttl2, DelegationList());
+  Rrset rrset1 = rf.generateNsRrset("/l1", 7654, ttl2, {});
 
   BOOST_CHECK_NO_THROW(m_tool.addRrset(rrset1));
   Rrset rrset2 = findRrSet(zone, "/l1", label::NS_RR_TYPE);
@@ -661,7 +661,7 @@ BOOST_AUTO_TEST_CASE(AddMultiLevelLabelRrset)
 
   Name labelName("/l1/l2/l3");
 
-  Rrset rrset1 = rf.generateNsRrset(labelName, 7654, ttl, DelegationList());
+  Rrset rrset1 = rf.generateNsRrset(labelName, 7654, ttl, {});
 
   //add NS NDNS_AUTH and check user-defined ttl
   BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(rrset1, rf, ttl));
@@ -682,12 +682,12 @@ BOOST_AUTO_TEST_CASE(AddMultiLevelLabelRrset)
   checkRrset("/l1/l2/l3", label::NS_RR_TYPE, ndns::NDNS_LINK);
 
   // insert a shorter NS, when there are longer NS or TXT
-  Rrset shorterNs = rf.generateNsRrset("/l1/l2", 7654, ttl, DelegationList());
+  Rrset shorterNs = rf.generateNsRrset("/l1/l2", 7654, ttl, {});
   BOOST_CHECK_THROW(m_tool.addMultiLevelLabelRrset(shorterNs, rf, ttl),
                     ndns::ManagementTool::Error);
 
   // insert a longer NS, when there is already a shorter NS
-  Rrset longerNs = rf.generateNsRrset("/l1/l2/l3/l4", 7654, ttl, DelegationList());
+  Rrset longerNs = rf.generateNsRrset("/l1/l2/l3/l4", 7654, ttl, {});
   BOOST_CHECK_THROW(m_tool.addMultiLevelLabelRrset(longerNs, rf, ttl),
                     ndns::ManagementTool::Error);
 
@@ -697,7 +697,7 @@ BOOST_AUTO_TEST_CASE(AddMultiLevelLabelRrset)
 
   // insert a smaller NS, when there is long TXT
   Rrset longTxt = rf.generateTxtRrset("/k1/k2/k3", 7654, ttl, std::vector<std::string>());
-  Rrset smallerNs = rf.generateNsRrset("/k1/k2", 7654, ttl, DelegationList());
+  Rrset smallerNs = rf.generateNsRrset("/k1/k2", 7654, ttl, {});
   BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(longTxt, rf, ttl));
   BOOST_CHECK_THROW(m_tool.addMultiLevelLabelRrset(smallerNs, rf, ttl),
                     ndns::ManagementTool::Error);

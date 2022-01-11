@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2021, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -106,14 +106,13 @@ BOOST_AUTO_TEST_CASE(GenerateNsRrset)
   RrsetFactory rf(TEST_DATABASE2, m_zoneName, m_keyChain, m_certName);
 
   // rf without checkZoneKey: throw.
-  ndn::DelegationList delegations;
+  std::vector<Name> delegations;
   BOOST_CHECK_THROW(rf.generateNsRrset(label, version, ttl, delegations),
                     ndns::RrsetFactory::Error);
   rf.checkZoneKey();
 
   for (int i = 1; i <= 4; i++) {
-    Name name("/delegation/" + std::to_string(i));
-    delegations.insert(i, name);
+    delegations.emplace_back("/delegation/" + std::to_string(i));
   }
 
   Rrset rrset = rf.generateNsRrset(label, version, ttl, delegations);
@@ -132,7 +131,9 @@ BOOST_AUTO_TEST_CASE(GenerateNsRrset)
 
   BOOST_CHECK_EQUAL(link.getName(), linkName);
   BOOST_CHECK_EQUAL(link.getContentType(), NDNS_LINK);
-  BOOST_CHECK(link.getDelegationList() == delegations);
+  BOOST_CHECK_EQUAL_COLLECTIONS(
+    link.getDelegationList().begin(), link.getDelegationList().end(),
+    delegations.begin(), delegations.end());
 
   BOOST_CHECK(security::verifySignature(link, m_cert));
 }

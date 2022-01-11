@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -57,7 +57,7 @@ public:
   generateNsRrset(const Name& label,
                   uint64_t version,
                   time::seconds ttl,
-                  const ndn::DelegationList& delegations);
+                  std::vector<Name> delegations);
 
   Rrset
   generateTxtRrset(const Name& label,

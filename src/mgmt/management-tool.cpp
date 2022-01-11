@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -475,11 +475,8 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
           }
           else {
             Link link(rrset.getData());
-            const DelegationList& ds = link.getDelegationList();
-            for (const auto& i: ds) {
-              std::string str = std::to_string(i.preference);
-                + "," + i.name.toUri() + ";";
-              os << str;
+            for (const auto& delegation : link.getDelegationList()) {
+              os << delegation << ";";
             }
           }
           os << std::endl;
