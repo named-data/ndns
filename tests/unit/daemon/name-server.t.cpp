@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2021, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
   BOOST_CHECK_EQUAL(nDataBack, 2);
 
   // explicit interest with correct version
-  face.receive(Interest(m_cert.getName()).setCanBePrefix(false));
+  face.receive(Interest(m_cert.getName()));
 
   face.onSendData.connectSingleShot([&] (const Data& data) {
     ++nDataBack;
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
   // explicit interest with wrong version
   Name wrongName = m_cert.getName().getPrefix(-1);
   wrongName.appendVersion();
-  face.receive(Interest(wrongName).setCanBePrefix(false));
+  face.receive(Interest(wrongName));
 
   face.onSendData.connectSingleShot([&] (const Data& data) {
     ++nDataBack;

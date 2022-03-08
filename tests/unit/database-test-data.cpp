@@ -85,7 +85,7 @@ DbTestData::DbTestData()
   io::save(m_cert, TEST_CERT.string());
   NDNS_LOG_INFO("save test root cert " << m_certName << " to: " << TEST_CERT.string());
 
-  BOOST_ASSERT(m_certName.size() > 0);
+  BOOST_ASSERT(!m_certName.empty());
   NDNS_LOG_TRACE("test certName: " << m_certName);
 
   int certificateIndex = 0;
@@ -139,20 +139,18 @@ DbTestData::addRrset(Zone& zone, const Name& label, const name::Component& type,
     rrset = rf.generateNsRrset(label, version.toVersion(), ttl, {"/xx"});
     if (contentType != NDNS_AUTH) {
       // do not add AUTH packet to link
-      m_links.push_back(Link(rrset.getData()));
+      m_links.emplace_back(rrset.getData());
     }
   }
   else if (type == label::TXT_RR_TYPE) {
-    rrset = rf.generateTxtRrset(label, version.toVersion(), ttl,
-                                std::vector<std::string>());
+    rrset = rf.generateTxtRrset(label, version.toVersion(), ttl, {});
   }
   else if (type == label::APPCERT_RR_TYPE) {
-    rrset = rf.generateCertRrset(label, version.toVersion(), ttl,
-                                 m_cert);
+    rrset = rf.generateCertRrset(label, version.toVersion(), ttl, m_cert);
   }
 
-  auto data = make_shared<Data>(rrset.getData());
-  security::verifySignature(*data, m_cert);
+  auto data = std::make_shared<Data>(rrset.getData());
+  BOOST_VERIFY(security::verifySignature(*data, m_cert));
 
   ManagementTool tool(TEST_DATABASE.string(), m_keyChain);
   tool.addRrset(rrset);
