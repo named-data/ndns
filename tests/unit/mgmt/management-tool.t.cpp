@@ -30,11 +30,7 @@
 
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/range/adaptors.hpp>
-#if BOOST_VERSION >= 105900
 #include <boost/test/tools/output_test_stream.hpp>
-#else
-#include <boost/test/output_test_stream.hpp>
-#endif
 
 #include <ndn-cxx/security/transform.hpp>
 #include <ndn-cxx/util/io.hpp>
@@ -753,7 +749,7 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCert)
 
 BOOST_AUTO_TEST_CASE(AddRrSetDskCertUserProvidedCert)
 {
-  //check using user provided certificate
+  // check using user provided certificate
   Name parentZoneName("/ndns-test");
   Name parentZoneIdentityName = Name(parentZoneName).append(label::NDNS_ITERATIVE_QUERY);
   Name zoneName("/ndns-test/child-zone");
@@ -778,7 +774,7 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCertUserProvidedCert)
 
 BOOST_AUTO_TEST_CASE(AddRrSetDskCertInvalidOutput)
 {
-  //check invalid output
+  // check invalid output
   Name parentZoneName("/ndns-test");
   Name zoneName = Name(parentZoneName).append("child-zone");
   m_tool.createZone(zoneName, parentZoneName);
@@ -792,7 +788,7 @@ BOOST_AUTO_TEST_CASE(AddRrSetDskCertInvalidOutput)
 
 BOOST_AUTO_TEST_CASE(AddRrSetVersionControl)
 {
-  //check version control
+  // check version control
   time::seconds ttl(4200);
   Name parentZoneName("/ndns-test");
   Name zoneName = Name(parentZoneName).append("child-zone");
@@ -834,7 +830,7 @@ BOOST_AUTO_TEST_CASE(AddRrSetVersionControl)
 
 BOOST_AUTO_TEST_CASE(AddRrSetDskCertFormat)
 {
-  //check input with different formats
+  // check input with different formats
   Name parentZoneName("/ndns-test");
   Name zoneName = Name(parentZoneName).append("child-zone");
   Zone parentZone(parentZoneName);
