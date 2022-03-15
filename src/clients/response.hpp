@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -24,15 +24,8 @@
 #include "ndns-enum.hpp"
 #include "ndns-label.hpp"
 
-
-#include <ndn-cxx/face.hpp>
-#include <ndn-cxx/name.hpp>
 #include <ndn-cxx/data.hpp>
-#include <ndn-cxx/encoding/block-helpers.hpp>
-#include <ndn-cxx/encoding/block.hpp>
 #include <ndn-cxx/meta-info.hpp>
-
-#include <vector>
 
 namespace ndn {
 namespace ndns {
@@ -102,7 +95,7 @@ public:
   /**
    * @brief encode the app-level data
    */
-  const Block
+  Block
   wireEncode() const;
 
   /**
@@ -116,15 +109,12 @@ public:
    */
   template<encoding::Tag T>
   size_t
-  wireEncode(EncodingImpl<T>& block) const;
+  wireEncode(EncodingImpl<T>& encoder) const;
 
   static std::pair<Name, Name>
   wireDecodeDoe(const Block& wire);
 
-public:
-  ///////////////////////////////////////////////
-  // getter and setter
-
+public: // getter and setter
   const Name&
   getZone() const
   {

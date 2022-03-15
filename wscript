@@ -3,10 +3,8 @@
 from waflib import Context, Logs, Utils
 import os, subprocess
 
-VERSION = '0.1.0'
+VERSION = '0.1'
 APPNAME = 'ndns'
-BUGREPORT = 'https://redmine.named-data.net/projects/ndns'
-URL = 'http://named-data.net/doc/ndns/'
 GIT_TAG_PREFIX = 'ndns-'
 
 def options(opt):
@@ -29,12 +27,13 @@ def configure(conf):
 
     conf.find_program('dot', var='DOT', mandatory=False)
 
-    conf.check_cfg(package='libndn-cxx', args=['--cflags', '--libs'], uselib_store='NDN_CXX',
-                   pkg_config_path=os.environ.get('PKG_CONFIG_PATH', '%s/pkgconfig' % conf.env.LIBDIR))
+    pkg_config_path = os.environ.get('PKG_CONFIG_PATH', f'{conf.env.LIBDIR}/pkgconfig')
+    conf.check_cfg(package='libndn-cxx', args=['libndn-cxx >= 0.8.0', '--cflags', '--libs'],
+                   uselib_store='NDN_CXX', pkg_config_path=pkg_config_path)
 
     conf.check_sqlite3()
 
-    boost_libs = ['system', 'program_options', 'filesystem', 'thread', 'log']
+    boost_libs = ['system', 'program_options', 'filesystem']
     if conf.env.WITH_TESTS:
         boost_libs.append('unit_test_framework')
     conf.check_boost(lib=boost_libs, mt=True)
@@ -53,23 +52,25 @@ def configure(conf):
 def build(bld):
     version(bld)
 
+    vmajor = int(VERSION_SPLIT[0])
+    vminor = int(VERSION_SPLIT[1]) if len(VERSION_SPLIT) >= 2 else 0
+    vpatch = int(VERSION_SPLIT[2]) if len(VERSION_SPLIT) >= 3 else 0
+
     bld(features='subst',
         name='version.hpp',
         source='src/version.hpp.in',
         target='src/version.hpp',
         VERSION_STRING=VERSION_BASE,
         VERSION_BUILD=VERSION,
-        VERSION=int(VERSION_SPLIT[0]) * 1000000 +
-                int(VERSION_SPLIT[1]) * 1000 +
-                int(VERSION_SPLIT[2]),
-        VERSION_MAJOR=VERSION_SPLIT[0],
-        VERSION_MINOR=VERSION_SPLIT[1],
-        VERSION_PATCH=VERSION_SPLIT[2])
+        VERSION=vmajor * 1000000 + vminor * 1000 + vpatch,
+        VERSION_MAJOR=str(vmajor),
+        VERSION_MINOR=str(vminor),
+        VERSION_PATCH=str(vpatch))
 
     bld.objects(
         name='ndns-objects',
         source=bld.path.ant_glob('src/**/*.cpp'),
-        use='version NDN_CXX BOOST',
+        use='version.hpp NDN_CXX BOOST',
         includes='src',
         export_includes='src')
 

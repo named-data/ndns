@@ -217,7 +217,6 @@ ManagementTool::exportCertificate(const Name& certName, const std::string& outFi
   shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<NDNS>(<>+)<CERT><>");
   if (!regex->match(certName)) {
     NDN_THROW(Error("Certificate name is illegal"));
-    return;
   }
 
   Name zoneName = regex->expand("\\1");
@@ -482,7 +481,7 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
           os << std::endl;
         }
         else {
-          bufferSource(rrs[i].wire(), rrs[i].size()) >> base64Encode() >> streamSink(os);
+          bufferSource(rrs[i]) >> base64Encode() >> streamSink(os);
         }
       }
     }
@@ -504,7 +503,7 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
           // cert.printCertificate(istream);
         }
         else {
-          bufferSource(re.getAppContent().wire(), re.getAppContent().size()) >> base64Encode() >> streamSink(os);
+          bufferSource(re.getAppContent()) >> base64Encode() >> streamSink(os);
         }
       }
       os << std::endl;
@@ -572,7 +571,7 @@ ManagementTool::getRrSet(const Name& zoneName,
     return;
   }
 
-  bufferSource(rrset.getData().wire(), rrset.getData().size()) >> base64Encode() >> streamSink(os);
+  bufferSource(rrset.getData()) >> base64Encode() >> streamSink(os);
 }
 
 void
@@ -624,11 +623,12 @@ bool
 ManagementTool::matchCertificate(const Name& certName, const Name& identity)
 {
   security::Identity id = m_keyChain.getPib().getIdentity(identity);
-  for (const security::Key& key: id.getKeys()) {
+  for (const security::Key& key : id.getKeys()) {
     try {
       key.getCertificate(certName);
       return true;
-    } catch (const std::exception&) {
+    }
+    catch (const std::exception&) {
     }
   }
   return false;

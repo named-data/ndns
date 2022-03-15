@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -19,6 +19,8 @@
 
 #include "response.hpp"
 #include "logger.hpp"
+
+#include <ndn-cxx/encoding/block-helpers.hpp>
 
 namespace ndn {
 namespace ndns {
@@ -39,13 +41,13 @@ Response::Response(const Name& zone, const name::Component& queryType)
 {
 }
 
-template<encoding::Tag T>
+template<encoding::Tag TAG>
 size_t
-Response::wireEncode(EncodingImpl<T>& block) const
+Response::wireEncode(EncodingImpl<TAG>& encoder) const
 {
   if (m_contentType == NDNS_BLOB || m_contentType == NDNS_KEY) {
     // Raw application content
-    return block.prependBlock(m_appContent);
+    return prependBlock(encoder, m_appContent);
   }
 
   // Content :: = CONTENT-TYPE TLV-LENGTH
@@ -53,16 +55,15 @@ Response::wireEncode(EncodingImpl<T>& block) const
 
   size_t totalLength = 0;
   for (auto iter = m_rrs.rbegin(); iter != m_rrs.rend(); ++iter) {
-    totalLength += block.prependBlock(*iter);
+    totalLength += prependBlock(encoder, *iter);
   }
 
-  totalLength += block.prependVarNumber(totalLength);
-  totalLength += block.prependVarNumber(::ndn::tlv::Content);
-
+  totalLength += encoder.prependVarNumber(totalLength);
+  totalLength += encoder.prependVarNumber(ndn::tlv::Content);
   return totalLength;
 }
 
-const Block
+Block
 Response::wireEncode() const
 {
   if (m_contentType == NDNS_BLOB || m_contentType == NDNS_KEY) {
@@ -86,7 +87,7 @@ Response::wireDecode(const Block& wire)
 
   wire.parse();
 
-  Block::element_const_iterator iter = wire.elements().begin();
+  auto iter = wire.elements().begin();
   for (; iter != wire.elements().end(); ++iter) {
     m_rrs.push_back(*iter);
   }
@@ -99,7 +100,7 @@ Response::wireDecodeDoe(const Block& wire)
   if (wire.elements().size() != 2) {
     NDN_THROW(Error("Unexpected number of elements while decoding DOE record"));
   }
-  return std::make_pair(Name(wire.elements().front()), Name(wire.elements().back()));
+  return {Name(wire.elements().front()), Name(wire.elements().back())};
 }
 
 bool

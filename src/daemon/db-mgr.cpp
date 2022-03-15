@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2021, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -150,7 +150,7 @@ DbMgr::restoreName(sqlite3_stmt* stmt, int iCol)
   while (nBytesLeft > 0) {
     bool hasDecodingSucceeded;
     name::Component component;
-    std::tie(hasDecodingSucceeded, component) = Block::fromBuffer(buffer, nBytesLeft);
+    std::tie(hasDecodingSucceeded, component) = Block::fromBuffer({buffer, nBytesLeft});
     if (!hasDecodingSucceeded) {
       NDN_THROW(Error("Error while decoding name from the database"));
     }
@@ -213,8 +213,8 @@ DbMgr::setZoneInfo(Zone& zone,
   }
 
   sqlite3_bind_int(stmt,  1, zone.getId());
-  sqlite3_bind_text(stmt, 2, key.data(),  key.length(), SQLITE_STATIC);
-  sqlite3_bind_blob(stmt, 3, value.wire(), value.size(), SQLITE_STATIC);
+  sqlite3_bind_text(stmt, 2, key.data(),   key.length(), SQLITE_STATIC);
+  sqlite3_bind_blob(stmt, 3, value.data(), value.size(), SQLITE_STATIC);
 
   rc = sqlite3_step(stmt);
   if (rc != SQLITE_DONE) {
@@ -250,8 +250,8 @@ DbMgr::getZoneInfo(Zone& zone)
 
   while (sqlite3_step(stmt) == SQLITE_ROW) {
     const char* key = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
-    rtn[string(key)] = Block(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 1)),
-                             sqlite3_column_bytes(stmt, 1));
+    rtn[string(key)] = Block(make_span(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 1)),
+                                       sqlite3_column_bytes(stmt, 1)));
   }
 
   sqlite3_finalize(stmt);
@@ -364,10 +364,10 @@ DbMgr::insert(Rrset& rrset)
   sqlite3_bind_int64(stmt, 1, rrset.getZone()->getId());
 
   saveName(rrset.getLabel(), stmt, 2);
-  sqlite3_bind_blob(stmt,  3, rrset.getType().wire(),    rrset.getType().size(),    SQLITE_STATIC);
-  sqlite3_bind_blob(stmt,  4, rrset.getVersion().wire(), rrset.getVersion().size(), SQLITE_STATIC);
+  sqlite3_bind_blob(stmt,  3, rrset.getType().data(),    rrset.getType().size(),    SQLITE_STATIC);
+  sqlite3_bind_blob(stmt,  4, rrset.getVersion().data(), rrset.getVersion().size(), SQLITE_STATIC);
   sqlite3_bind_int64(stmt, 5, rrset.getTtl().count());
-  sqlite3_bind_blob(stmt,  6, rrset.getData().wire(),    rrset.getData().size(),    SQLITE_STATIC);
+  sqlite3_bind_blob(stmt,  6, rrset.getData().data(),    rrset.getData().size(),    SQLITE_STATIC);
 
   rc = sqlite3_step(stmt);
   if (rc != SQLITE_DONE) {
@@ -405,15 +405,15 @@ DbMgr::find(Rrset& rrset)
   sqlite3_bind_int64(stmt, 1, rrset.getZone()->getId());
 
   saveName(rrset.getLabel(), stmt, 2);
-  sqlite3_bind_blob(stmt, 3, rrset.getType().wire(), rrset.getType().size(), SQLITE_STATIC);
+  sqlite3_bind_blob(stmt, 3, rrset.getType().data(), rrset.getType().size(), SQLITE_STATIC);
 
   if (sqlite3_step(stmt) == SQLITE_ROW) {
     rrset.setId(sqlite3_column_int64(stmt, 0));
     rrset.setTtl(time::seconds(sqlite3_column_int64(stmt, 1)));
-    rrset.setVersion(Block(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 2)),
-                           sqlite3_column_bytes(stmt, 2)));
-    rrset.setData(Block(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 3)),
-                        sqlite3_column_bytes(stmt, 3)));
+    rrset.setVersion(Block(make_span(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 2)),
+                                     sqlite3_column_bytes(stmt, 2))));
+    rrset.setData(Block(make_span(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 3)),
+                                  sqlite3_column_bytes(stmt, 3))));
   }
   else {
     rrset.setId(0);
@@ -449,15 +449,15 @@ DbMgr::findLowerBound(Rrset& rrset)
   sqlite3_bind_int64(stmt, 1, rrset.getZone()->getId());
 
   saveName(rrset.getLabel(), stmt, 2);
-  sqlite3_bind_blob(stmt, 3, rrset.getType().wire(), rrset.getType().size(), SQLITE_STATIC);
+  sqlite3_bind_blob(stmt, 3, rrset.getType().data(), rrset.getType().size(), SQLITE_STATIC);
 
   if (sqlite3_step(stmt) == SQLITE_ROW) {
     rrset.setId(sqlite3_column_int64(stmt, 0));
     rrset.setTtl(time::seconds(sqlite3_column_int64(stmt, 1)));
-    rrset.setVersion(Block(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 2)),
-                           sqlite3_column_bytes(stmt, 2)));
-    rrset.setData(Block(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 3)),
-                        sqlite3_column_bytes(stmt, 3)));
+    rrset.setVersion(Block(make_span(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 2)),
+                                     sqlite3_column_bytes(stmt, 2))));
+    rrset.setData(Block(make_span(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 3)),
+                                  sqlite3_column_bytes(stmt, 3))));
   }
   else {
     rrset.setId(0);
@@ -493,13 +493,13 @@ DbMgr::findRrsets(Zone& zone)
 
     rrset.setId(sqlite3_column_int64(stmt, 0));
     rrset.setTtl(time::seconds(sqlite3_column_int64(stmt, 1)));
-    rrset.setVersion(Block(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 2)),
-                           sqlite3_column_bytes(stmt, 2)));
-    rrset.setData(Block(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 3)),
-                        sqlite3_column_bytes(stmt, 3)));
+    rrset.setVersion(Block(make_span(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 2)),
+                                     sqlite3_column_bytes(stmt, 2))));
+    rrset.setData(Block(make_span(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 3)),
+                                  sqlite3_column_bytes(stmt, 3))));
     rrset.setLabel(restoreName(stmt, 4));
-    rrset.setType(Block(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 5)),
-                  sqlite3_column_bytes(stmt, 5)));
+    rrset.setType(Block(make_span(static_cast<const uint8_t*>(sqlite3_column_blob(stmt, 5)),
+                                  sqlite3_column_bytes(stmt, 5))));
   }
   sqlite3_finalize(stmt);
 
@@ -523,7 +523,7 @@ DbMgr::removeRrsetsOfZoneByType(Zone& zone, const name::Component& type)
   }
 
   sqlite3_bind_int64(stmt, 1, zone.getId());
-  sqlite3_bind_blob(stmt,  2, type.wire(), type.size(), SQLITE_STATIC);
+  sqlite3_bind_blob(stmt,  2, type.data(), type.size(), SQLITE_STATIC);
 
   rc = sqlite3_step(stmt);
   if (rc != SQLITE_DONE) {
@@ -578,8 +578,8 @@ DbMgr::update(Rrset& rrset)
   }
 
   sqlite3_bind_int64(stmt, 1, rrset.getTtl().count());
-  sqlite3_bind_blob(stmt,  2, rrset.getVersion().wire(), rrset.getVersion().size(), SQLITE_STATIC);
-  sqlite3_bind_blob(stmt,  3, rrset.getData().wire(),    rrset.getData().size(),    SQLITE_STATIC);
+  sqlite3_bind_blob(stmt,  2, rrset.getVersion().data(), rrset.getVersion().size(), SQLITE_STATIC);
+  sqlite3_bind_blob(stmt,  3, rrset.getData().data(),    rrset.getData().size(),    SQLITE_STATIC);
   sqlite3_bind_int64(stmt, 4, rrset.getId());
 
   sqlite3_step(stmt);

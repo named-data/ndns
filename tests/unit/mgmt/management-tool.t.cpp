@@ -201,7 +201,6 @@ public:
       }
     }
     NDN_THROW(Error("Certificate not found in keyChain"));
-    return rtn;
   }
 
   Certificate
@@ -1038,7 +1037,7 @@ BOOST_FIXTURE_TEST_CASE(GetRrSet, ManagementToolFixture)
   using security::transform::streamSink;
   using security::transform::bufferSource;
 
-  bufferSource(rrset1.getData().wire(), rrset1.getData().size()) >> base64Encode() >> streamSink(os);
+  bufferSource(rrset1.getData()) >> base64Encode() >> streamSink(os);
 
   std::string expectedValue = os.str();
 

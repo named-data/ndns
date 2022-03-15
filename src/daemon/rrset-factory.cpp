@@ -60,7 +60,7 @@ void
 RrsetFactory::onlyCheckZone()
 {
   if (m_checked) {
-    return ;
+    return;
   }
   m_checked = true;
 
@@ -70,7 +70,6 @@ RrsetFactory::onlyCheckZone()
     NDN_THROW(Error(zoneName.toUri() + " is not presented in the NDNS db"));
   }
 }
-
 
 std::pair<Rrset, Name>
 RrsetFactory::generateBaseRrset(const Name& label,
@@ -158,10 +157,9 @@ RrsetFactory::generateTxtRrset(const Name& label,
   std::tie(rrset, name) = generateBaseRrset(label, label::TXT_RR_TYPE, version, ttl);
 
   std::vector<Block> rrs;
+  rrs.reserve(strings.size());
   for (const auto& item : strings) {
-    rrs.push_back(makeBinaryBlock(ndns::tlv::RrData,
-                                  item.c_str(),
-                                  item.size()));
+    rrs.push_back(makeBinaryBlock(ndns::tlv::RrData, item.data(), item.size()));
   }
 
   Data data(name);
@@ -274,24 +272,23 @@ RrsetFactory::setContentType(Data& data, NdnsContentType contentType,
 }
 
 template<encoding::Tag TAG>
-inline size_t
-RrsetFactory::wireEncode(EncodingImpl<TAG>& block, const std::vector<Block>& rrs) const
+size_t
+RrsetFactory::wireEncode(EncodingImpl<TAG>& encoder, const std::vector<Block>& rrs) const
 {
   // Content :: = CONTENT-TYPE TLV-LENGTH
   //              Block*
 
   size_t totalLength = 0;
   for (auto iter = rrs.rbegin(); iter != rrs.rend(); ++iter) {
-    totalLength += block.prependBlock(*iter);
+    totalLength += prependBlock(encoder, *iter);
   }
 
-  totalLength += block.prependVarNumber(totalLength);
-  totalLength += block.prependVarNumber(::ndn::tlv::Content);
-
+  totalLength += encoder.prependVarNumber(totalLength);
+  totalLength += encoder.prependVarNumber(ndn::tlv::Content);
   return totalLength;
 }
 
-const Block
+Block
 RrsetFactory::wireEncode(const std::vector<Block>& rrs) const
 {
   EncodingEstimator estimator;
@@ -314,7 +311,6 @@ RrsetFactory::wireDecodeTxt(const Block& wire)
 
   return txts;
 }
-
 
 } // namespace ndns
 } // namespace ndn

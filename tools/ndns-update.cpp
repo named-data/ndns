@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -28,13 +28,11 @@
 #include "util/util.hpp"
 #include "util/cert-helper.hpp"
 
+#include <ndn-cxx/face.hpp>
 #include <ndn-cxx/security/key-chain.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
-#include <ndn-cxx/data.hpp>
 #include <ndn-cxx/util/io.hpp>
 #include <ndn-cxx/util/regex.hpp>
-#include <ndn-cxx/encoding/block.hpp>
-#include <ndn-cxx/encoding/block-helpers.hpp>
 
 #include <boost/asio/io_service.hpp>
 #include <boost/program_options.hpp>
@@ -91,7 +89,7 @@ private:
     NDNS_LOG_INFO("get response of Update");
     int ret = -1;
     std::string msg;
-    std::tie(ret, msg) = this->parseResponse(data);
+    std::tie(ret, msg) = parseResponse(data);
     NDNS_LOG_INFO("Return Code: " << ret << ", and Update "
                   << (ret == UPDATE_OK ? "succeeds" : "fails"));
     if (ret != UPDATE_OK)
@@ -107,7 +105,7 @@ private:
                           bind(&NdnsUpdate::onDataValidationFailed, this, _1, _2));
   }
 
-  std::tuple<int, std::string>
+  static std::tuple<int, std::string>
   parseResponse(const Data& data)
   {
     int ret = -1;
@@ -136,7 +134,7 @@ private:
   makeUpdateInterest()
   {
     Query q(m_zone, label::NDNS_ITERATIVE_QUERY);
-    q.setRrLabel(Name().append(m_update->wireEncode()));
+    q.setRrLabel(Name().append(ndn::tlv::GenericNameComponent, m_update->wireEncode()));
     q.setRrType(label::NDNS_UPDATE_LABEL);
     q.setInterestLifetime(m_interestLifetime);
 
@@ -293,7 +291,6 @@ main(int argc, char* argv[])
             catch (const std::exception&) {
               // If it cannot get a default certificate from one identity,
               // just ignore this one try next identity.
-              ;
             }
           }
         } // for
@@ -383,12 +380,11 @@ main(int argc, char* argv[])
           return 1;
         }
       }
-      catch (const std::exception& e) {
+      catch (const std::exception&) {
         std::cerr << "Error: the loaded Data packet cannot parse to a Response stored at zone: "
                   << zone << std::endl;
         return 1;
       }
-
     }
   }
   catch (const std::exception& ex) {

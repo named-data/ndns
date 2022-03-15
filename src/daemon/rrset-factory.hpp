@@ -106,18 +106,17 @@ private:
   matchCertificate(const Name& certName, const Name& identity);
 
   template<encoding::Tag TAG>
-  inline size_t
-  wireEncode(EncodingImpl<TAG>& block, const std::vector<Block>& rrs) const;
+  size_t
+  wireEncode(EncodingImpl<TAG>& encoder, const std::vector<Block>& rrs) const;
 
-  const Block
+  Block
   wireEncode(const std::vector<Block>& rrs) const;
 
   void
   sign(Data& data);
 
   void
-  setContentType(Data& data, NdnsContentType contentType,
-                 const time::seconds& ttl);
+  setContentType(Data& data, NdnsContentType contentType, const time::seconds& ttl);
 
 private:
   KeyChain& m_keyChain;

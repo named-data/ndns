@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -108,7 +108,7 @@ CertHelper::createCertificate(KeyChain& keyChain,
   certificate.setFreshnessPeriod(time::hours(1));
 
   // set content
-  certificate.setContent(key.getPublicKey().data(), key.getPublicKey().size());
+  certificate.setContent(key.getPublicKey());
 
   // set signature-info
   // to overcome the round-up issue in ndn-cxx setPeriod (notBefore is round up to the the next whole second)

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -47,7 +47,7 @@ toNdnsContentType(const std::string& str)
   else if (str == "link")
     return NDNS_LINK;
   else if (str == "key")
-    return NDNS_LINK;
+    return NDNS_KEY;
   else
     return NDNS_UNKNOWN;
 }
@@ -61,7 +61,7 @@ output(const Data& data, std::ostream& os, bool isPretty)
 
   const Block& block = data.wireEncode();
   if (!isPretty) {
-    bufferSource(block.wire(), block.size()) >> base64Encode() >> streamSink(os);
+    bufferSource(block) >> base64Encode() >> streamSink(os);
   }
   else {
     os << "Name: " << data.getName() << std::endl;
@@ -69,7 +69,7 @@ output(const Data& data, std::ostream& os, bool isPretty)
     if (kl) {
       os << "KeyLocator: " << kl->getName() << std::endl;
     }
-    bufferSource(block.wire(), block.size()) >> base64Encode() >> streamSink(os);
+    bufferSource(block) >> base64Encode() >> streamSink(os);
     os << std::endl;
   }
 }

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -27,7 +27,7 @@ namespace ndn {
 namespace ndns {
 
 /**
- * @brief contentType of response
+ * @brief ContentType of response
  */
 enum NdnsContentType {
   NDNS_BLOB = ndn::tlv::ContentType_Blob,
@@ -41,10 +41,10 @@ enum NdnsContentType {
 };
 
 std::ostream&
-operator<<(std::ostream& os, const NdnsContentType contentType);
+operator<<(std::ostream& os, NdnsContentType contentType);
 
 /**
- * @brief define Return code of Update's Response
+ * @brief Return code of Update response
  */
 enum UpdateReturnCode {
   UPDATE_OK = 0, ///< Update succeeds
