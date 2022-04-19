@@ -30,8 +30,6 @@ namespace ndn {
 namespace ndns {
 namespace tests {
 
-NDNS_LOG_INIT(TestFakeData);
-
 const fs::path DbTestData::TEST_DATABASE = fs::path(UNIT_TESTS_TMPDIR) / "test-ndns.db";
 const Name DbTestData::TEST_IDENTITY_NAME("/test19");
 const fs::path DbTestData::TEST_CERT = fs::path(UNIT_TESTS_TMPDIR) / "anchors" / "root.cert";
@@ -44,13 +42,11 @@ DbTestData::PreviousStateCleaner::PreviousStateCleaner()
 }
 
 DbTestData::DbTestData()
-  : m_session(TEST_DATABASE.string()),
-    m_testName("/test19"),
-    m_netName("/test19/net"),
-    m_ndnsimName("/test19/net/ndnsim")
+  : m_session(TEST_DATABASE.string())
+  , m_testName("/test19")
+  , m_netName("/test19/net")
+  , m_ndnsimName("/test19/net/ndnsim")
 {
-  NDNS_LOG_TRACE("start creating test data");
-
   NdnsValidatorBuilder::VALIDATOR_CONF_FILE = (fs::path(UNIT_TESTS_TMPDIR) / "validator.conf").string();
 
   ManagementTool tool(TEST_DATABASE.string(), m_keyChain);
@@ -81,18 +77,15 @@ DbTestData::DbTestData()
   m_identity = CertHelper::getIdentity(m_keyChain, identityName);
   m_certName = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain, identityName);
   m_cert = CertHelper::getCertificate(m_keyChain, identityName, m_certName);
+  BOOST_ASSERT(!m_certName.empty());
 
   io::save(m_cert, TEST_CERT.string());
-  NDNS_LOG_INFO("save test root cert " << m_certName << " to: " << TEST_CERT.string());
-
-  BOOST_ASSERT(!m_certName.empty());
-  NDNS_LOG_TRACE("test certName: " << m_certName);
 
   int certificateIndex = 0;
   auto addQueryRrset = [this, &certificateIndex] (const Name& label, Zone& zone,
                                                   const name::Component& type) {
     const time::seconds ttl(3000 + 100 * certificateIndex);
-    const name::Component version = name::Component::fromVersion(100 + 1000 * certificateIndex);
+    const auto version = name::Component::fromVersion(100 + 1000 * certificateIndex);
     name::Component qType(label::NDNS_ITERATIVE_QUERY);
     NdnsContentType contentType = NDNS_RESP;
     if (type == label::APPCERT_RR_TYPE) {
@@ -122,8 +115,6 @@ DbTestData::DbTestData()
   // last link is the same as former one
   BOOST_ASSERT(!m_links.empty());
   m_links.push_back(m_links.back());
-
-  NDNS_LOG_INFO("insert testing data: OK");
 }
 
 void

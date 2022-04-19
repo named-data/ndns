@@ -38,7 +38,6 @@
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/transform.hpp>
 
-
 namespace ndn {
 namespace ndns {
 
@@ -48,8 +47,6 @@ using security::transform::base64Encode;
 using security::transform::streamSink;
 using security::transform::bufferSource;
 using security::Certificate;
-using security::Identity;
-using security::Key;
 
 ManagementTool::ManagementTool(const std::string& dbFile, KeyChain& keyChain)
   : m_keyChain(keyChain)
@@ -112,14 +109,14 @@ ManagementTool::createZone(const Name& zoneName,
   NDNS_LOG_INFO("Generated D-Key's identityName: " + dkeyIdentityName.toUri());
 
   Name dskName;
-  Key ksk;
-  Key dsk;
-  Key dkey;
+  security::Key ksk;
+  security::Key dsk;
+  security::Key dkey;
   Certificate dskCert;
   Certificate kskCert;
   Certificate dkeyCert;
-  Identity zoneIdentity = m_keyChain.createIdentity(zoneIdentityName);
-  Identity dkeyIdentity = m_keyChain.createIdentity(dkeyIdentityName);
+  auto zoneIdentity = m_keyChain.createIdentity(zoneIdentityName);
+  auto dkeyIdentity = m_keyChain.createIdentity(dkeyIdentityName);
 
   if (dkeyCertName == DEFAULT_CERT) {
     dkey = m_keyChain.createKey(dkeyIdentity);
@@ -319,7 +316,7 @@ ManagementTool::addRrsetFromFile(const Name& zoneName,
                                  const std::string& inFile,
                                  const time::seconds& ttl,
                                  const Name& inputDskCertName,
-                                 const ndn::io::IoEncoding encoding,
+                                 ndn::io::IoEncoding encoding,
                                  bool needResign)
 {
   //check precondition
@@ -397,7 +394,7 @@ ManagementTool::getZoneDkey(Zone& zone)
 }
 
 void
-ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool printRaw)
+ManagementTool::listZone(const Name& zoneName, std::ostream& os, bool printRaw)
 {
   Zone zone(zoneName);
   if (!m_dbMgr.find(zone)) {
@@ -440,7 +437,7 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
                     || re.getContentType() == NDNS_KEY
                     || re.getContentType() == NDNS_AUTH ? 1 : re.getRrs().size();
 
-    const std::vector<Block>& rrs = re.getRrs();
+    const auto& rrs = re.getRrs();
 
     if (re.getContentType() != NDNS_BLOB && re.getContentType() != NDNS_KEY) {
       os << "; rrset=" << rrset.getLabel().toUri()
@@ -515,7 +512,8 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
 }
 
 void
-ManagementTool::listAllZones(std::ostream& os) {
+ManagementTool::listAllZones(std::ostream& os)
+{
   std::vector<Zone> zones = m_dbMgr.listZones();
 
   size_t nameWidth = 0;
@@ -622,8 +620,8 @@ ManagementTool::removeZone(Zone& zone)
 bool
 ManagementTool::matchCertificate(const Name& certName, const Name& identity)
 {
-  security::Identity id = m_keyChain.getPib().getIdentity(identity);
-  for (const security::Key& key : id.getKeys()) {
+  auto id = m_keyChain.getPib().getIdentity(identity);
+  for (const auto& key : id.getKeys()) {
     try {
       key.getCertificate(certName);
       return true;

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  Regents of the University of California,
+ * Copyright (c) 2014-2022,  Regents of the University of California,
  *                           Arizona Board of Regents,
  *                           Colorado State University,
  *                           University Pierre & Marie Curie, Sorbonne University,
@@ -107,7 +107,7 @@ public: // parse helpers
   static T
   parseNumber(const ConfigSection& node, const std::string& key, const std::string& sectionName)
   {
-    static_assert(std::is_arithmetic<T>::value, "T must be an arithmetic type");
+    static_assert(std::is_arithmetic_v<T>, "T must be an arithmetic type");
 
     boost::optional<T> value = node.get_value_optional<T>();
     if (value) {

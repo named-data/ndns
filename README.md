@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/named-data/ndns/actions/workflows/ci.yml/badge.svg)](https://github.com/named-data/ndns/actions/workflows/ci.yml)
 [![Docs](https://github.com/named-data/ndns/actions/workflows/docs.yml/badge.svg)](https://github.com/named-data/ndns/actions/workflows/docs.yml)
-![Language](https://img.shields.io/badge/C%2B%2B-14-blue)
+![Language](https://img.shields.io/badge/C%2B%2B-17-blue)
 
 **NDNS** is a completely distributed database system that largely mimics the structure of
 the DNS system in today's Internet but operates within the NDN architecture. Although the

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -33,7 +33,6 @@ BOOST_AUTO_TEST_CASE(Basic)
   Name zone("/net");
   name::Component qType = ndns::label::NDNS_ITERATIVE_QUERY;
 
-
   ndns::Response r(zone, qType);
   r.setRrLabel(Name("/ndnsim/www"));
   r.setRrType(label::CERT_RR_TYPE);
@@ -47,7 +46,7 @@ BOOST_AUTO_TEST_CASE(Basic)
   BOOST_CHECK_EQUAL(r.getQueryType(), qType);
 
   const std::string DATA1("some fake content");
-  r.setAppContent(makeBinaryBlock(ndn::tlv::Content, DATA1.c_str(), DATA1.size()));
+  r.setAppContent(makeStringBlock(ndn::tlv::Content, DATA1));
 
   //const Block& block = r.wireEncode();
   shared_ptr<Data> data = r.toData();
@@ -63,10 +62,9 @@ BOOST_AUTO_TEST_CASE(Basic)
   r4.setContentType(NDNS_RESP);
 
   std::string str = "Just try it";
-  Block s = makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size());
+  Block s = makeStringBlock(ndns::tlv::RrData, str);
   r4.addRr(s);
   str = "Go to Hell";
-  // Block s2 = makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size());
   r4.addRr(str);
 
   BOOST_CHECK_NE(r2, r4);
@@ -78,7 +76,7 @@ BOOST_AUTO_TEST_CASE(Basic)
 
   BOOST_CHECK_EQUAL(r5.fromData(zone, *data), true);
   BOOST_CHECK_EQUAL(r4, r5);
- }
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 

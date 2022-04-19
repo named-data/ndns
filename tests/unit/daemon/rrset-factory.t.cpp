@@ -31,8 +31,6 @@ namespace ndn {
 namespace ndns {
 namespace tests {
 
-NDNS_LOG_INIT(RrsetFactoryTest);
-
 const auto TEST_DATABASE2 = boost::filesystem::path(UNIT_TESTS_TMPDIR) / "test-ndns.db";
 const auto TEST_CERT = boost::filesystem::path(UNIT_TESTS_TMPDIR) / "anchors" / "root.cert";
 
@@ -47,24 +45,18 @@ public:
     Zone zone1;
     zone1.setName(m_zoneName);
     zone1.setTtl(time::seconds(4600));
-    BOOST_CHECK_NO_THROW(m_session.insert(zone1));
+    m_session.insert(zone1);
 
     Name identityName = Name(TEST_IDENTITY_NAME).append("NDNS");
-
     m_identity = m_keyChain.createIdentity(identityName);
     m_cert = m_identity.getDefaultKey().getDefaultCertificate();
     m_certName = m_cert.getName();
     saveIdentityCert(m_identity, TEST_CERT.string());
-
-    NDNS_LOG_INFO("save test root cert " << m_certName << " to: " << TEST_CERT);
-    BOOST_CHECK_GT(m_certName.size(), 0);
-    NDNS_LOG_TRACE("test certName: " << m_certName);
   }
 
   ~RrsetFactoryFixture()
   {
     m_session.close();
-    NDNS_LOG_INFO("remove database " << TEST_DATABASE2);
     boost::filesystem::remove(TEST_DATABASE2);
     boost::filesystem::remove(TEST_CERT);
   }

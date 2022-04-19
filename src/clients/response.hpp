@@ -33,8 +33,7 @@ namespace ndns {
 /**
  * @brief Default life time of resource record
  */
-const time::seconds DEFAULT_RR_FRESHNESS_PERIOD = 3600_s;
-
+inline constexpr time::seconds DEFAULT_RR_FRESHNESS_PERIOD = 3600_s;
 
 /**
  * @brief NDNS Response abstraction. Response is used on client side,

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -35,14 +35,14 @@
 namespace ndn {
 namespace ndns {
 
-static const Name DEFAULT_CERT;
-static const Name ROOT_ZONE;
-static const time::seconds DEFAULT_CACHE_TTL = time::seconds(3600);
-static const time::seconds DEFAULT_CERT_TTL = time::days(365);
-static const std::vector<std::string> DEFAULT_CONTENTS;
-static const std::string DEFAULT_IO = "-";
-static const time::seconds DEFAULT_RR_TTL = time::seconds(0);
-static constexpr uint64_t VERSION_USE_UNIX_TIMESTAMP = std::numeric_limits<uint64_t>::max();
+inline const Name DEFAULT_CERT;
+inline const Name ROOT_ZONE;
+inline constexpr time::seconds DEFAULT_CACHE_TTL = time::seconds(3600);
+inline constexpr time::seconds DEFAULT_CERT_TTL = time::days(365);
+inline const std::vector<std::string> DEFAULT_CONTENTS;
+inline const std::string DEFAULT_IO = "-";
+inline constexpr time::seconds DEFAULT_RR_TTL = time::seconds(0);
+inline constexpr uint64_t VERSION_USE_UNIX_TIMESTAMP = std::numeric_limits<uint64_t>::max();
 
 /**
  * @brief provides management tools to the NDNS system, such as zone creation, zone delegation, DSK
@@ -139,7 +139,7 @@ public:
                    const std::string& inFile = DEFAULT_IO,
                    const time::seconds& ttl = DEFAULT_RR_TTL,
                    const Name& dskCertName = DEFAULT_CERT,
-                   const ndn::io::IoEncoding encoding = ndn::io::BASE64,
+                   ndn::io::IoEncoding encoding = ndn::io::BASE64,
                    bool needResign = false);
 
   /** @brief Add rrset to the NDNS local database
@@ -211,7 +211,7 @@ public:
    *  @throw Error if zoneName does not exist in the database
    */
   void
-  listZone(const Name& zoneName, std::ostream& os, const bool printRaw = false);
+  listZone(const Name& zoneName, std::ostream& os, bool printRaw = false);
 
   /** @brief lists all existing zones within this name server.
    *

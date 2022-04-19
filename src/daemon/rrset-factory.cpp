@@ -98,7 +98,7 @@ RrsetFactory::generateBaseRrset(const Name& label,
 
   rrset.setVersion(name.get(-1));
 
-  return std::make_pair(rrset, name);
+  return {rrset, name};
 }
 
 bool
@@ -125,13 +125,10 @@ RrsetFactory::generateNsRrset(const Name& label,
   if (ttl == DEFAULT_RR_TTL)
     ttl = m_zone.getTtl();
 
-  std::pair<Rrset, Name> rrsetAndName = generateBaseRrset(label, label::NS_RR_TYPE, version, ttl);
-  const Name& name = rrsetAndName.second;
-  Rrset& rrset = rrsetAndName.first;
+  auto [rrset, name] = generateBaseRrset(label, label::NS_RR_TYPE, version, ttl);
 
   Link link(name);
   link.setDelegationList(std::move(delegations));
-
   setContentType(link, NDNS_LINK, ttl);
   sign(link);
   rrset.setData(link.wireEncode());
@@ -152,19 +149,16 @@ RrsetFactory::generateTxtRrset(const Name& label,
   if (ttl == DEFAULT_RR_TTL)
     ttl = m_zone.getTtl();
 
-  Name name;
-  Rrset rrset;
-  std::tie(rrset, name) = generateBaseRrset(label, label::TXT_RR_TYPE, version, ttl);
+  auto [rrset, name] = generateBaseRrset(label, label::TXT_RR_TYPE, version, ttl);
 
   std::vector<Block> rrs;
   rrs.reserve(strings.size());
   for (const auto& item : strings) {
-    rrs.push_back(makeBinaryBlock(ndns::tlv::RrData, item.data(), item.size()));
+    rrs.push_back(makeStringBlock(ndns::tlv::RrData, item));
   }
 
   Data data(name);
   data.setContent(wireEncode(rrs));
-
   setContentType(data, NDNS_RESP, ttl);
   sign(data);
   rrset.setData(data.wireEncode());
@@ -185,13 +179,10 @@ RrsetFactory::generateCertRrset(const Name& label,
   if (ttl == DEFAULT_RR_TTL)
     ttl = m_zone.getTtl();
 
-  Name name;
-  Rrset rrset;
-  std::tie(rrset, name) = generateBaseRrset(label, label::APPCERT_RR_TYPE, version, ttl);
+  auto [rrset, name] = generateBaseRrset(label, label::APPCERT_RR_TYPE, version, ttl);
 
   Data data(name);
   data.setContent(cert.wireEncode());
-
   setContentType(data, NDNS_KEY, ttl);
   sign(data);
   rrset.setData(data.wireEncode());
@@ -211,12 +202,9 @@ RrsetFactory::generateAuthRrset(const Name& label,
   if (ttl == DEFAULT_RR_TTL)
     ttl = m_zone.getTtl();
 
-  Name name;
-  Rrset rrset;
-  std::tie(rrset, name) = generateBaseRrset(label, label::NS_RR_TYPE, version, ttl);
+  auto [rrset, name] = generateBaseRrset(label, label::NS_RR_TYPE, version, ttl);
 
   Data data(name);
-
   setContentType(data, NDNS_AUTH, ttl);
   sign(data);
   rrset.setData(data.wireEncode());
@@ -238,9 +226,7 @@ RrsetFactory::generateDoeRrset(const Name& label,
   if (ttl == DEFAULT_RR_TTL)
     ttl = m_zone.getTtl();
 
-  Name name;
-  Rrset rrset;
-  std::tie(rrset, name) = generateBaseRrset(label, label::DOE_RR_TYPE, version, ttl);
+  auto [rrset, name] = generateBaseRrset(label, label::DOE_RR_TYPE, version, ttl);
 
   std::vector<Block> range;
   range.push_back(lowerLabel.wireEncode());
@@ -303,12 +289,9 @@ RrsetFactory::wireDecodeTxt(const Block& wire)
 {
   std::vector<std::string> txts;
   wire.parse();
-
   for (const auto& e : wire.elements()) {
-    txts.push_back(std::string(reinterpret_cast<const char*>(e.value()),
-                               e.value_size()));
+    txts.emplace_back(reinterpret_cast<const char*>(e.value()), e.value_size());
   }
-
   return txts;
 }
 

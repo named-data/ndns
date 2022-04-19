@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -18,7 +18,6 @@
  */
 
 #include "daemon/db-mgr.hpp"
-#include "logger.hpp"
 
 #include "boost-test.hpp"
 
@@ -28,8 +27,6 @@
 namespace ndn {
 namespace ndns {
 namespace tests {
-
-NDNS_LOG_INIT(DbMgrTest);
 
 BOOST_AUTO_TEST_SUITE(DbMgr)
 
@@ -46,7 +43,6 @@ public:
   ~DbMgrFixture()
   {
     session.close();
-    NDNS_LOG_INFO("remove database " << TEST_DATABASE2);
     boost::filesystem::remove(TEST_DATABASE2);
   }
 
@@ -113,7 +109,7 @@ BOOST_FIXTURE_TEST_CASE(Rrsets, DbMgrFixture)
   rrset1.setTtl(time::seconds(4600));
 
   static const std::string DATA1 = "SOME DATA";
-  rrset1.setData(makeBinaryBlock(ndn::tlv::Content, DATA1.c_str(), DATA1.size()));
+  rrset1.setData(makeStringBlock(ndn::tlv::Content, DATA1));
 
   BOOST_CHECK_EQUAL(rrset1.getId(), 0);
   BOOST_CHECK_NO_THROW(session.insert(rrset1));
@@ -141,7 +137,7 @@ BOOST_FIXTURE_TEST_CASE(Rrsets, DbMgrFixture)
 
   rrset1.setVersion(name::Component::fromVersion(890));
   static const std::string DATA2 = "ANOTHER DATA";
-  rrset1.setData(makeBinaryBlock(ndn::tlv::Content, DATA2.c_str(), DATA2.size()));
+  rrset1.setData(makeStringBlock(ndn::tlv::Content, DATA2));
 
   BOOST_CHECK_NO_THROW(session.update(rrset1));
 
@@ -190,7 +186,7 @@ BOOST_FIXTURE_TEST_CASE(Rrsets, DbMgrFixture)
   rrset1.setId(1);
   BOOST_CHECK_NO_THROW(session.remove(rrset1));
 
-  rrset1.setZone(0);
+  rrset1.setZone(nullptr);
   rrset1.setId(1);
   BOOST_CHECK_NO_THROW(session.remove(rrset1));
 }
@@ -233,7 +229,7 @@ BOOST_FIXTURE_TEST_CASE(FindRrsets, DbMgrFixture)
   rrset1.setTtl(time::seconds(4600));
 
   static const std::string DATA1 = "SOME DATA";
-  rrset1.setData(makeBinaryBlock(ndn::tlv::Content, DATA1.data(), DATA1.size()));
+  rrset1.setData(makeStringBlock(ndn::tlv::Content, DATA1));
   session.insert(rrset1);
 
   Rrset rrset2(&zone);
@@ -242,14 +238,13 @@ BOOST_FIXTURE_TEST_CASE(FindRrsets, DbMgrFixture)
   rrset2.setVersion(name::Component::fromVersion(232));
   rrset2.setTtl(time::seconds(2100));
   std::string data2 = "host1.net";
-  rrset2.setData(makeBinaryBlock(ndn::tlv::Content, data2.c_str(), data2.size()));
+  rrset2.setData(makeStringBlock(ndn::tlv::Content, data2));
   session.insert(rrset2);
 
   std::vector<Rrset> vec = session.findRrsets(zone);
   BOOST_CHECK_EQUAL(vec.size(), 2);
 
-  std::sort(vec.begin(),
-            vec.end(),
+  std::sort(vec.begin(), vec.end(),
             [] (const Rrset& n1, const Rrset& n2) {
               return n1.getLabel().size() < n2.getLabel().size();
             });

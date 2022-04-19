@@ -87,13 +87,12 @@ private:
   onData(const Interest&, const Data& data)
   {
     NDNS_LOG_INFO("get response of Update");
-    int ret = -1;
-    std::string msg;
-    std::tie(ret, msg) = parseResponse(data);
-    NDNS_LOG_INFO("Return Code: " << ret << ", and Update "
-                  << (ret == UPDATE_OK ? "succeeds" : "fails"));
-    if (ret != UPDATE_OK)
+    auto [ret, msg] = parseResponse(data);
+    NDNS_LOG_INFO("Return Code: " << ret << ", and Update " << (ret == UPDATE_OK ? "succeeds" : "fails"));
+
+    if (ret != UPDATE_OK) {
       m_hasError = true;
+    }
 
     if (!msg.empty()) {
       NDNS_LOG_INFO("Return Msg: " << msg);
@@ -120,11 +119,11 @@ private:
         ret = readNonNegativeInteger(*val);
       }
       else if (val->type() == ndns::tlv::UpdateReturnMsg) {
-        msg =  std::string(reinterpret_cast<const char*>(val->value()), val->value_size());
+        msg = std::string(reinterpret_cast<const char*>(val->value()), val->value_size());
       }
     }
 
-    return std::make_tuple(ret, msg);
+    return {ret, msg};
   }
 
   /**
@@ -319,8 +318,7 @@ main(int argc, char* argv[])
       re.setContentType(contentType);
 
       for (const auto& content : contents) {
-        re.addRr(makeBinaryBlock(ndns::tlv::RrData, content.c_str(), content.size()));
-
+        re.addRr(makeStringBlock(ndns::tlv::RrData, content));
         // re.addRr(content);
       }
 

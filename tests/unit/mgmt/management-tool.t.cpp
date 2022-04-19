@@ -447,8 +447,7 @@ BOOST_AUTO_TEST_CASE(CreateZoneWithFixture)
 
   // Check certificate freshnessPeriod and validity
   Certificate cert = CertHelper::getCertificate(m_keyChain, zoneIdentityName, dsk);
-  time::system_clock::TimePoint beg,end;
-  std::tie(beg, end) = cert.getValidityPeriod().getPeriod();
+  auto [beg, end] = cert.getValidityPeriod().getPeriod();
 
   BOOST_REQUIRE_NO_THROW(cert = findCertFromDb(zone, dsk));
   BOOST_CHECK_EQUAL(cert.getFreshnessPeriod(), time::seconds(4200));

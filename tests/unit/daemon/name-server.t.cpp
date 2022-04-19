@@ -22,7 +22,6 @@
 #include "clients/query.hpp"
 #include "clients/response.hpp"
 #include "daemon/db-mgr.hpp"
-#include "logger.hpp"
 
 #include "boost-test.hpp"
 #include "unit/database-test-data.hpp"
@@ -33,8 +32,6 @@
 namespace ndn {
 namespace ndns {
 namespace tests {
-
-NDNS_LOG_INIT(NameServerTest);
 
 class NameServerFixture : public DbTestData
 {
@@ -76,7 +73,6 @@ BOOST_AUTO_TEST_CASE(NdnsQuery)
 
   face.onSendData.connectSingleShot([&] (const Data& data) {
     hasDataBack = true;
-    NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
 
     Response resp;
@@ -101,7 +97,6 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
   // will ask for non-existing record
   face.onSendData.connectSingleShot([&] (const Data& data) {
     ++nDataBack;
-    NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
 
     Response resp;
@@ -115,7 +110,6 @@ BOOST_AUTO_TEST_CASE(KeyQuery)
   // will ask for the existing record (will have type NDNS_KEY, as it is certificate)
   face.onSendData.connectSingleShot([&] (const Data& data) {
     ++nDataBack;
-    NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
 
     Response resp;
@@ -173,9 +167,9 @@ BOOST_AUTO_TEST_CASE(UpdateReplaceRr)
   re.setContentType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
-  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeStringBlock(ndns::tlv::RrData, str));
   str = "ns2.ndnsim.net";
-  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeStringBlock(ndns::tlv::RrData, str));
 
   auto data = re.toData();
   m_keyChain.sign(*data, security::signingByCertificate(m_cert));
@@ -191,18 +185,17 @@ BOOST_AUTO_TEST_CASE(UpdateReplaceRr)
 
   face.onSendData.connectSingleShot([&] (const Data& data) {
     hasDataBack = true;
-    NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
     Response resp;
 
     BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
     BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_RESP); // by default NDNS_BLOB is enough
-    BOOST_CHECK_GT(resp.getRrs().size(), 0);
+    BOOST_TEST_REQUIRE(resp.getRrs().size() > 0);
     Block block = resp.getRrs()[0];
     block.parse();
     int ret = -1;
     BOOST_CHECK_EQUAL(block.type(), ndns::tlv::RrData);
-    Block::element_const_iterator val = block.elements_begin();
+    auto val = block.elements_begin();
     BOOST_CHECK_EQUAL(val->type(), ndns::tlv::UpdateReturnCode); // the first must be return code
     ret = readNonNegativeInteger(*val);
     BOOST_CHECK_EQUAL(ret, 0);
@@ -223,9 +216,9 @@ BOOST_AUTO_TEST_CASE(UpdateInsertNewRr)
   re.setContentType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
-  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeStringBlock(ndns::tlv::RrData, str));
   str = "ns2.ndnsim.net";
-  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeStringBlock(ndns::tlv::RrData, str));
 
   auto data = re.toData();
   m_keyChain.sign(*data, security::signingByCertificate(m_cert));
@@ -241,18 +234,17 @@ BOOST_AUTO_TEST_CASE(UpdateInsertNewRr)
 
   face.onSendData.connectSingleShot([&] (const Data& data) {
     hasDataBack = true;
-    NDNS_LOG_TRACE("get Data back");
     BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
     Response resp;
 
     BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
     BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_RESP); // by default NDNS_BLOB is enough
-    BOOST_CHECK_GT(resp.getRrs().size(), 0);
+    BOOST_TEST_REQUIRE(resp.getRrs().size() > 0);
     Block block = resp.getRrs()[0];
     block.parse();
     int ret = -1;
     BOOST_CHECK_EQUAL(block.type(), ndns::tlv::RrData);
-    Block::element_const_iterator val = block.elements_begin();
+    auto val = block.elements_begin();
     BOOST_CHECK_EQUAL(val->type(), ndns::tlv::UpdateReturnCode); // the first must be return code
     ret = readNonNegativeInteger(*val);
     BOOST_CHECK_EQUAL(ret, 0);
@@ -284,9 +276,8 @@ BOOST_AUTO_TEST_CASE(UpdateValidatorCannotFetchCert)
 
   m_keyChain.sign(dskCert, security::signingByCertificate(m_cert));
   m_keyChain.setDefaultCertificate(dsk, dskCert);
-
-  NDNS_LOG_TRACE("KeyChain: add cert: " << dskCert.getName() << ". KeyLocator: "
-                 << dskCert.getKeyLocator()->getName());
+  BOOST_TEST_MESSAGE("Added Certificate=" << dskCert.getName()
+                     << " KeyLocator=" << dskCert.getKeyLocator()->getName());
 
   Rrset rrset(&m_test);
   Name label = dskCert.getName().getPrefix(-2).getSubName(m_test.getName().size() + 1);
@@ -296,8 +287,7 @@ BOOST_AUTO_TEST_CASE(UpdateValidatorCannotFetchCert)
   rrset.setTtl(m_test.getTtl());
   rrset.setData(dskCert.wireEncode());
   m_session.insert(rrset);
-  NDNS_LOG_TRACE("DB: zone " << m_test << " add a CERT RR with name="
-                 << dskCert.getName() << " rrLabel=" << label);
+  BOOST_TEST_MESSAGE(m_test << " added CERT RR with name=" << dskCert.getName() << " label=" << label);
 
   Response re;
   re.setZone(zone);
@@ -307,9 +297,9 @@ BOOST_AUTO_TEST_CASE(UpdateValidatorCannotFetchCert)
   re.setContentType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
-  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeStringBlock(ndns::tlv::RrData, str));
   str = "ns2.ndnsim.net";
-  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeStringBlock(ndns::tlv::RrData, str));
 
   auto data = re.toData();
   m_keyChain.sign(*data, security::signingByCertificate(dskCert));
@@ -326,7 +316,7 @@ BOOST_AUTO_TEST_CASE(UpdateValidatorCannotFetchCert)
   // no data back, since the Update cannot pass verification
   face.onSendData.connectSingleShot([&] (const Data&) {
     hasDataBack = true;
-    BOOST_FAIL("UNEXPECTED");
+    BOOST_ERROR("unexpected onSendData");
   });
 
   face.receive(q.toInterest());
@@ -349,9 +339,8 @@ public:
     run();
 
     validatorFace.onSendInterest.connect([this] (const Interest& interest) {
-      NDNS_LOG_TRACE("validatorFace get Interest: " << interest.getName());
-      auto i = interest.shared_from_this();
-      io.post([i, this] { face.receive(*i); });
+      BOOST_TEST_MESSAGE("Interest on validatorFace: " << interest);
+      io.post([this, i = interest.shared_from_this()] { face.receive(*i); });
     });
   }
 
@@ -381,9 +370,9 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
   re.setContentType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
-  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeStringBlock(ndns::tlv::RrData, str));
   str = "ns2.ndnsim.net";
-  re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
+  re.addRr(makeStringBlock(ndns::tlv::RrData, str));
 
   auto data = re.toData();
   m_keyChain.sign(*data, security::signingByCertificate(m_cert));
@@ -396,25 +385,23 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
   q.setRrType(label::NDNS_UPDATE_LABEL);
 
   bool hasDataBack = false;
+  auto regex = make_shared<Regex>("(<>*)<NDNS><KEY>(<>+)<CERT><>");
 
-  shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<NDNS><KEY>(<>+)<CERT><>");
   face.onSendData.connect([&] (const Data& data) {
     if (regex->match(data.getName())) {
-      shared_ptr<const Data> d = data.shared_from_this();
-      io.post([d, this] {
-          validatorFace.receive(*d); // It's data requested by validator
-        });
+      io.post([this, d = data.shared_from_this()] {
+        validatorFace.receive(*d); // It's data requested by validator
+      });
     }
     else {
       // cert is requested by validator
       hasDataBack = true;
-      NDNS_LOG_TRACE("get Data back");
       BOOST_CHECK_EQUAL(data.getName().getPrefix(-1), q.toInterest().getName());
       Response resp;
 
       BOOST_CHECK_NO_THROW(resp.fromData(zone, data));
       BOOST_CHECK_EQUAL(resp.getContentType(), NDNS_RESP); // by default NDNS_BLOB is enough
-      BOOST_CHECK_GT(resp.getRrs().size(), 0);
+      BOOST_TEST_REQUIRE(resp.getRrs().size() > 0);
       Block block = resp.getRrs()[0];
       block.parse();
       int ret = -1;

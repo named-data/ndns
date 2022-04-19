@@ -163,14 +163,14 @@ Response::toData()
 Response&
 Response::addRr(const Block& rr)
 {
-  this->m_rrs.push_back(rr);
+  m_rrs.push_back(rr);
   return *this;
 }
 
 Response&
 Response::addRr(const std::string& rr)
 {
-  return this->addRr(makeBinaryBlock(ndns::tlv::RrData, rr.c_str(), rr.size()));
+  return addRr(makeStringBlock(ndns::tlv::RrData, rr));
 }
 
 bool

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -196,8 +196,7 @@ public: // Rrset manipulation
    * @brief remove all records of a specific type in a zone
    */
   void
-  removeRrsetsOfZoneByType(Zone& zone,
-                           const name::Component& type);
+  removeRrsetsOfZoneByType(Zone& zone, const name::Component& type);
 
   /**
    * @brief replace ttl, version, and Data with new values
@@ -220,10 +219,10 @@ private:
    * If @p name is not preserved until @p stmt is executed, @p isStatic must be
    * set to `false`.
    */
-  void
+  static void
   saveName(const Name& name, sqlite3_stmt* stmt, int iCol, bool isStatic = true);
 
-  Name
+  static Name
   restoreName(sqlite3_stmt* stmt, int iCol);
 
 private:
