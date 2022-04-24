@@ -10,7 +10,7 @@ rule
   checker
   {
     type customized
-    sig-type ecdsa-sha256
+    sig-type sm2-sm3
     key-locator
     {
       type name
@@ -44,7 +44,7 @@ rule
   checker
   {
     type customized
-    sig-type ecdsa-sha256
+    sig-type sm2-sm3
     key-locator
     {
       type name
