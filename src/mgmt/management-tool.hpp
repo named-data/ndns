@@ -94,6 +94,18 @@ public:
    *                     ksk certificate will be ignored
    *  @param dkeyCertName if given, ksk will be signed by this d-key.
    */
+	  //added_GM liupenghui
+#if 1
+ Zone createZone(const Name& zoneName,
+             const Name& parentZoneName,
+	         const char keyTypeChoice = 's',
+             const time::seconds& cacheTtl = DEFAULT_CACHE_TTL,
+             const time::seconds& certValidity = DEFAULT_CERT_TTL,
+             const Name& kskCertName = DEFAULT_CERT,
+             const Name& dskCertName = DEFAULT_CERT,
+             const Name& dkeyCertName = DEFAULT_CERT);
+
+#else   
   Zone
   createZone(const Name& zoneName,
              const Name& parentZoneName,
@@ -102,7 +114,7 @@ public:
              const Name& kskCertName = DEFAULT_CERT,
              const Name& dskCertName = DEFAULT_CERT,
              const Name& dkeyCertName = DEFAULT_CERT);
-
+#endif
   /** @brief Delete a Zone according to a given name.
    *
    *  Specifically, It will do the following things:

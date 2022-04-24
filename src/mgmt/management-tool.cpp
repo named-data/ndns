@@ -38,6 +38,11 @@
 #include <ndn-cxx/security/signing-helpers.hpp>
 #include <ndn-cxx/security/transform.hpp>
 
+//added_GM liupenghui
+#if 1
+#include <ndn-cxx/security/key-params.hpp>
+#include <ndn-cxx/security/signing-info.hpp>
+#endif
 
 namespace ndn {
 namespace ndns {
@@ -56,6 +61,160 @@ ManagementTool::ManagementTool(const std::string& dbFile, KeyChain& keyChain)
   , m_dbMgr(dbFile)
 {
 }
+
+//added_GM liupenghui
+#if 1
+Zone
+ManagementTool::createZone(const Name& zoneName,
+                           const Name& parentZoneName,
+	                       const char keyTypeChoice,
+                           const time::seconds& cacheTtl,
+                           const time::seconds& certValidity,
+                           const Name& kskCertName,
+                           const Name& dskCertName,
+                           const Name& dkeyCertName)
+{
+  bool isRoot = zoneName == ROOT_ZONE;
+  Name zoneIdentityName = Name(zoneName).append(label::NDNS_ITERATIVE_QUERY);
+
+  //check preconditions
+  Zone zone(zoneName, cacheTtl);
+  if (m_dbMgr.find(zone)) {
+    NDN_THROW(Error(zoneName.toUri() + " is already present in the NDNS db"));
+  }
+
+  if (!isRoot && parentZoneName.equals(zoneName)) {
+    NDN_THROW(Error("Parent zone name can not be the zone itself"));
+  }
+
+  if (!isRoot && !parentZoneName.isPrefixOf(zoneName)) {
+    NDN_THROW(Error(parentZoneName.toUri() + " is not a prefix of " + zoneName.toUri()));
+  }
+
+  // if dsk is provided, there is no need to check ksk
+  if (dskCertName != DEFAULT_CERT) {
+    if (!matchCertificate(dskCertName, zoneIdentityName)) {
+      NDN_THROW(Error("Cannot verify DSK certificate"));
+    }
+  }
+  else if (kskCertName != DEFAULT_CERT) {
+    if (!matchCertificate(kskCertName, zoneIdentityName)) {
+      NDN_THROW(Error("Cannot verify KSK certificate"));
+    }
+  }
+
+  if (dkeyCertName == DEFAULT_CERT && isRoot) {
+    NDN_THROW(Error("Cannot generate dkey for root zone"));
+  }
+
+  // Generate a parentZone's identity to generate a D-Key.
+  // This D-key will be passed to parent zone and resigned.
+  Name dkeyIdentityName;
+  if (dkeyCertName == DEFAULT_CERT) {
+    dkeyIdentityName = Name(parentZoneName).append(label::NDNS_ITERATIVE_QUERY)
+      .append(zoneName.getSubName(parentZoneName.size()));
+  }
+  else {
+    dkeyIdentityName = CertHelper::getIdentityNameFromCert(dkeyCertName);
+  }
+  NDNS_LOG_INFO("Generated D-Key's identityName: " + dkeyIdentityName.toUri());
+
+  ndn::KeyIdType keyIdType = KeyIdType::RANDOM;
+  unique_ptr<ndn::KeyParams> params;
+  switch (keyTypeChoice) {
+    case 'r':
+      params = make_unique<ndn::RsaKeyParams>(ndn::detail::RsaKeyParamsInfo::getDefaultSize(), keyIdType);
+      break;
+    case 'e':
+      params = make_unique<ndn::EcKeyParams>(ndn::detail::EcKeyParamsInfo::getDefaultSize(), keyIdType);
+      break;
+    case 's':
+      params = make_unique<ndn::sm2KeyParams>(ndn::detail::sm2KeyParamsInfo::getDefaultSize(), keyIdType);
+      break;
+    default:
+      NDN_THROW(Error("Cannot generate key for DSK KSK dkey"));
+  }
+
+  Name dskName;
+  Key ksk;
+  Key dsk;
+  Key dkey;
+  Certificate dskCert;
+  Certificate kskCert;
+  Certificate dkeyCert;
+  Identity zoneIdentity = m_keyChain.createIdentity(zoneIdentityName, *params);
+  Identity dkeyIdentity = m_keyChain.createIdentity(dkeyIdentityName, *params);
+  
+
+  if (dkeyCertName == DEFAULT_CERT) {
+    dkey = m_keyChain.createKey(dkeyIdentity, *params);
+    m_keyChain.deleteCertificate(dkey, dkey.getDefaultCertificate().getName());
+
+    dkeyCert = CertHelper::createCertificate(m_keyChain, dkey, dkey, label::CERT_RR_TYPE.toUri(), certValidity);
+    dkeyCert.setFreshnessPeriod(cacheTtl);
+    m_keyChain.addCertificate(dkey, dkeyCert);
+    NDNS_LOG_INFO("Generated DKEY: " << dkeyCert.getName());
+
+  }
+  else {
+    dkeyCert = CertHelper::getCertificate(m_keyChain, dkeyIdentityName, dkeyCertName);
+    dkey = dkeyIdentity.getKey(dkeyCert.getKeyName());
+  }
+
+  if (kskCertName == DEFAULT_CERT) {
+    ksk = m_keyChain.createKey(zoneIdentity, *params);
+    // delete automatically generated certificates,
+    // because its issue is 'self' instead of CERT_RR_TYPE
+    m_keyChain.deleteCertificate(ksk, ksk.getDefaultCertificate().getName());
+    kskCert = CertHelper::createCertificate(m_keyChain, ksk, dkey, label::CERT_RR_TYPE.toUri(), certValidity);
+    kskCert.setFreshnessPeriod(cacheTtl);
+    m_keyChain.addCertificate(ksk, kskCert);
+    NDNS_LOG_INFO("Generated KSK: " << kskCert.getName());
+  }
+  else {
+    // ksk usually might not be the default key of a zone
+    kskCert = CertHelper::getCertificate(m_keyChain, zoneIdentityName, kskCertName);
+    ksk = zoneIdentity.getKey(kskCert.getKeyName());
+  }
+
+  if (dskCertName == DEFAULT_CERT) {
+    // if no dsk provided, then generate a dsk either signed by ksk auto generated or user provided
+    dsk = m_keyChain.createKey(zoneIdentity, *params);
+    m_keyChain.deleteCertificate(dsk, dsk.getDefaultCertificate().getName());
+    dskCert = CertHelper::createCertificate(m_keyChain, dsk, ksk, label::CERT_RR_TYPE.toUri(), certValidity);
+    dskCert.setFreshnessPeriod(cacheTtl);
+    // dskCert will become the default certificate, since the default cert has been deleted.
+    m_keyChain.addCertificate(dsk, dskCert);
+    m_keyChain.setDefaultKey(zoneIdentity, dsk);
+    NDNS_LOG_INFO("Generated DSK: " << dskCert.getName());
+  }
+  else {
+    dskCert = CertHelper::getCertificate(m_keyChain, zoneIdentityName, dskCertName);
+    dsk = zoneIdentity.getKey(dskCert.getKeyName());
+    m_keyChain.setDefaultKey(zoneIdentity, dsk);
+    m_keyChain.setDefaultCertificate(dsk, dskCert);
+  }
+
+  //second add zone to the database
+  NDNS_LOG_INFO("Start adding new zone to data base");
+  addZone(zone);
+
+  //third create ID-cert
+  NDNS_LOG_INFO("Start adding Certificates to NDNS database");
+  addIdCert(zone, kskCert, cacheTtl, dskCert);
+  addIdCert(zone, dskCert, cacheTtl, dskCert);
+
+  NDNS_LOG_INFO("Start saving KSK and DSK's id to ZoneInfo");
+  m_dbMgr.setZoneInfo(zone, "ksk", kskCert.wireEncode());
+  m_dbMgr.setZoneInfo(zone, "dsk", dskCert.wireEncode());
+
+  NDNS_LOG_INFO("Start saving DKEY certificate id to ZoneInfo");
+  m_dbMgr.setZoneInfo(zone, "dkey", dkeyCert.wireEncode());
+
+  generateDoe(zone);
+  return zone;
+}
+#else
 
 Zone
 ManagementTool::createZone(const Name& zoneName,
@@ -189,6 +348,9 @@ ManagementTool::createZone(const Name& zoneName,
   generateDoe(zone);
   return zone;
 }
+
+#endif
+
 
 void
 ManagementTool::deleteZone(const Name& zoneName)

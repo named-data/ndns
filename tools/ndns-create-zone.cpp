@@ -40,6 +40,11 @@ main(int argc, char* argv[])
   string dskStr;
   string kskStr;
   string dkeyStr;
+//added_GM, by liupenghui
+#if 1
+  char keyTypeChoice = 'e';
+#endif
+
   string db = ndns::getDefaultDatabaseFile();
   try {
     namespace po = boost::program_options;
@@ -65,6 +70,11 @@ main(int argc, char* argv[])
         "Default: generate new key and certificate")
       ("dkey,g", po::value<std::string>(&dkeyStr), "Set the name of DKEY's certificate, "
         "Default: generate new key and certificate")
+//added_GM, by liupenghui
+#if 1
+	  ("type,t", po::value<char>(&keyTypeChoice)->default_value('e'),
+		"key type: 'r' for RSA, 'e' for ECDSA, 's' for SM2")
+#endif							  
       ;
 
     options.add(config);
@@ -89,8 +99,14 @@ main(int argc, char* argv[])
     po::notify(vm);
 
     if (vm.count("help")) {
+//added_GM liupenghui
+#if 1
+      std::cout << "Usage: ndns-create-zone [-b db] zone [-a cacheTtl] [-e certTtl] [-p parent] "
+        "[-d dskCert] [-k kskCert] [-g dkeyCert] [-t TYPE]" << std::endl;
+#else
       std::cout << "Usage: ndns-create-zone [-b db] zone [-a cacheTtl] [-e certTtl] [-p parent] "
         "[-d dskCert] [-k kskCert] [-g dkeyCert]" << std::endl;
+#endif
       std::cout << options << std::endl;
       return 0;
     }
@@ -129,7 +145,12 @@ main(int argc, char* argv[])
 
     KeyChain keyChain;
     ndn::ndns::ManagementTool tool(db, keyChain);
+//added_GM liupenghui
+#if 1
+    ndn::ndns::Zone createdZone = tool.createZone(zone, parent, keyTypeChoice, cacheTtl, certTtl, ksk, dsk, dkey);
+#else	
     ndn::ndns::Zone createdZone = tool.createZone(zone, parent, cacheTtl, certTtl, ksk, dsk, dkey);
+#endif
     ndn::security::Certificate dkeyCert = tool.getZoneDkey(createdZone);
     NDNS_LOG_INFO("Generated DKEY " << dkeyCert.getName());
     ndn::io::save(dkeyCert, std::cout);
