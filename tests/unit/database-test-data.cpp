@@ -98,7 +98,7 @@ DbTestData::DbTestData()
     if (type == label::APPCERT_RR_TYPE) {
       contentType = NDNS_KEY;
     }
-    else if (type == label::NS_RR_TYPE) {
+    else if (type == label::DELEGATION_INFO_RR_TYPE) {
       contentType = NDNS_LINK;
     }
     else if (type == label::TXT_RR_TYPE) {
@@ -110,12 +110,12 @@ DbTestData::DbTestData()
     addRrset(zone, label, type, ttl, version, qType, contentType, os.str());
   };
 
-  addQueryRrset("net", m_test, label::NS_RR_TYPE);
-  addQueryRrset("ndnsim", m_net, label::NS_RR_TYPE);
+  addQueryRrset("net", m_test, label::DELEGATION_INFO_RR_TYPE);
+  addQueryRrset("ndnsim", m_net, label::DELEGATION_INFO_RR_TYPE);
   addQueryRrset("www", m_ndnsim, label::TXT_RR_TYPE);
   addQueryRrset("doc/www", m_ndnsim, label::TXT_RR_TYPE);
 
-  addRrset(m_ndnsim, Name("doc"), label::NS_RR_TYPE , time::seconds(2000),
+  addRrset(m_ndnsim, Name("doc"), label::DELEGATION_INFO_RR_TYPE , time::seconds(2000),
            name::Component::fromVersion(1234), label::NDNS_ITERATIVE_QUERY, NDNS_AUTH,
            std::string(""));
 
@@ -135,7 +135,7 @@ DbTestData::addRrset(Zone& zone, const Name& label, const name::Component& type,
   RrsetFactory rf(TEST_DATABASE.string(), zone.getName(),
                   m_keyChain, m_certName);
   rf.onlyCheckZone();
-  if (type == label::NS_RR_TYPE) {
+  if (type == label::DELEGATION_INFO_RR_TYPE) {
     rrset = rf.generateNsRrset(label, version.toVersion(), ttl, {"/xx"});
     if (contentType != NDNS_AUTH) {
       // do not add AUTH packet to link
@@ -153,7 +153,7 @@ DbTestData::addRrset(Zone& zone, const Name& label, const name::Component& type,
   BOOST_VERIFY(security::verifySignature(*data, m_cert));
 
   ManagementTool tool(TEST_DATABASE.string(), m_keyChain);
-  tool.addRrset(rrset);
+  tool.addRrset(rrset, true);
 
   m_rrsets.push_back(rrset);
 }

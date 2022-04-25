@@ -25,292 +25,723 @@
 
 #include <boost/algorithm/string/join.hpp>
 
-namespace ndn {
-namespace ndns {
-
-RrsetFactory::RrsetFactory(const boost::filesystem::path& dbFile,
-                           const Name& zoneName,
-                           KeyChain& keyChain,
-                           const Name& inputDskCertName)
-  : m_keyChain(keyChain)
-  , m_dbFile(dbFile.string())
-  , m_zone(zoneName)
-  , m_dskCertName(inputDskCertName)
-  , m_checked(false)
+namespace ndn
 {
-  Name identityName = Name(zoneName).append(label::NDNS_ITERATIVE_QUERY);
-  if (m_dskCertName == DEFAULT_CERT) {
-    m_dskName = CertHelper::getDefaultKeyNameOfIdentity(m_keyChain, identityName);
-    m_dskCertName = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain, identityName);
-  }
-}
+  namespace ndns
+  {
 
-void
-RrsetFactory::checkZoneKey()
-{
-  onlyCheckZone();
-  Name zoneIdentityName = Name(m_zone.getName()).append(label::NDNS_ITERATIVE_QUERY);
-  if (m_dskCertName != DEFAULT_CERT &&
-      !matchCertificate(m_dskCertName, zoneIdentityName)) {
-    NDN_THROW(Error("Cannot verify certificate"));
-  }
-}
+    RrsetFactory::RrsetFactory(const boost::filesystem::path &dbFile,
+                               const Name &zoneName,
+                               KeyChain &keyChain,
+                               const Name &inputDskCertName)
+        : m_keyChain(keyChain), m_dbFile(dbFile.string()), m_zone(zoneName), m_dskCertName(inputDskCertName), m_checked(false)
+    {
+      Name identityName = Name(zoneName).append(label::NDNS_ITERATIVE_QUERY);
+      if (m_dskCertName == DEFAULT_CERT)
+      {
+        m_dskName = CertHelper::getDefaultKeyNameOfIdentity(m_keyChain, identityName);
+        m_dskCertName = CertHelper::getDefaultCertificateNameOfIdentity(m_keyChain, identityName);
+      }
+    }
 
-void
-RrsetFactory::onlyCheckZone()
-{
-  if (m_checked) {
-    return;
-  }
-  m_checked = true;
+    void
+    RrsetFactory::checkZoneKey()
+    {
+      onlyCheckZone();
+      Name zoneIdentityName = Name(m_zone.getName()).append(label::NDNS_ITERATIVE_QUERY);
+      if (m_dskCertName != DEFAULT_CERT &&
+          !matchCertificate(m_dskCertName, zoneIdentityName))
+      {
+        NDN_THROW(Error("Cannot verify certificate"));
+      }
+    }
 
-  DbMgr dbMgr(m_dbFile);
-  const Name& zoneName = m_zone.getName();
-  if (!dbMgr.find(m_zone)) {
-    NDN_THROW(Error(zoneName.toUri() + " is not presented in the NDNS db"));
-  }
-}
+    void
+    RrsetFactory::onlyCheckZone()
+    {
+      if (m_checked)
+      {
+        return;
+      }
+      m_checked = true;
 
-std::pair<Rrset, Name>
-RrsetFactory::generateBaseRrset(const Name& label,
-                                const name::Component& type,
-                                uint64_t version,
-                                const time::seconds& ttl)
-{
-  Rrset rrset(&m_zone);
+      DbMgr dbMgr(m_dbFile);
+      const Name &zoneName = m_zone.getName();
+      if (!dbMgr.find(m_zone))
+      {
+        NDN_THROW(Error(zoneName.toUri() + " is not presented in the NDNS db"));
+      }
+    }
 
-  rrset.setLabel(label);
-  rrset.setType(type);
-  rrset.setTtl(ttl);
+    std::pair<Rrset, Name>
+    RrsetFactory::generateBaseRrset(const Name &label,
+                                    const name::Component &type,
+                                    uint64_t version,
+                                    const time::seconds &ttl)
+    {
+      Rrset rrset(&m_zone);
 
-  Name name;
-  name.append(m_zone.getName())
-      .append(label::NDNS_ITERATIVE_QUERY)
-      .append(label)
-      .append(type);
+      rrset.setLabel(label);
+      rrset.setType(type);
+      rrset.setTtl(ttl);
 
-  if (version != VERSION_USE_UNIX_TIMESTAMP) {
-    name.append(name::Component::fromVersion(version));
-  }
-  else {
-    name.appendVersion();
-  }
+      Name name;
+      name.append(m_zone.getName())
+          .append(label::NDNS_ITERATIVE_QUERY)
+          .append(label)
+          .append(type);
 
-  rrset.setVersion(name.get(-1));
+      if (version != VERSION_USE_UNIX_TIMESTAMP)
+      {
+        name.append(name::Component::fromVersion(version));
+      }
+      else
+      {
+        name.appendVersion();
+      }
 
-  return std::make_pair(rrset, name);
-}
+      rrset.setVersion(name.get(-1));
 
-bool
-RrsetFactory::matchCertificate(const Name& certName, const Name& identity)
-{
-  try {
-    CertHelper::getCertificate(m_keyChain, identity, certName);
-    return true;
-  } catch (const ndn::security::Pib::Error&) {
-    return false;
-  }
-}
+      return std::make_pair(rrset, name);
+    }
 
-Rrset
-RrsetFactory::generateNsRrset(const Name& label,
-                              uint64_t version,
-                              time::seconds ttl,
-                              std::vector<Name> delegations)
-{
-  if (!m_checked) {
-    NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
-  }
+    bool
+    RrsetFactory::matchCertificate(const Name &certName, const Name &identity)
+    {
+      try
+      {
+        CertHelper::getCertificate(m_keyChain, identity, certName);
+        return true;
+      }
+      catch (const ndn::security::Pib::Error &)
+      {
+        return false;
+      }
+    }
 
-  if (ttl == DEFAULT_RR_TTL)
-    ttl = m_zone.getTtl();
+    Rrset
+    RrsetFactory::generateNsRrset(const Name &label,
+                                  uint64_t version,
+                                  time::seconds ttl,
+                                  std::vector<Name> delegations)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
 
-  std::pair<Rrset, Name> rrsetAndName = generateBaseRrset(label, label::NS_RR_TYPE, version, ttl);
-  const Name& name = rrsetAndName.second;
-  Rrset& rrset = rrsetAndName.first;
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
 
-  Link link(name);
-  link.setDelegationList(std::move(delegations));
+      std::pair<Rrset, Name> rrsetAndName = generateBaseRrset(label, label::DELEGATION_INFO_RR_TYPE, version, ttl);
+      const Name &name = rrsetAndName.second;
+      Rrset &rrset = rrsetAndName.first;
 
-  setContentType(link, NDNS_LINK, ttl);
-  sign(link);
-  rrset.setData(link.wireEncode());
+      Link link(name);
+      link.setDelegationList(std::move(delegations));
 
-  return rrset;
-}
+      setContentType(link, NDNS_LINK, ttl);
+      sign(link);
+      rrset.setData(link.wireEncode());
 
-Rrset
-RrsetFactory::generateTxtRrset(const Name& label,
-                               uint64_t version,
-                               time::seconds ttl,
-                               const std::vector<std::string>& strings)
-{
-  if (!m_checked) {
-    NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
-  }
+      return rrset;
+    }
 
-  if (ttl == DEFAULT_RR_TTL)
-    ttl = m_zone.getTtl();
+    Rrset
+    RrsetFactory::generateTxtRrset(const Name &label,
+                                   uint64_t version,
+                                   time::seconds ttl,
+                                   const std::vector<std::string> &strings)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
 
-  Name name;
-  Rrset rrset;
-  std::tie(rrset, name) = generateBaseRrset(label, label::TXT_RR_TYPE, version, ttl);
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
 
-  std::vector<Block> rrs;
-  rrs.reserve(strings.size());
-  for (const auto& item : strings) {
-    rrs.push_back(makeBinaryBlock(ndns::tlv::RrData, item.data(), item.size()));
-  }
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::TXT_RR_TYPE, version, ttl);
 
-  Data data(name);
-  data.setContent(wireEncode(rrs));
+      std::vector<Block> rrs;
+      for (const auto &item : strings)
+      {
+        rrs.push_back(makeBinaryBlock(ndns::tlv::RrData,
+                                      item.c_str(),
+                                      item.size()));
+      }
 
-  setContentType(data, NDNS_RESP, ttl);
-  sign(data);
-  rrset.setData(data.wireEncode());
+      Data data(name);
+      data.setContent(wireEncode(rrs));
 
-  return rrset;
-}
+      setContentType(data, NDNS_RESP, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
 
-Rrset
-RrsetFactory::generateCertRrset(const Name& label,
-                                uint64_t version,
-                                time::seconds ttl,
-                                const ndn::security::Certificate& cert)
-{
-  if (!m_checked) {
-    NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
-  }
+      return rrset;
+    }
 
-  if (ttl == DEFAULT_RR_TTL)
-    ttl = m_zone.getTtl();
+    Rrset
+    RrsetFactory::generateCertRrset(const Name &label,
+                                    uint64_t version,
+                                    time::seconds ttl,
+                                    const ndn::security::Certificate &cert)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
 
-  Name name;
-  Rrset rrset;
-  std::tie(rrset, name) = generateBaseRrset(label, label::APPCERT_RR_TYPE, version, ttl);
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
 
-  Data data(name);
-  data.setContent(cert.wireEncode());
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::APPCERT_RR_TYPE, version, ttl);
 
-  setContentType(data, NDNS_KEY, ttl);
-  sign(data);
-  rrset.setData(data.wireEncode());
+      Data data(name);
+      data.setContent(cert.wireEncode());
 
-  return rrset;
-}
+      setContentType(data, NDNS_KEY, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
 
-Rrset
-RrsetFactory::generateAuthRrset(const Name& label,
-                                uint64_t version,
-                                time::seconds ttl)
-{
-  if (!m_checked) {
-    NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
-  }
+      return rrset;
+    }
 
-  if (ttl == DEFAULT_RR_TTL)
-    ttl = m_zone.getTtl();
+    // DIN append {
 
-  Name name;
-  Rrset rrset;
-  std::tie(rrset, name) = generateBaseRrset(label, label::NS_RR_TYPE, version, ttl);
+    Rrset
+    RrsetFactory::generateDelegationInfoRrset(const Name &label,
+                                              uint64_t version,
+                                              time::seconds ttl,
+                                              const std::vector<std::string> &strings)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
 
-  Data data(name);
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
 
-  setContentType(data, NDNS_AUTH, ttl);
-  sign(data);
-  rrset.setData(data.wireEncode());
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::DELEGATION_INFO_RR_TYPE, version, ttl);
 
-  return rrset;
-}
+      std::vector<Block> rrs;
+      for (const auto &item : strings)
+      {
+        rrs.push_back(makeBinaryBlock(ndns::tlv::RrData,
+                                      item.c_str(),
+                                      item.size()));
+      }
 
-Rrset
-RrsetFactory::generateDoeRrset(const Name& label,
-                               uint64_t version,
-                               time::seconds ttl,
-                               const Name& lowerLabel,
-                               const Name& upperLabel)
-{
-  if (!m_checked) {
-    NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
-  }
+      Data data(name);
+      data.setContent(wireEncode(rrs));
 
-  if (ttl == DEFAULT_RR_TTL)
-    ttl = m_zone.getTtl();
+      setContentType(data, NDNS_RESP, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
 
-  Name name;
-  Rrset rrset;
-  std::tie(rrset, name) = generateBaseRrset(label, label::DOE_RR_TYPE, version, ttl);
+      return rrset;
+    }
 
-  std::vector<Block> range;
-  range.push_back(lowerLabel.wireEncode());
-  range.push_back(upperLabel.wireEncode());
+    Rrset
+    RrsetFactory::generateAInRrset(const Name &label,
+                                   uint64_t version,
+                                   time::seconds ttl,
+                                   const std::vector<std::string> &strings)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
 
-  Data data(name);
-  data.setContent(wireEncode(range));
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
 
-  setContentType(data, NDNS_DOE, ttl);
-  sign(data);
-  rrset.setData(data.wireEncode());
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::A_IN_RR_TYPE, version, ttl);
 
-  return rrset;
-}
+      std::vector<Block> rrs;
+      for (const auto &item : strings)
+      {
+        rrs.push_back(makeBinaryBlock(ndns::tlv::RrData,
+                                      item.c_str(),
+                                      item.size()));
+      }
 
+      Data data(name);
+      data.setContent(wireEncode(rrs));
 
-void
-RrsetFactory::sign(Data& data)
-{
-  m_keyChain.sign(data, signingByCertificate(m_dskCertName));
-}
+      setContentType(data, NDNS_RESP, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
 
-void
-RrsetFactory::setContentType(Data& data, NdnsContentType contentType,
-                             const time::seconds& ttl)
-{
-  data.setContentType(contentType);
-  data.setFreshnessPeriod(ttl);
-}
+      return rrset;
+    }
 
-template<encoding::Tag TAG>
-size_t
-RrsetFactory::wireEncode(EncodingImpl<TAG>& encoder, const std::vector<Block>& rrs) const
-{
-  // Content :: = CONTENT-TYPE TLV-LENGTH
-  //              Block*
+    Rrset
+    RrsetFactory::generateAaaaInRrset(const Name &label,
+                                      uint64_t version,
+                                      time::seconds ttl,
+                                      const std::vector<std::string> &strings)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
 
-  size_t totalLength = 0;
-  for (auto iter = rrs.rbegin(); iter != rrs.rend(); ++iter) {
-    totalLength += prependBlock(encoder, *iter);
-  }
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
 
-  totalLength += encoder.prependVarNumber(totalLength);
-  totalLength += encoder.prependVarNumber(ndn::tlv::Content);
-  return totalLength;
-}
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::AAAA_IN_RR_TYPE, version, ttl);
 
-Block
-RrsetFactory::wireEncode(const std::vector<Block>& rrs) const
-{
-  EncodingEstimator estimator;
-  size_t estimatedSize = wireEncode(estimator, rrs);
-  EncodingBuffer buffer(estimatedSize, 0);
-  wireEncode(buffer, rrs);
-  return buffer.block();
-}
+      std::vector<Block> rrs;
+      for (const auto &item : strings)
+      {
+        rrs.push_back(makeBinaryBlock(ndns::tlv::RrData,
+                                      item.c_str(),
+                                      item.size()));
+      }
 
-std::vector<std::string>
-RrsetFactory::wireDecodeTxt(const Block& wire)
-{
-  std::vector<std::string> txts;
-  wire.parse();
+      Data data(name);
+      data.setContent(wireEncode(rrs));
 
-  for (const auto& e : wire.elements()) {
-    txts.push_back(std::string(reinterpret_cast<const char*>(e.value()),
-                               e.value_size()));
-  }
+      setContentType(data, NDNS_RESP, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
 
-  return txts;
-}
+      return rrset;
+    }
 
-} // namespace ndns
+    Rrset
+    RrsetFactory::generateDnskeyInRrset(const Name &label,
+                                        uint64_t version,
+                                        time::seconds ttl,
+                                        const std::vector<std::string> &strings)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
+
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
+
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::DNSKEY_IN_RR_TYPE, version, ttl);
+
+      std::vector<Block> rrs;
+      for (const auto &item : strings)
+      {
+        rrs.push_back(makeBinaryBlock(ndns::tlv::RrData,
+                                      item.c_str(),
+                                      item.size()));
+      }
+
+      Data data(name);
+      data.setContent(wireEncode(rrs));
+
+      setContentType(data, NDNS_RESP, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
+
+      return rrset;
+    }
+
+    Rrset
+    RrsetFactory::generateDsInRrset(const Name &label,
+                                    uint64_t version,
+                                    time::seconds ttl,
+                                    const std::vector<std::string> &strings)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
+
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
+
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::DS_IN_RR_TYPE, version, ttl);
+
+      std::vector<Block> rrs;
+      for (const auto &item : strings)
+      {
+        rrs.push_back(makeBinaryBlock(ndns::tlv::RrData,
+                                      item.c_str(),
+                                      item.size()));
+      }
+
+      Data data(name);
+      data.setContent(wireEncode(rrs));
+
+      setContentType(data, NDNS_RESP, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
+
+      return rrset;
+    }
+
+    Rrset
+    RrsetFactory::generateNsInRrset(const Name &label,
+                                    uint64_t version,
+                                    time::seconds ttl,
+                                    const std::vector<std::string> &strings)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
+
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
+
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::NS_IN_RR_TYPE, version, ttl);
+
+      std::vector<Block> rrs;
+      for (const auto &item : strings)
+      {
+        rrs.push_back(makeBinaryBlock(ndns::tlv::RrData,
+                                      item.c_str(),
+                                      item.size()));
+      }
+
+      Data data(name);
+      data.setContent(wireEncode(rrs));
+
+      setContentType(data, NDNS_RESP, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
+
+      return rrset;
+    }
+
+    Rrset
+    RrsetFactory::generateNsecInRrset(const Name &label,
+                                      uint64_t version,
+                                      time::seconds ttl,
+                                      const std::vector<std::string> &strings)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
+
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
+
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::NSEC_IN_RR_TYPE, version, ttl);
+
+      std::vector<Block> rrs;
+      for (const auto &item : strings)
+      {
+        rrs.push_back(makeBinaryBlock(ndns::tlv::RrData,
+                                      item.c_str(),
+                                      item.size()));
+      }
+
+      Data data(name);
+      data.setContent(wireEncode(rrs));
+
+      setContentType(data, NDNS_RESP, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
+
+      return rrset;
+    }
+
+    Rrset
+    RrsetFactory::generateRrsigInRrset(const Name &label,
+                                       uint64_t version,
+                                       time::seconds ttl,
+                                       const std::vector<std::string> &strings)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
+
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
+
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::RRSIG_IN_RR_TYPE, version, ttl);
+
+      std::vector<Block> rrs;
+      for (const auto &item : strings)
+      {
+        rrs.push_back(makeBinaryBlock(ndns::tlv::RrData,
+                                      item.c_str(),
+                                      item.size()));
+      }
+
+      Data data(name);
+      data.setContent(wireEncode(rrs));
+
+      setContentType(data, NDNS_RESP, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
+
+      return rrset;
+    }
+
+    Rrset
+    RrsetFactory::generateSoaInRrset(const Name &label,
+                                     uint64_t version,
+                                     time::seconds ttl,
+                                     const std::vector<std::string> &strings)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
+
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
+
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::SOA_IN_RR_TYPE, version, ttl);
+
+      std::vector<Block> rrs;
+      for (const auto &item : strings)
+      {
+        rrs.push_back(makeBinaryBlock(ndns::tlv::RrData,
+                                      item.c_str(),
+                                      item.size()));
+      }
+
+      Data data(name);
+      data.setContent(wireEncode(rrs));
+
+      setContentType(data, NDNS_RESP, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
+
+      return rrset;
+    }
+
+    Rrset
+    RrsetFactory::generateCnameInRrset(const Name &label,
+                                       uint64_t version,
+                                       time::seconds ttl,
+                                       const std::vector<std::string> &strings)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
+
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
+
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::CNAME_IN_RR_TYPE, version, ttl);
+
+      std::vector<Block> rrs;
+      for (const auto &item : strings)
+      {
+        rrs.push_back(makeBinaryBlock(ndns::tlv::RrData,
+                                      item.c_str(),
+                                      item.size()));
+      }
+
+      Data data(name);
+      data.setContent(wireEncode(rrs));
+
+      setContentType(data, NDNS_RESP, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
+
+      return rrset;
+    }
+
+    Rrset
+    RrsetFactory::generateNsGlueRrset(const Name &label,
+                                      uint64_t version,
+                                      time::seconds ttl,
+                                      const std::vector<std::string> &strings)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
+
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
+
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::NS_GLUE_RR_TYPE, version, ttl);
+
+      std::vector<Block> rrs;
+      for (const auto &item : strings)
+      {
+        rrs.push_back(makeBinaryBlock(ndns::tlv::RrData,
+                                      item.c_str(),
+                                      item.size()));
+      }
+
+      Data data(name);
+      data.setContent(wireEncode(rrs));
+
+      setContentType(data, NDNS_RESP, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
+
+      return rrset;
+    }
+
+    // } DIN append
+
+    Rrset
+    RrsetFactory::generateAuthRrset(const Name &label,
+                                    uint64_t version,
+                                    time::seconds ttl)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
+
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
+
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::DELEGATION_INFO_RR_TYPE, version, ttl);
+
+      Data data(name);
+
+      setContentType(data, NDNS_AUTH, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
+
+      return rrset;
+    }
+
+    Rrset
+    RrsetFactory::generateDoeRrset(const Name &label,
+                                   uint64_t version,
+                                   time::seconds ttl,
+                                   const Name &lowerLabel,
+                                   const Name &upperLabel)
+    {
+      if (!m_checked)
+      {
+        NDN_THROW(Error("You have to call checkZoneKey before call generate functions"));
+      }
+
+      if (ttl == DEFAULT_RR_TTL)
+        ttl = m_zone.getTtl();
+
+      Name name;
+      Rrset rrset;
+      std::tie(rrset, name) = generateBaseRrset(label, label::DOE_RR_TYPE, version, ttl);
+
+      std::vector<Block> range;
+      range.push_back(lowerLabel.wireEncode());
+      range.push_back(upperLabel.wireEncode());
+
+      Data data(name);
+      data.setContent(wireEncode(range));
+
+      setContentType(data, NDNS_DOE, ttl);
+      sign(data);
+      rrset.setData(data.wireEncode());
+
+      return rrset;
+    }
+
+    void
+    RrsetFactory::sign(Data &data)
+    {
+//added_GM liupenghui
+#if 1
+	  ndn::security::Identity identity;
+	  ndn::security::pib::Key key;
+	
+	  ndn::Name identityName = ndn::security::extractIdentityFromCertName(m_dskCertName);
+	  ndn::Name keyName = ndn::security::extractKeyNameFromCertName(m_dskCertName);
+	  identity = m_keyChain.getPib().getIdentity(identityName);
+	  key = identity.getKey(keyName);
+	  if (key.getKeyType() == KeyType::SM2)
+	    m_keyChain.sign(data, signingByCertificate(m_dskCertName).setDigestAlgorithm(ndn::DigestAlgorithm::SM3));
+	  else
+		m_keyChain.sign(data, signingByCertificate(m_dskCertName));
+#else
+      m_keyChain.sign(data, signingByCertificate(m_dskCertName));
+#endif
+    }
+
+    void
+    RrsetFactory::setContentType(Data &data, NdnsContentType contentType,
+                                 const time::seconds &ttl)
+    {
+      data.setContentType(contentType);
+      data.setFreshnessPeriod(ttl);
+    }
+
+    template <encoding::Tag TAG>
+    inline size_t
+    RrsetFactory::wireEncode(EncodingImpl<TAG> &block, const std::vector<Block> &rrs) const
+    {
+      // Content :: = CONTENT-TYPE TLV-LENGTH
+      //              Block*
+
+      size_t totalLength = 0;
+      for (auto iter = rrs.rbegin(); iter != rrs.rend(); ++iter)
+      {
+        totalLength += block.prependBlock(*iter);
+      }
+
+      totalLength += block.prependVarNumber(totalLength);
+      totalLength += block.prependVarNumber(::ndn::tlv::Content);
+
+      return totalLength;
+    }
+
+    const Block
+    RrsetFactory::wireEncode(const std::vector<Block> &rrs) const
+    {
+      EncodingEstimator estimator;
+      size_t estimatedSize = wireEncode(estimator, rrs);
+      EncodingBuffer buffer(estimatedSize, 0);
+      wireEncode(buffer, rrs);
+      return buffer.block();
+    }
+
+    std::vector<std::string>
+    RrsetFactory::wireDecodeTxt(const Block &wire)
+    {
+      std::vector<std::string> txts;
+      wire.parse();
+
+      for (const auto &e : wire.elements())
+      {
+        txts.push_back(std::string(reinterpret_cast<const char *>(e.value()),
+                                   e.value_size()));
+      }
+
+      return txts;
+    }
+
+  } // namespace ndns
 } // namespace ndn

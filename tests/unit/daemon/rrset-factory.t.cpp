@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE(CheckZoneKey)
 BOOST_AUTO_TEST_CASE(GenerateNsRrset)
 {
   Name label("/nstest");
-  name::Component type = label::NS_RR_TYPE;
+  name::Component type = label::DELEGATION_INFO_RR_TYPE;
   uint64_t version = 1234;
   time::seconds ttl(2000);
   Zone zone(m_zoneName);

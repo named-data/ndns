@@ -96,10 +96,25 @@ private:
                                               VERSION_USE_UNIX_TIMESTAMP, DEFAULT_RR_TTL,
                                               ndnsStoredAppCert);
     ManagementTool tool(TEST_DATABASE.string(), m_keyChain);
-    tool.addRrset(appCertRrset);
+    tool.addRrset(appCertRrset, true);
 
     m_appCertSignedData = Data(Name(m_ndnsimName).append("randomData"));
-    m_keyChain.sign(m_appCertSignedData, signingByCertificate(ndnsStoredAppCert));
+//added_GM liupenghui
+#if 1
+	ndn::security::Identity identity;
+	ndn::security::pib::Key key;
+	
+	ndn::Name identityName = ndn::security::extractIdentityFromCertName(ndnsStoredAppCert);
+	ndn::Name keyName = ndn::security::extractKeyNameFromCertName(ndnsStoredAppCert);
+	identity = m_keyChain.getPib().getIdentity(identityName);
+	key = identity.getKey(keyName);
+	if (key.getKeyType() == KeyType::SM2)
+	  m_keyChain.sign(m_appCertSignedData, signingByCertificate(ndnsStoredAppCert).setDigestAlgorithm(ndn::DigestAlgorithm::SM3));
+	else
+	  m_keyChain.sign(m_appCertSignedData, signingByCertificate(ndnsStoredAppCert));
+#else
+	m_keyChain.sign(m_appCertSignedData, signingByCertificate(ndnsStoredAppCert));
+#endif
 
     // load this certificate as the trust anchor
     m_validator->loadAnchor("", std::move(ndnsStoredAppCert));

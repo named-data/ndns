@@ -201,6 +201,7 @@ public:
       }
     }
     NDN_THROW(Error("Certificate not found in keyChain"));
+    return rtn;
   }
 
   Certificate
@@ -628,8 +629,8 @@ BOOST_AUTO_TEST_CASE(AddRrset)
   rf.checkZoneKey();
   Rrset rrset1 = rf.generateNsRrset("/l1", 7654, ttl2, {});
 
-  BOOST_CHECK_NO_THROW(m_tool.addRrset(rrset1));
-  Rrset rrset2 = findRrSet(zone, "/l1", label::NS_RR_TYPE);
+  BOOST_CHECK_NO_THROW(m_tool.addRrset(rrset1, true));
+  Rrset rrset2 = findRrSet(zone, "/l1", label::DELEGATION_INFO_RR_TYPE);
   BOOST_CHECK_EQUAL(rrset1, rrset2);
 }
 
@@ -659,47 +660,47 @@ BOOST_AUTO_TEST_CASE(AddMultiLevelLabelRrset)
   Rrset rrset1 = rf.generateNsRrset(labelName, 7654, ttl, {});
 
   //add NS NDNS_AUTH and check user-defined ttl
-  BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(rrset1, rf, ttl));
-  Rrset rrset2 = findRrSet(zone, labelName, label::NS_RR_TYPE);
+  BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(rrset1, rf, ttl, true));
+  Rrset rrset2 = findRrSet(zone, labelName, label::DELEGATION_INFO_RR_TYPE);
   BOOST_CHECK_EQUAL(rrset1, rrset2);
 
-  checkRrset("/l1", label::NS_RR_TYPE, ndns::NDNS_AUTH);
-  checkRrset("/l1/l2", label::NS_RR_TYPE, ndns::NDNS_AUTH);
+  checkRrset("/l1", label::DELEGATION_INFO_RR_TYPE, ndns::NDNS_AUTH);
+  checkRrset("/l1/l2", label::DELEGATION_INFO_RR_TYPE, ndns::NDNS_AUTH);
 
   // insert a same-name rrset with TXT type
   Rrset txtRr = rf.generateTxtRrset("/l1/l2/l3", 7654, ttl, std::vector<std::string>());
-  BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(txtRr, rf, ttl));
+  BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(txtRr, rf, ttl, true));
 
-  checkRrset("/l1", label::NS_RR_TYPE, ndns::NDNS_AUTH);
-  checkRrset("/l1/l2", label::NS_RR_TYPE, ndns::NDNS_AUTH);
+  checkRrset("/l1", label::DELEGATION_INFO_RR_TYPE, ndns::NDNS_AUTH);
+  checkRrset("/l1/l2", label::DELEGATION_INFO_RR_TYPE, ndns::NDNS_AUTH);
   checkRrset("/l1/l2/l3", label::TXT_RR_TYPE, ndns::NDNS_RESP);
   // check that there is no confliction
-  checkRrset("/l1/l2/l3", label::NS_RR_TYPE, ndns::NDNS_LINK);
+  checkRrset("/l1/l2/l3", label::DELEGATION_INFO_RR_TYPE, ndns::NDNS_LINK);
 
   // insert a shorter NS, when there are longer NS or TXT
   Rrset shorterNs = rf.generateNsRrset("/l1/l2", 7654, ttl, {});
-  BOOST_CHECK_THROW(m_tool.addMultiLevelLabelRrset(shorterNs, rf, ttl),
+  BOOST_CHECK_THROW(m_tool.addMultiLevelLabelRrset(shorterNs, rf, ttl, true),
                     ndns::ManagementTool::Error);
 
   // insert a longer NS, when there is already a shorter NS
   Rrset longerNs = rf.generateNsRrset("/l1/l2/l3/l4", 7654, ttl, {});
-  BOOST_CHECK_THROW(m_tool.addMultiLevelLabelRrset(longerNs, rf, ttl),
+  BOOST_CHECK_THROW(m_tool.addMultiLevelLabelRrset(longerNs, rf, ttl, true),
                     ndns::ManagementTool::Error);
 
   // insert a smaller TXT, when there are longer NS and TXT
   Rrset shorterTxt = rf.generateTxtRrset("/l1/l2", 7654, ttl, std::vector<std::string>());
-  BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(shorterTxt, rf, ttl));
+  BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(shorterTxt, rf, ttl, true));
 
   // insert a smaller NS, when there is long TXT
   Rrset longTxt = rf.generateTxtRrset("/k1/k2/k3", 7654, ttl, std::vector<std::string>());
   Rrset smallerNs = rf.generateNsRrset("/k1/k2", 7654, ttl, {});
-  BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(longTxt, rf, ttl));
-  BOOST_CHECK_THROW(m_tool.addMultiLevelLabelRrset(smallerNs, rf, ttl),
+  BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(longTxt, rf, ttl, true));
+  BOOST_CHECK_THROW(m_tool.addMultiLevelLabelRrset(smallerNs, rf, ttl, ture),
                     ndns::ManagementTool::Error);
 
   // inserting a longer TXT, when there is shoter TXT
   Rrset longerTxt = rf.generateTxtRrset("/k1/k2/k3/k4", 7654, ttl, std::vector<std::string>());
-  BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(longerTxt, rf, ttl));
+  BOOST_CHECK_NO_THROW(m_tool.addMultiLevelLabelRrset(longerTxt, rf, ttl, true));
 }
 
 BOOST_AUTO_TEST_CASE(AddRrSetDskCertPreConditon)
@@ -801,20 +802,20 @@ BOOST_AUTO_TEST_CASE(AddRrSetVersionControl)
 
   Rrset rrset1 = rf.generateTxtRrset(label, version, ttl, {});
 
-  m_tool.addRrset(rrset1);
+  m_tool.addRrset(rrset1, true);
   // throw error when adding duplicated rrset with the same version
-  BOOST_CHECK_THROW(m_tool.addRrset(rrset1),
+  BOOST_CHECK_THROW(m_tool.addRrset(rrset1, true),
                     ndns::ManagementTool::Error);
   version--;
   Rrset rrset2 = rf.generateTxtRrset(label, version, ttl, {});
   // throw error when adding duplicated rrset with older version
-  BOOST_CHECK_THROW(m_tool.addRrset(rrset2),
+  BOOST_CHECK_THROW(m_tool.addRrset(rrset2, true),
                     ndns::ManagementTool::Error);
 
   version++;
   version++;
   Rrset rrset3 = rf.generateTxtRrset(label, version, ttl, {});
-  BOOST_CHECK_NO_THROW(m_tool.addRrset(rrset3));
+  BOOST_CHECK_NO_THROW(m_tool.addRrset(rrset3, true));
 
   Zone zone(zoneName);
   m_dbMgr.find(zone);
@@ -1029,7 +1030,7 @@ BOOST_FIXTURE_TEST_CASE(GetRrSet, ManagementToolFixture)
   rf.checkZoneKey();
   Rrset rrset1 = rf.generateTxtRrset("/label", 100, DEFAULT_RR_TTL, {"Value1", "Value2"});
 
-  m_tool.addRrset(rrset1);
+  m_tool.addRrset(rrset1, true);
 
   std::stringstream os;
 
@@ -1037,7 +1038,7 @@ BOOST_FIXTURE_TEST_CASE(GetRrSet, ManagementToolFixture)
   using security::transform::streamSink;
   using security::transform::bufferSource;
 
-  bufferSource(rrset1.getData()) >> base64Encode() >> streamSink(os);
+  bufferSource(rrset1.getData().wire(), rrset1.getData().size()) >> base64Encode() >> streamSink(os);
 
   std::string expectedValue = os.str();
 
@@ -1056,14 +1057,14 @@ BOOST_FIXTURE_TEST_CASE(RemoveRrSet, ManagementToolFixture)
 
   Rrset rrset1 = rf.generateTxtRrset("/label", 100, DEFAULT_RR_TTL, {});
 
-  BOOST_CHECK_NO_THROW(m_tool.addRrset(rrset1));
+  BOOST_CHECK_NO_THROW(m_tool.addRrset(rrset1, true));
 
   Zone zone(zoneName);
   BOOST_CHECK_NO_THROW(findRrSet(zone, "/label", label::TXT_RR_TYPE));
 
-  BOOST_CHECK_NO_THROW(m_tool.removeRrSet(zoneName, "/label", label::NS_RR_TYPE));
+  BOOST_CHECK_NO_THROW(m_tool.removeRrSet(zoneName, "/label", label::DELEGATION_INFO_RR_TYPE));
 
-  BOOST_CHECK_THROW(findRrSet(zone, "/label", label::NS_RR_TYPE), Error);
+  BOOST_CHECK_THROW(findRrSet(zone, "/label", label::DELEGATION_INFO_RR_TYPE), Error);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -93,7 +93,22 @@ BOOST_FIXTURE_TEST_CASE(Basic, ValidatorTestFixture)
     .append("rrType")
     .appendVersion();
   shared_ptr<Data> data = make_shared<Data>(dataName);
+//added_GM liupenghui
+#if 1
+  ndn::security::Identity identity;
+  ndn::security::pib::Key key;
+  
+  ndn::Name identityName = ndn::security::extractIdentityFromCertName(m_ndnsimCert);
+  ndn::Name keyName = ndn::security::extractKeyNameFromCertName(m_ndnsimCert);
+  identity = m_keyChain.getPib().getIdentity(identityName);
+  key = identity.getKey(keyName);
+  if (key.getKeyType() == KeyType::SM2)
+    m_keyChain.sign(*data, signingByCertificate(m_ndnsimCert).setSignatureInfo(info).setDigestAlgorithm(ndn::DigestAlgorithm::SM3));
+  else
+    m_keyChain.sign(*data, signingByCertificate(m_ndnsimCert).setSignatureInfo(info));
+#else
   m_keyChain.sign(*data, signingByCertificate(m_ndnsimCert).setSignatureInfo(info));
+#endif
 
   bool hasValidated = false;
   m_validator->validate(*data,
@@ -119,8 +134,19 @@ BOOST_FIXTURE_TEST_CASE(Basic, ValidatorTestFixture)
     .append("CERT")
     .appendVersion();
   data = make_shared<Data>(dataName);
+//added_GM liupenghui
+#if 1
+  identityName = ndn::security::extractIdentityFromCertName(m_ndnsimCert);
+  keyName = ndn::security::extractKeyNameFromCertName(m_ndnsimCert);
+  identity = m_keyChain.getPib().getIdentity(identityName);
+  key = identity.getKey(keyName);
+  if (key.getKeyType() == KeyType::SM2)
+    m_keyChain.sign(*data, signingByCertificate(m_ndnsimCert).setDigestAlgorithm(ndn::DigestAlgorithm::SM3)); // key's owner's name is longer than data owner's
+  else
+    m_keyChain.sign(*data, signingByCertificate(m_ndnsimCert)); // key's owner's name is longer than data owner's
+#else
   m_keyChain.sign(*data, signingByCertificate(m_ndnsimCert)); // key's owner's name is longer than data owner's
-
+#endif
   hasValidated = false;
   m_validator->validate(*data,
                         [&] (const Data& data) {
@@ -145,7 +171,19 @@ BOOST_FIXTURE_TEST_CASE(Basic, ValidatorTestFixture)
     .append("CERT")
     .appendVersion();
   data = make_shared<Data>(dataName);
+//added_GM liupenghui
+#if 1
+  identityName = ndn::security::extractIdentityFromCertName(m_randomCert);
+  keyName = ndn::security::extractKeyNameFromCertName(m_randomCert);
+  identity = m_keyChain.getPib().getIdentity(identityName);
+  key = identity.getKey(keyName);
+  if (key.getKeyType() == KeyType::SM2)
+    m_keyChain.sign(*data, signingByCertificate(m_randomCert).setDigestAlgorithm(ndn::DigestAlgorithm::SM3));
+else
+    m_keyChain.sign(*data, signingByCertificate(m_randomCert));
+#else
   m_keyChain.sign(*data, signingByCertificate(m_randomCert));
+#endif
 
   hasValidated = false;
   m_validator->validate(*data,

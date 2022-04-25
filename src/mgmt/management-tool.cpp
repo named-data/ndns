@@ -66,13 +66,14 @@ ManagementTool::ManagementTool(const std::string& dbFile, KeyChain& keyChain)
 #if 1
 Zone
 ManagementTool::createZone(const Name& zoneName,
-                           const Name& parentZoneName,
-	                       const char keyTypeChoice,
-                           const time::seconds& cacheTtl,
-                           const time::seconds& certValidity,
-                           const Name& kskCertName,
-                           const Name& dskCertName,
-                           const Name& dkeyCertName)
+             const Name& parentZoneName,
+			 const char keyTypeChoice,
+             const time::seconds& cacheTtl,
+             const time::seconds& certValidity,
+             const Name& kskCertName,
+             const Name& dskCertName,
+             const Name& dkeyCertName
+             )
 {
   bool isRoot = zoneName == ROOT_ZONE;
   Name zoneIdentityName = Name(zoneName).append(label::NDNS_ITERATIVE_QUERY);
@@ -119,20 +120,20 @@ ManagementTool::createZone(const Name& zoneName,
   }
   NDNS_LOG_INFO("Generated D-Key's identityName: " + dkeyIdentityName.toUri());
 
-  ndn::KeyIdType keyIdType = KeyIdType::RANDOM;
-  unique_ptr<ndn::KeyParams> params;
+  KeyIdType keyIdType = KeyIdType::RANDOM;
+  unique_ptr<KeyParams> params;
   switch (keyTypeChoice) {
-    case 'r':
-      params = make_unique<ndn::RsaKeyParams>(ndn::detail::RsaKeyParamsInfo::getDefaultSize(), keyIdType);
-      break;
-    case 'e':
-      params = make_unique<ndn::EcKeyParams>(ndn::detail::EcKeyParamsInfo::getDefaultSize(), keyIdType);
-      break;
-    case 's':
-      params = make_unique<ndn::sm2KeyParams>(ndn::detail::sm2KeyParamsInfo::getDefaultSize(), keyIdType);
-      break;
-    default:
-      NDN_THROW(Error("Cannot generate key for DSK KSK dkey"));
+  case 'r':
+    params = make_unique<RsaKeyParams>(detail::RsaKeyParamsInfo::getDefaultSize(), keyIdType);
+    break;
+  case 'e':
+    params = make_unique<EcKeyParams>(detail::EcKeyParamsInfo::getDefaultSize(), keyIdType);
+    break;
+  case 's':
+    params = make_unique<sm2KeyParams>(detail::sm2KeyParamsInfo::getDefaultSize(), keyIdType);
+    break;
+  default:
+    NDN_THROW(Error("Cannot generate key for DSK KSK dkey"));
   }
 
   Name dskName;
@@ -379,6 +380,7 @@ ManagementTool::exportCertificate(const Name& certName, const std::string& outFi
   shared_ptr<Regex> regex = make_shared<Regex>("(<>*)<NDNS>(<>+)<CERT><>");
   if (!regex->match(certName)) {
     NDN_THROW(Error("Certificate name is illegal"));
+    return;
   }
 
   Name zoneName = regex->expand("\\1");
@@ -408,7 +410,8 @@ ManagementTool::exportCertificate(const Name& certName, const std::string& outFi
 void
 ManagementTool::addMultiLevelLabelRrset(Rrset& rrset,
                                         RrsetFactory& zoneRrFactory,
-                                        const time::seconds& authTtl)
+                                        const time::seconds& authTtl,
+                                        bool generateDOE)
 {
   const Name& label = rrset.getLabel();
 
@@ -417,7 +420,7 @@ ManagementTool::addMultiLevelLabelRrset(Rrset& rrset,
     Name prefix = label.getPrefix(i);
     Rrset prefixNsRr(rrset.getZone());
     prefixNsRr.setLabel(prefix);
-    prefixNsRr.setType(label::NS_RR_TYPE);
+    prefixNsRr.setType(label::DELEGATION_INFO_RR_TYPE);
     if (m_dbMgr.find(prefixNsRr)) {
       Data data(prefixNsRr.getData());
       if (data.getContentType() == NDNS_LINK) {
@@ -427,7 +430,7 @@ ManagementTool::addMultiLevelLabelRrset(Rrset& rrset,
   }
 
   // check that it does not override existing AUTH
-  if (rrset.getType() == label::NS_RR_TYPE) {
+  if (rrset.getType() == label::DELEGATION_INFO_RR_TYPE) {
     Rrset rrsetCopy = rrset;
     if (m_dbMgr.find(rrsetCopy)) {
       if (Data(rrsetCopy.getData()).getContentType() == NDNS_AUTH) {
@@ -440,7 +443,7 @@ ManagementTool::addMultiLevelLabelRrset(Rrset& rrset,
     Name prefix = label.getPrefix(i);
     Rrset prefixNsRr(rrset.getZone());
     prefixNsRr.setLabel(prefix);
-    prefixNsRr.setType(label::NS_RR_TYPE);
+    prefixNsRr.setType(label::DELEGATION_INFO_RR_TYPE);
     if (m_dbMgr.find(prefixNsRr)) {
       NDNS_LOG_INFO("NDNS_AUTH Rrset Label=" << prefix << " is already existed, insertion skipped");
       continue;
@@ -455,15 +458,17 @@ ManagementTool::addMultiLevelLabelRrset(Rrset& rrset,
   checkRrsetVersion(rrset);
   NDNS_LOG_INFO("Adding " << rrset);
   m_dbMgr.insert(rrset);
-  generateDoe(*rrset.getZone());
+  if (generateDOE) {
+    generateDoe(*rrset.getZone());
+  }
 }
 
 void
-ManagementTool::addRrset(Rrset& rrset)
+ManagementTool::addRrset(Rrset& rrset, bool generateDOE)
 {
   // check that it does not override existing AUTH
   Rrset rrsetCopy = rrset;
-  rrsetCopy.setType(label::NS_RR_TYPE);
+  rrsetCopy.setType(label::DELEGATION_INFO_RR_TYPE);
   if (m_dbMgr.find(rrsetCopy)) {
     if (Data(rrsetCopy.getData()).getContentType() == NDNS_AUTH) {
       NDN_THROW(Error("Can not add this Rrset: it overrides a NDNS_AUTH record"));
@@ -473,7 +478,9 @@ ManagementTool::addRrset(Rrset& rrset)
   checkRrsetVersion(rrset);
   NDNS_LOG_INFO("Added " << rrset);
   m_dbMgr.insert(rrset);
-  generateDoe(*rrset.getZone());
+  if (generateDOE) {
+    generateDoe(*rrset.getZone());
+  }
 }
 
 void
@@ -526,7 +533,23 @@ ManagementTool::addRrsetFromFile(const Name& zoneName,
     SignatureInfo info;
     info.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
                                                     time::system_clock::now() + DEFAULT_CERT_TTL));
+//added_GM liupenghui
+#if 1
+	ndn::security::Identity identity;
+	ndn::security::pib::Key key;
+	
+	ndn::Name identityName = ndn::security::extractIdentityFromCertName(dskCertName);
+	ndn::Name keyName = ndn::security::extractKeyNameFromCertName(dskCertName);
+    identity = m_keyChain.getPib().getIdentity(identityName);
+    key = identity.getKey(keyName);
+    if (key.getKeyType() == KeyType::SM2)
+      m_keyChain.sign(*data, signingByCertificate(dskCertName).setSignatureInfo(info).setDigestAlgorithm(ndn::DigestAlgorithm::SM3));
+    else
+	  m_keyChain.sign(*data, signingByCertificate(dskCertName).setSignatureInfo(info));
+#else
     m_keyChain.sign(*data, signingByCertificate(dskCertName).setSignatureInfo(info));
+#endif
+	
   }
 
   // create response for the input data
@@ -628,22 +651,27 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
           os.write(reinterpret_cast<const char*>(rrs[i].value()), rrs[i].value_size());
           os << std::endl;
         }
-        else if (rrset.getType() == label::NS_RR_TYPE) {
+        else if (rrset.getType() == label::DELEGATION_INFO_RR_TYPE) {
           BOOST_ASSERT(iteration == 1);
           if (re.getContentType() == NDNS_AUTH) {
             const std::string authStr = "NDNS-Auth";
             os << authStr;
           }
           else {
-            Link link(rrset.getData());
-            for (const auto& delegation : link.getDelegationList()) {
-              os << delegation << ";";
-            }
+            // Link link(rrset.getData());
+            // for (const auto& delegation : link.getDelegationList()) {
+            //   os << delegation << ";";
+            // }
+            os.write(reinterpret_cast<const char *>(rrs[i].value()), rrs[i].value_size());
           }
           os << std::endl;
         }
+        else if (rrset.getType() == label::NS_GLUE_RR_TYPE) {
+          os.write(reinterpret_cast<const char *>(rrs[i].value()), rrs[i].value_size());
+          os << std::endl;
+        }
         else {
-          bufferSource(rrs[i]) >> base64Encode() >> streamSink(os);
+          bufferSource(rrs[i].wire(), rrs[i].size()) >> base64Encode() >> streamSink(os);
         }
       }
     }
@@ -665,7 +693,7 @@ ManagementTool::listZone(const Name& zoneName, std::ostream& os, const bool prin
           // cert.printCertificate(istream);
         }
         else {
-          bufferSource(re.getAppContent()) >> base64Encode() >> streamSink(os);
+          bufferSource(re.getAppContent().wire(), re.getAppContent().size()) >> base64Encode() >> streamSink(os);
         }
       }
       os << std::endl;
@@ -733,7 +761,7 @@ ManagementTool::getRrSet(const Name& zoneName,
     return;
   }
 
-  bufferSource(rrset.getData()) >> base64Encode() >> streamSink(os);
+  bufferSource(rrset.getData().wire(), rrset.getData().size()) >> base64Encode() >> streamSink(os);
 }
 
 void
@@ -785,12 +813,11 @@ bool
 ManagementTool::matchCertificate(const Name& certName, const Name& identity)
 {
   security::Identity id = m_keyChain.getPib().getIdentity(identity);
-  for (const security::Key& key : id.getKeys()) {
+  for (const security::Key& key: id.getKeys()) {
     try {
       key.getCertificate(certName);
       return true;
-    }
-    catch (const std::exception&) {
+    } catch (const std::exception&) {
     }
   }
   return false;

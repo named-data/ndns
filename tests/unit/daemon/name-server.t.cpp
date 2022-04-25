@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(NdnsQuery)
 {
   Query q(zone, ndns::label::NDNS_ITERATIVE_QUERY);
   q.setRrLabel(Name("net"));
-  q.setRrType(ndns::label::NS_RR_TYPE);
+  q.setRrType(ndns::label::DELEGATION_INFO_RR_TYPE);
 
   bool hasDataBack = false;
 
@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE(UpdateReplaceRr)
   re.setZone(zone);
   re.setQueryType(label::NDNS_ITERATIVE_QUERY);
   re.setRrLabel(Name("net"));
-  re.setRrType(label::NS_RR_TYPE);
+  re.setRrType(label::DELEGATION_INFO_RR_TYPE);
   re.setContentType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
@@ -177,12 +177,29 @@ BOOST_AUTO_TEST_CASE(UpdateReplaceRr)
   str = "ns2.ndnsim.net";
   re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
 
-  auto data = re.toData();
+  shared_ptr<Data> data = re.toData();
+
+//added_GM liupenghui
+#if 1
+  ndn::security::Identity identity;
+  ndn::security::pib::Key key;
+  
+  ndn::Name identityName = ndn::security::extractIdentityFromCertName(m_cert);
+  ndn::Name keyName = ndn::security::extractKeyNameFromCertName(m_cert);
+  identity = m_keyChain.getPib().getIdentity(identityName);
+  key = identity.getKey(keyName);
+  if (key.getKeyType() == KeyType::SM2)
+    m_keyChain.sign(*data, security::signingByCertificate(m_cert).setDigestAlgorithm(ndn::DigestAlgorithm::SM3));
+  else
+    m_keyChain.sign(*data, security::signingByCertificate(m_cert));
+#else
   m_keyChain.sign(*data, security::signingByCertificate(m_cert));
+#endif
 
   Query q(Name(zone), ndns::label::NDNS_ITERATIVE_QUERY);
+  const Block& block = data->wireEncode();
   Name name;
-  name.append(ndn::tlv::GenericNameComponent, data->wireEncode());
+  name.append(block);
 
   q.setRrLabel(name);
   q.setRrType(label::NDNS_UPDATE_LABEL);
@@ -219,7 +236,7 @@ BOOST_AUTO_TEST_CASE(UpdateInsertNewRr)
   re.setZone(zone);
   re.setQueryType(label::NDNS_ITERATIVE_QUERY);
   re.setRrLabel(Name("net-XYZ")); // insert new records
-  re.setRrType(label::NS_RR_TYPE);
+  re.setRrType(label::DELEGATION_INFO_RR_TYPE);
   re.setContentType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
@@ -227,12 +244,28 @@ BOOST_AUTO_TEST_CASE(UpdateInsertNewRr)
   str = "ns2.ndnsim.net";
   re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
 
-  auto data = re.toData();
+  shared_ptr<Data> data = re.toData();
+//added_GM liupenghui
+#if 1
+  ndn::security::Identity identity;
+  ndn::security::pib::Key key;
+  
+  ndn::Name identityName = ndn::security::extractIdentityFromCertName(m_cert);
+  ndn::Name keyName = ndn::security::extractKeyNameFromCertName(m_cert);
+  identity = m_keyChain.getPib().getIdentity(identityName);
+  key = identity.getKey(keyName);
+  if (key.getKeyType() == KeyType::SM2)
+    m_keyChain.sign(*data, security::signingByCertificate(m_cert).setDigestAlgorithm(ndn::DigestAlgorithm::SM3));
+  else
+    m_keyChain.sign(*data, security::signingByCertificate(m_cert));
+#else
   m_keyChain.sign(*data, security::signingByCertificate(m_cert));
+#endif
 
   Query q(Name(zone), ndns::label::NDNS_ITERATIVE_QUERY);
+  const Block& block = data->wireEncode();
   Name name;
-  name.append(ndn::tlv::GenericNameComponent, data->wireEncode());
+  name.append(block);
 
   q.setRrLabel(name);
   q.setRrType(label::NDNS_UPDATE_LABEL);
@@ -277,12 +310,28 @@ BOOST_AUTO_TEST_CASE(UpdateValidatorCannotFetchCert)
   dskCert.setName(dskCertName);
   dskCert.setContentType(ndn::tlv::ContentType_Key);
   dskCert.setFreshnessPeriod(time::hours(1));
-  dskCert.setContent(dsk.getPublicKey());
+  dskCert.setContent(dsk.getPublicKey().data(), dsk.getPublicKey().size());
   SignatureInfo info;
   info.setValidityPeriod(security::ValidityPeriod(time::system_clock::now(),
                                                   time::system_clock::now() + time::days(365)));
 
+//added_GM liupenghui
+#if 1
+  ndn::security::Identity identity;
+  ndn::security::pib::Key key;
+  
+  ndn::Name identityName = ndn::security::extractIdentityFromCertName(m_cert);
+  ndn::Name keyName = ndn::security::extractKeyNameFromCertName(m_cert);
+  identity = m_keyChain.getPib().getIdentity(identityName);
+  key = identity.getKey(keyName);
+  if (key.getKeyType() == KeyType::SM2)
+    m_keyChain.sign(dskCert, security::signingByCertificate(m_cert).setDigestAlgorithm(ndn::DigestAlgorithm::SM3));
+  else
+    m_keyChain.sign(dskCert, security::signingByCertificate(m_cert));
+#else
   m_keyChain.sign(dskCert, security::signingByCertificate(m_cert));
+#endif
+
   m_keyChain.setDefaultCertificate(dsk, dskCert);
 
   NDNS_LOG_TRACE("KeyChain: add cert: " << dskCert.getName() << ". KeyLocator: "
@@ -303,7 +352,7 @@ BOOST_AUTO_TEST_CASE(UpdateValidatorCannotFetchCert)
   re.setZone(zone);
   re.setQueryType(label::NDNS_ITERATIVE_QUERY);
   re.setRrLabel(Name("ndnsim-XYZ")); // insert new records
-  re.setRrType(label::NS_RR_TYPE);
+  re.setRrType(label::DELEGATION_INFO_RR_TYPE);
   re.setContentType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
@@ -311,12 +360,26 @@ BOOST_AUTO_TEST_CASE(UpdateValidatorCannotFetchCert)
   str = "ns2.ndnsim.net";
   re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
 
-  auto data = re.toData();
+  shared_ptr<Data> data = re.toData();
+  //added_GM liupenghui
+#if 1
+  
+  identityName = ndn::security::extractIdentityFromCertName(dskCert);
+  keyName = ndn::security::extractKeyNameFromCertName(dskCert);
+  identity = m_keyChain.getPib().getIdentity(identityName);
+  key = identity.getKey(keyName);
+  if (key.getKeyType() == KeyType::SM2)
+    m_keyChain.sign(*data, security::signingByCertificate(dskCert).setDigestAlgorithm(ndn::DigestAlgorithm::SM3));
+  else
+	m_keyChain.sign(*data, security::signingByCertificate(dskCert));
+#else
   m_keyChain.sign(*data, security::signingByCertificate(dskCert));
+#endif
 
   Query q(Name(zone), ndns::label::NDNS_ITERATIVE_QUERY);
+  const Block& block = data->wireEncode();
   Name name;
-  name.append(ndn::tlv::GenericNameComponent, data->wireEncode());
+  name.append(block);
 
   q.setRrLabel(name);
   q.setRrType(label::NDNS_UPDATE_LABEL);
@@ -350,8 +413,11 @@ public:
 
     validatorFace.onSendInterest.connect([this] (const Interest& interest) {
       NDNS_LOG_TRACE("validatorFace get Interest: " << interest.getName());
-      auto i = interest.shared_from_this();
-      io.post([i, this] { face.receive(*i); });
+
+      shared_ptr<const Interest> i = interest.shared_from_this();
+      io.post([i, this] {
+          face.receive(*i);
+        });
     });
   }
 
@@ -377,7 +443,7 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
   re.setZone(zone);
   re.setQueryType(label::NDNS_ITERATIVE_QUERY);
   re.setRrLabel(Name("ndnsim-XYZ")); // insert new records
-  re.setRrType(label::NS_RR_TYPE);
+  re.setRrType(label::DELEGATION_INFO_RR_TYPE);
   re.setContentType(NDNS_RESP);
 
   std::string str = "ns1.ndnsim.net";
@@ -385,12 +451,28 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
   str = "ns2.ndnsim.net";
   re.addRr(makeBinaryBlock(ndns::tlv::RrData, str.c_str(), str.size()));
 
-  auto data = re.toData();
+  shared_ptr<Data> data = re.toData();
+//added_GM liupenghui
+#if 1
+  ndn::security::Identity identity;
+  ndn::security::pib::Key key;
+  
+  ndn::Name identityName = ndn::security::extractIdentityFromCertName(m_cert);
+  ndn::Name keyName = ndn::security::extractKeyNameFromCertName(m_cert);
+  identity = m_keyChain.getPib().getIdentity(identityName);
+  key = identity.getKey(keyName);
+  if (key.getKeyType() == KeyType::SM2)
+    m_keyChain.sign(*data, security::signingByCertificate(m_cert).setDigestAlgorithm(ndn::DigestAlgorithm::SM3));
+  else
+    m_keyChain.sign(*data, security::signingByCertificate(m_cert));
+#else
   m_keyChain.sign(*data, security::signingByCertificate(m_cert));
+#endif
 
   Query q(Name(zone), ndns::label::NDNS_ITERATIVE_QUERY);
+  const Block& block = data->wireEncode();
   Name name;
-  name.append(ndn::tlv::GenericNameComponent, data->wireEncode());
+  name.append(block);
 
   q.setRrLabel(name);
   q.setRrType(label::NDNS_UPDATE_LABEL);
@@ -419,7 +501,7 @@ BOOST_FIXTURE_TEST_CASE(UpdateValidatorFetchCert, NameServerFixture2)
       block.parse();
       int ret = -1;
       BOOST_CHECK_EQUAL(block.type(), ndns::tlv::RrData);
-      auto val = block.elements_begin();
+      Block::element_const_iterator val = block.elements_begin();
       BOOST_CHECK_EQUAL(val->type(), ndns::tlv::UpdateReturnCode); // the first must be return code
       ret = readNonNegativeInteger(*val);
       BOOST_CHECK_EQUAL(ret, 0);

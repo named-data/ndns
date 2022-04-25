@@ -51,7 +51,16 @@ BOOST_FIXTURE_TEST_CASE(TestCase, KeyChainFixture)
     link->addDelegation(std::string("/link/") + to_string(i));
   }
   // link has to be signed first, then wireDecode
+//added_GM, by liupenghui
+#if 1
+  security::pib::Key key = certIdentity.getDefaultKey();
+  if (key.getKeyType() == KeyType::SM2)
+    m_keyChain.sign(*link, security::signingByIdentity(certIdentity).setDigestAlgorithm(ndn::DigestAlgorithm::SM3));
+  else
+    m_keyChain.sign(*link, security::signingByIdentity(certIdentity));
+#else
   m_keyChain.sign(*link, security::signingByIdentity(certIdentity));
+#endif
 
   q.setForwardingHintFromLink(*link);
   BOOST_CHECK_EQUAL_COLLECTIONS(

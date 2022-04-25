@@ -108,7 +108,16 @@ NameServer::handleQuery(const Name& prefix, const Interest& interest, const labe
     answer->setFreshnessPeriod(this->getContentFreshness());
     answer->setContentType(NDNS_NACK);
     // give this NACk a random signature
-    m_keyChain.sign(*answer);
+//added_GM, by liupenghui
+#if 1
+	ndn::security::pib::Key key = m_keyChain.getPib().getDefaultIdentity().getDefaultKey();
+	if (key.getKeyType() == KeyType::SM2)
+	  m_keyChain.sign(*answer, ndn::security::SigningInfo(m_keyChain.getPib().getDefaultIdentity()).setDigestAlgorithm(ndn::DigestAlgorithm::SM3));
+	else
+	  m_keyChain.sign(*answer);
+#else
+	m_keyChain.sign(*answer);
+#endif
 
     NDNS_LOG_TRACE("answer query with NDNS-NACK: " << answer->getName());
     m_face.put(*answer);
@@ -212,7 +221,22 @@ NameServer::doUpdate(const shared_ptr<const Interest>& interest,
                   << ". Update may need sudo privilege to write DbFile");
     NDNS_LOG_TRACE("exception happens and answer update with UPDATE_FAILURE");
   }
-  m_keyChain.sign(*answer, signingByCertificate(m_certName));
+//added_GM liupenghui
+#if 1
+	  ndn::security::Identity identity;
+	  ndn::security::pib::Key key;
+	  
+	  ndn::Name identityName = ndn::security::extractIdentityFromCertName(m_certName);
+	  ndn::Name keyName = ndn::security::extractKeyNameFromCertName(m_certName);
+	  identity = m_keyChain.getPib().getIdentity(identityName);
+	  key = identity.getKey(keyName);
+	  if (key.getKeyType() == KeyType::SM2)
+	    m_keyChain.sign(*answer, signingByCertificate(m_certName).setDigestAlgorithm(ndn::DigestAlgorithm::SM3));
+	  else
+	    m_keyChain.sign(*answer, signingByCertificate(m_certName));
+#else
+	  m_keyChain.sign(*answer, signingByCertificate(m_certName));
+#endif
   m_face.put(*answer);
 }
 

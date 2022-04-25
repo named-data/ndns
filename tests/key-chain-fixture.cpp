@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2013-2022 Regents of the University of California.
+ * Copyright (c) 2013-2020 Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -55,14 +55,23 @@ KeyChainFixture::makeCert(const Key& key, const std::string& issuer, const Key& 
   cert.setFreshnessPeriod(1_h);
 
   // set content
-  cert.setContent(key.getPublicKey());
+  cert.setContent(key.getPublicKey().data(), key.getPublicKey().size());
 
   // set signature info
   ndn::SignatureInfo info;
   auto now = time::system_clock::now();
   info.setValidityPeriod(ValidityPeriod(now - 30_days, now + 30_days));
 
-  m_keyChain.sign(cert, signingByKey(signingKey ? signingKey : key).setSignatureInfo(info));
+//added_GM liupenghui
+#if 1
+	if ((signingKey && signingKey.getKeyType() == KeyType::SM2) || (key && key.getKeyType() == KeyType::SM2))
+	  m_keyChain.sign(cert, signingByKey(signingKey ? signingKey : key).setSignatureInfo(info).setDigestAlgorithm(ndn::DigestAlgorithm::SM3));
+	else
+	  m_keyChain.sign(cert, signingByKey(signingKey ? signingKey : key).setSignatureInfo(info));
+#else
+	m_keyChain.sign(cert, signingByKey(signingKey ? signingKey : key).setSignatureInfo(info));
+#endif
+
   return cert;
 }
 
