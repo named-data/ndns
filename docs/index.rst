@@ -29,7 +29,7 @@ Additional Documentation
 Downloading
 -----------
 
-* `Source code git repository <https://github.com/named-data/NDNS>`_
+* `Source code git repository <https://github.com/named-data/ndns>`_
 
 License
 -------
@@ -37,4 +37,4 @@ License
 NDNS is an open and free software package licensed under GPL 3.0 license and is the
 centerpiece of our committement to making NDN's core technology open and free to all
 Internet users and developers. For more information about the licensing details and
-limitation, refer to `COPYING.md <https://github.com/named-data/NDNS/blob/master/COPYING.md>`_.
+limitation, refer to `COPYING.md <https://github.com/named-data/ndns/blob/master/COPYING.md>`_.

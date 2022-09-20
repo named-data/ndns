@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -19,6 +19,7 @@
 
 #include "name-server.hpp"
 #include "logger.hpp"
+
 #include <ndn-cxx/encoding/encoding-buffer.hpp>
 #include <ndn-cxx/security/signing-helpers.hpp>
 
@@ -27,7 +28,7 @@ namespace ndns {
 
 NDNS_LOG_INIT(NameServer);
 
-const time::milliseconds NAME_SERVER_DEFAULT_CONTENT_FRESHNESS(4000);
+constexpr time::milliseconds NAME_SERVER_DEFAULT_CONTENT_FRESHNESS{4000};
 
 NameServer::NameServer(const Name& zoneName, const Name& certName, Face& face, DbMgr& dbMgr,
                        KeyChain& keyChain, security::Validator& validator)

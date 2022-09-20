@@ -12,7 +12,7 @@ need to be installed:
 
 - doxygen
 - graphviz
-- sphinx >= 1.3
+- sphinx >= 4.0
 - sphinxcontrib-doxylink
 
 Build

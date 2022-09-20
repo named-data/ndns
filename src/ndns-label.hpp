@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2018, Regents of the University of California.
+ * Copyright (c) 2014-2022, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -25,59 +25,48 @@
 #include <ndn-cxx/name.hpp>
 #include <ndn-cxx/interest.hpp>
 
-#include <string>
-
-namespace ndn {
-namespace ndns {
-namespace label {
-
+namespace ndn::ndns::label {
 
 /**
  * @brief NDNS iterative query type
  */
-
-const name::Component NDNS_ITERATIVE_QUERY("NDNS");
+inline const name::Component NDNS_ITERATIVE_QUERY{"NDNS"};
 
 /**
  * @brief NDNS recursive query type
  */
 // it is not supported now
-// const name::Component NDNS_RECURSIVE_QUERY("NDNS-R");
-
-/////////////////////////////////////////////
+// inline const name::Component NDNS_RECURSIVE_QUERY{"NDNS-R"};
 
 /**
- * @brief label of update message, located at the last component in Interest name
+ * @brief Label of update message, located at the last component in Interest name
  */
-const name::Component NDNS_UPDATE_LABEL("UPDATE");
-
-
-//////////////////////////////////////////////
+inline const name::Component NDNS_UPDATE_LABEL{"UPDATE"};
 
 /**
  * @brief NS resource record type
  */
-const name::Component NS_RR_TYPE("NS");
+inline const name::Component NS_RR_TYPE{"NS"};
 
 /**
- * @brief ndns related certificate resource record type
+ * @brief NDNS related certificate resource record type
  */
-const name::Component CERT_RR_TYPE("CERT");
+inline const name::Component CERT_RR_TYPE{"CERT"};
 
 /**
- * @brief application stored certificate resource record type
+ * @brief Application stored certificate resource record type
  */
-const name::Component APPCERT_RR_TYPE("APPCERT");
+inline const name::Component APPCERT_RR_TYPE{"APPCERT"};
 
 /**
  * @brief TXT resource record type
  */
-const name::Component TXT_RR_TYPE("TXT");
+inline const name::Component TXT_RR_TYPE{"TXT"};
 
 /**
  * @brief Denial of Existance record type
  */
-const name::Component DOE_RR_TYPE("DOE");
+inline const name::Component DOE_RR_TYPE{"DOE"};
 
 //////////////////////////////////////////
 
@@ -119,8 +108,6 @@ matchName(const Data& data,
           const Name& zone,
           MatchResult& result);
 
-} // namespace label
-} // namespace ndns
-} // namespace ndn
+} // namespace ndn::ndns::label
 
 #endif // NDNS_NDNS_LABEL_HPP
