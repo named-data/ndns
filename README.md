@@ -23,12 +23,11 @@ Please submit any bug reports or feature requests to the
 ## Contributing
 
 We greatly appreciate contributions to the NDNS code base, provided that they are
-licensed under the GPL 3.0+ or a compatible license (see below).
-If you are new to the NDN software community, please read the
-[Contributor's Guide](https://github.com/named-data/.github/blob/master/CONTRIBUTING.md)
-to get started.
+licensed under the GNU GPL version 3 or a compatible license.
+If you are new to the NDN software community, please read our [Contributor's Guide](
+https://github.com/named-data/.github/blob/main/CONTRIBUTING.md) to get started.
 
 ## License
 
-NDNS is an open source project licensed under the GPL version 3.
-See [`COPYING.md`](COPYING.md) for more information.
+NDNS is free software distributed under the GNU General Public License version 3.
+See [`COPYING.md`](COPYING.md) for details.

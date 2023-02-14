@@ -4,7 +4,7 @@ Installation Instructions
 Prerequisites
 -------------
 
-Install the `ndn-cxx library <https://named-data.net/doc/ndn-cxx/current/INSTALL.html>`_
+Install the `ndn-cxx library <https://docs.named-data.net/ndn-cxx/current/INSTALL.html>`__
 and its prerequisites.
 
 Optionally, to build man pages and API documentation the following additional dependencies
