@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2023, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -36,16 +36,15 @@ namespace ndns {
  * @param[in] Data the Data packet which contains the Response, client should verify the packet
  * @param[in] Response the Final Response converted from Data
  */
-typedef function<void(const Data&, const Response&)> QuerySucceedCallback;
+using QuerySucceedCallback = std::function<void(const Data&, const Response&)>;
 
 /**
  * @brief callback function when failing to get the final Response
  */
-typedef function<void(uint32_t errCode, const std::string& errMsg)> QueryFailCallback;
+using QueryFailCallback = std::function<void(uint32_t errCode, const std::string& errMsg)>;
 
 /**
  * @brief a Query Controller interface
- *
  */
 class QueryController : boost::noncopyable
 {
@@ -73,10 +72,7 @@ public:
   virtual void
   setStartComponentIndex(size_t startIndex) = 0;
 
-public:
-  ////////////////
-  // getter
-
+public: // getters
   const Name&
   getDstLabel() const
   {
@@ -104,7 +100,6 @@ protected:
   const QueryFailCallback m_onFail;
 
   Face& m_face;
-
 };
 
 std::ostream&
