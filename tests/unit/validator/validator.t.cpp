@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2023, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -45,8 +45,8 @@ public:
     // check how does name-server test do
     // initialize all servers
     auto addServer = [this] (const Name& zoneName) {
-      m_serverFaces.push_back(make_unique<util::DummyClientFace>(m_io, m_keyChain,
-                                                                 util::DummyClientFace::Options{true, true}));
+      m_serverFaces.push_back(make_unique<DummyClientFace>(m_io, m_keyChain,
+                                                           DummyClientFace::Options{true, true}));
       m_serverFaces.back()->linkTo(m_validatorFace);
 
       // validator is used only for check update signature
@@ -70,9 +70,9 @@ public:
   }
 
 public:
-  util::DummyClientFace m_validatorFace;
+  DummyClientFace m_validatorFace;
   unique_ptr<security::Validator> m_validator;
-  std::vector<unique_ptr<util::DummyClientFace>> m_serverFaces;
+  std::vector<unique_ptr<DummyClientFace>> m_serverFaces;
   std::vector<shared_ptr<ndns::NameServer>> m_servers;
   Name m_ndnsimCert;
   Name m_randomCert;
@@ -81,7 +81,7 @@ public:
 BOOST_FIXTURE_TEST_CASE(Basic, ValidatorTestFixture)
 {
   SignatureInfo info;
-  info.setValidityPeriod(security::ValidityPeriod(time::system_clock::TimePoint::min(),
+  info.setValidityPeriod(security::ValidityPeriod(time::system_clock::time_point::min(),
                                                   time::system_clock::now() + time::days(10)));
 
   // case1: record of testId3, signed by its dsk, should be successful validated.

@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2022, Regents of the University of California.
+ * Copyright (c) 2014-2023, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -55,7 +55,7 @@ public:
   }
 
 public:
-  ndn::util::DummyClientFace face;
+  ndn::DummyClientFace face;
   const Name& zone;
   unique_ptr<security::Validator> validator;
   ndns::NameServer server;
@@ -353,8 +353,8 @@ public:
 
 public:
   boost::asio::io_service io;
-  ndn::util::DummyClientFace face;
-  ndn::util::DummyClientFace validatorFace;
+  ndn::DummyClientFace face;
+  ndn::DummyClientFace validatorFace;
   const Name& zone;
   unique_ptr<security::Validator> validator;
   ndns::NameServer server;
