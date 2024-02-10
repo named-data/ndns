@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020,  Regents of the University of California,
+ * Copyright (c) 2014-2024,  Regents of the University of California,
  *                           Arizona Board of Regents,
  *                           Colorado State University,
  *                           University Pierre & Marie Curie, Sorbonne University,
@@ -26,13 +26,11 @@
 
 #include "clock-fixture.hpp"
 
-namespace ndn {
-namespace ndns {
-namespace tests {
+namespace ndn::ndns::tests {
 
 ClockFixture::ClockFixture()
-  : m_steadyClock(make_shared<time::UnitTestSteadyClock>())
-  , m_systemClock(make_shared<time::UnitTestSystemClock>())
+  : m_steadyClock(std::make_shared<time::UnitTestSteadyClock>())
+  , m_systemClock(std::make_shared<time::UnitTestSystemClock>())
 {
   time::setCustomClocks(m_steadyClock, m_systemClock);
 }
@@ -58,6 +56,4 @@ ClockFixture::advanceClocks(time::nanoseconds tick, time::nanoseconds total)
   }
 }
 
-} // namespace tests
-} // namespace ndns
-} // namespace ndn
+} // namespace ndn::ndns::tests

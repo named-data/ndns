@@ -1,7 +1,8 @@
 # -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
+import os
+import subprocess
 from waflib import Context, Logs, Utils
-import os, subprocess
 
 VERSION = '0.1'
 APPNAME = 'ndns'
@@ -33,12 +34,12 @@ def configure(conf):
     conf.find_program(['pkgconf', 'pkg-config'], var='PKGCONFIG')
 
     pkg_config_path = os.environ.get('PKG_CONFIG_PATH', f'{conf.env.LIBDIR}/pkgconfig')
-    conf.check_cfg(package='libndn-cxx', args=['libndn-cxx >= 0.8.0', '--cflags', '--libs'],
+    conf.check_cfg(package='libndn-cxx', args=['libndn-cxx >= 0.8.1', '--cflags', '--libs'],
                    uselib_store='NDN_CXX', pkg_config_path=pkg_config_path)
 
     conf.check_sqlite3()
 
-    boost_libs = ['system', 'program_options', 'filesystem']
+    boost_libs = ['filesystem', 'program_options']
     if conf.env.WITH_TESTS:
         boost_libs.append('unit_test_framework')
 
@@ -94,7 +95,7 @@ def build(bld):
 
     if Utils.unversioned_sys_platform() == 'linux':
         bld(features='subst',
-            name='ndns.service',
+            name='systemd-units',
             source='systemd/ndns.service.in',
             target='systemd/ndns.service')
 
@@ -160,16 +161,16 @@ def version(ctx):
     # first, try to get a version string from git
     gotVersionFromGit = False
     try:
-        cmd = ['git', 'describe', '--always', '--match', '%s*' % GIT_TAG_PREFIX]
-        out = subprocess.check_output(cmd, universal_newlines=True).strip()
+        cmd = ['git', 'describe', '--always', '--match', f'{GIT_TAG_PREFIX}*']
+        out = subprocess.run(cmd, capture_output=True, check=True, text=True).stdout.strip()
         if out:
             gotVersionFromGit = True
             if out.startswith(GIT_TAG_PREFIX):
                 Context.g_module.VERSION = out.lstrip(GIT_TAG_PREFIX)
             else:
                 # no tags matched
-                Context.g_module.VERSION = '%s-commit-%s' % (VERSION_BASE, out)
-    except (OSError, subprocess.CalledProcessError):
+                Context.g_module.VERSION = f'{VERSION_BASE}-commit-{out}'
+    except (OSError, subprocess.SubprocessError):
         pass
 
     versionFile = ctx.path.find_node('VERSION.info')
@@ -187,14 +188,14 @@ def version(ctx):
                 # already up-to-date
                 return
         except EnvironmentError as e:
-            Logs.warn('%s exists but is not readable (%s)' % (versionFile, e.strerror))
+            Logs.warn(f'{versionFile} exists but is not readable ({e.strerror})')
     else:
         versionFile = ctx.path.make_node('VERSION.info')
 
     try:
         versionFile.write(Context.g_module.VERSION)
     except EnvironmentError as e:
-        Logs.warn('%s is not writable (%s)' % (versionFile, e.strerror))
+        Logs.warn(f'{versionFile} is not writable ({e.strerror})')
 
 def dist(ctx):
     ctx.algo = 'tar.xz'

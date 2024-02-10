@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2020, Regents of the University of California.
+ * Copyright (c) 2014-2024, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -86,7 +86,7 @@ public:
   void
   stop()
   {
-    m_face.getIoService().stop();
+    m_face.getIoContext().stop();
     NDNS_LOG_TRACE("application stops.");
   }
 

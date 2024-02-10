@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2014-2023, Regents of the University of California.
+ * Copyright (c) 2014-2024, Regents of the University of California.
  *
  * This file is part of NDNS (Named Data Networking Domain Name Service).
  * See AUTHORS.md for complete list of NDNS authors and contributors.
@@ -50,8 +50,8 @@ public:
   void
   run()
   {
-    face.getIoService().poll();
-    face.getIoService().reset();
+    face.getIoContext().poll();
+    face.getIoContext().reset();
   }
 
 public:
